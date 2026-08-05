@@ -6,30 +6,33 @@ import prettierPlugin from 'eslint-plugin-prettier';
 import prettierConfig from 'eslint-config-prettier';
 
 export default [
-  {
-    ignores: ['dist', 'node_modules'],
-  },
-  {
-    files: ['**/*.{js,jsx}'],
-    languageOptions: {
-      ecmaVersion: 2020,
-      globals: globals.browser,
-      parserOptions: {
-        ecmaFeatures: { jsx: true },
-        sourceType: 'module',
-      },
+    {
+        ignores: ['dist', 'node_modules'],
     },
-    plugins: {
-      'react-hooks': reactHooks,
-      'react-refresh': reactRefresh,
-      prettier: prettierPlugin,
+    {
+        files: ['**/*.{js,jsx}'],
+        languageOptions: {
+            ecmaVersion: 2020,
+            globals: globals.browser,
+            parserOptions: {
+                ecmaFeatures: { jsx: true },
+                sourceType: 'module',
+            },
+        },
+        plugins: {
+            'react-hooks': reactHooks,
+            'react-refresh': reactRefresh,
+            prettier: prettierPlugin,
+        },
+        rules: {
+            ...js.configs.recommended.rules,
+            ...reactHooks.configs.recommended.rules,
+            'react-refresh/only-export-components': [
+                'warn',
+                { allowConstantExport: true },
+            ],
+            'prettier/prettier': 'error',
+        },
     },
-    rules: {
-      ...js.configs.recommended.rules,
-      ...reactHooks.configs.recommended.rules,
-      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
-      'prettier/prettier': 'error',
-    },
-  },
-  prettierConfig,
+    prettierConfig,
 ];
