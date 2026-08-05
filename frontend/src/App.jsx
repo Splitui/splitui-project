@@ -3,6 +3,8 @@ import clsx from 'clsx';
 import reactLogo from './assets/react.svg';
 import viteLogo from './assets/vite.svg';
 import heroImg from './assets/hero.png';
+import { Button } from '@mui/material';
+import SendIcon from '@mui/icons-material/Send';
 import './App.css';
 
 function App() {
@@ -21,13 +23,15 @@ function App() {
             Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
           </p>
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<SendIcon />}
+          onClick={() => setCount((c) => c + 1)}
+          className={clsx(count > 0 && 'button-active')}
         >
           Count is {count}
-        </button>
+        </Button>
       </section>
 
       <div className="ticks"></div>
