@@ -2,8 +2,8 @@ from enum import StrEnum
 from datetime import datetime
 import uuid as uuid_module
 
-from sqlalchemy import DateTime, Numeric, String, func, Uuid, Boolean,Enum
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import DateTime, String, func, Uuid, Boolean, Enum
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
@@ -24,6 +24,7 @@ class Meeting(Base):
     uuid: Mapped[uuid_module.UUID] = mapped_column(
         Uuid,
         nullable=False,
+        unique=True,
     )
 
     title: Mapped[str] = mapped_column(
@@ -51,7 +52,12 @@ class Meeting(Base):
         server_default=func.now(),
     )
 
-    end_date: Mapped[datetime] = mapped_column(
-            DateTime(timezone=True),
-            nullable=True,
-        )
+    end_date: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=False),
+        nullable=True,
+    )
+
+    receipts: Mapped[list["Receipt"]] = relationship(
+        back_populates="meeting",
+        cascade="all, delete-orphan",
+    )
