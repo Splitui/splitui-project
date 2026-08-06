@@ -24,6 +24,7 @@ class Meeting(Base):
     uuid: Mapped[uuid_module.UUID] = mapped_column(
         Uuid,
         nullable=False,
+        default=uuid_module.uuid4(),
         unique=True,
     )
 
