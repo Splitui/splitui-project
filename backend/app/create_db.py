@@ -1,7 +1,7 @@
 from app.db.base import Base
 from app.db.session import engine
 
-from app.models import Meeting
+import app.models
 
 
 def create_database() -> None:
