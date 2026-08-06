@@ -11,7 +11,7 @@ export default function Home() {
         <div className="min-h-screen py-8 flex flex-col items-center gap-6">
             <p className="text-xl">Главная</p>
             <Box className="w-full">
-                <Slyder />
+                <Slider />
             </Box>
             <Button variant="contained" onClick={() => setOpenAdd(true)}>
                 Создание встречи

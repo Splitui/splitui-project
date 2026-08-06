@@ -1,26 +1,25 @@
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Box } from '@mui/material';
 import clsx from 'clsx';
 import { Mousewheel, Parallax, Pagination } from 'swiper/modules';
 
 import 'swiper/css';
 import 'swiper/css/pagination';
 
-import FirstSlide from './slyderComponents/FirstSlide';
-import SecondSlide from './slyderComponents/SecondSlide';
-import ThirdSlide from './slyderComponents/ThirdSlide';
-import FourthSlide from './slyderComponents/FourthSlide';
+import FirstSlide from './FirstSlide';
+import SecondSlide from './SecondSlide';
+import ThirdSlide from './ThirdSlide';
+import FourthSlide from './FourthSlide';
 
-export default function Slyder() {
+export default function Slider() {
     return (
-        <Box className={clsx('w-full', 'h-[600px]')}>
+        <div className={clsx('w-full h-[600px]')}>
             <Swiper
                 speed={600}
                 parallax={true}
                 mousewheel={true}
                 pagination={{ clickable: true }}
                 modules={[Mousewheel, Parallax, Pagination]}
-                className={clsx('w-full', 'h-full')}
+                className={clsx('w-full h-full')}
             >
                 <SwiperSlide
                     className={clsx(
@@ -54,6 +53,6 @@ export default function Slyder() {
                     <FourthSlide />
                 </SwiperSlide>
             </Swiper>
-        </Box>
+        </div>
     );
 }
