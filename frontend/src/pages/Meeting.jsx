@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
+import { Container, Typography } from '@mui/material';
 import { useParams } from 'react-router-dom';
 
-function Meeting() {
+export default function Meeting() {
     const { meetingUUID } = useParams();
 
     useEffect(() => {
@@ -9,11 +10,9 @@ function Meeting() {
     }, [meetingUUID]);
 
     return (
-        <div>
-            <h1>Страница встречи</h1>
-            <p>Айди встречи: {meetingUUID}</p>
-        </div>
+        <Container>
+            <Typography>Страница встречи</Typography>
+            <Typography>Айди встречи: {meetingUUID}</Typography>
+        </Container>
     );
 }
-
-export default Meeting;
