@@ -22,12 +22,12 @@ export default function AddMeeting({ open, onClose }) {
             open={open}
             onClose={onClose}
         >
-            <DialogTitle className={clsx('flex items-center justify-between')}>
+            <div className={clsx('flex items-center justify-between')}>
                 Создание встречи
                 <IconButton onClick={onClose} size="small">
                     <CloseIcon />
                 </IconButton>
-            </DialogTitle>
+            </div>
             <DialogContent dividers>
                 <div className="mb-2">
                     <p className="mb-1">Название встречи</p>

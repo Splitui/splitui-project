@@ -1,6 +1,6 @@
 import { Box, Button } from '@mui/material';
 import { useState } from 'react';
-import Slyder from '../components/Slyder';
+import Slider from '../components/sliderComponents/Slider';
 import AddMeeting from '../components/Modal/AddMeeting';
 import JoinMeeting from '../components/Modal/JoinMeeting';
 export default function Home() {
