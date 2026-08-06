@@ -2,7 +2,6 @@ import {
     Dialog,
     DialogTitle,
     DialogContent,
-    DialogActions,
     IconButton,
     Button,
     useTheme,
@@ -10,6 +9,7 @@ import {
     TextField,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import clsx from 'clsx';
 export default function JoinMeeting({ open, onClose }) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
@@ -21,13 +21,7 @@ export default function JoinMeeting({ open, onClose }) {
             open={open}
             onClose={onClose}
         >
-            <DialogTitle
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                }}
-            >
+            <DialogTitle className={clsx('flex items-center justify-between')}>
                 Вход в встречу
                 <IconButton onClick={onClose} size="small">
                     <CloseIcon />
@@ -43,11 +37,11 @@ export default function JoinMeeting({ open, onClose }) {
                     <TextField fullWidth size="small" />
                 </div>
             </DialogContent>
-            <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
+            <div className={clsx('flex justify-center pb-3')}>
                 <Button variant="outlined" onClick={onClose}>
                     Кнопка
                 </Button>
-            </DialogActions>
+            </div>
         </Dialog>
     );
 }

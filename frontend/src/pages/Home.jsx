@@ -1,8 +1,8 @@
 import { Box, Button } from '@mui/material';
 import { useState } from 'react';
-import Slider from '../components/sliderComponents/Slider';
-import AddMeeting from '../components/AddMeeting';
-import JoinMeeting from '../components/JoinMeeting';
+import Slyder from '../components/Slyder';
+import AddMeeting from '../components/Modal/AddMeeting';
+import JoinMeeting from '../components/Modal/JoinMeeting';
 export default function Home() {
     const [openAdd, setOpenAdd] = useState(false);
     const [openJoin, setOpenJoin] = useState(false);
