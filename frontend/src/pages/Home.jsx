@@ -1,6 +1,6 @@
 import {Button, Container, Typography} from '@mui/material';
 import {useState} from 'react';
-import CustomModal from '../components/CustomModal'
+import AddMeeting from '../components/AddMeeting'
 export default function Home() {
     const[open, setOpen] = useState(false);
     const handleOpen = () => {
@@ -12,8 +12,8 @@ export default function Home() {
     return (
         <Container className='min-h-screen py-8 flex flex-col items-center gap-6'>
             <Typography>Главная</Typography>
-            <Button variant='contained' onClick={handleOpen}>Клик</Button>
-            <CustomModal open={open} onClose={handleClose}/>
+            <Button variant='contained' onClick={handleOpen}>Создание встречи</Button>
+            <AddMeeting open={open} onClose={handleClose}/>
         </Container>
     );
 }
