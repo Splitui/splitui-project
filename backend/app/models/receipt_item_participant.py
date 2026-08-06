@@ -19,8 +19,7 @@ class ReceiptItemParticipant(Base):
         primary_key=True,
     )
 
-
     share_amount: Mapped[Decimal] = mapped_column(
-        Numeric(10,2),
+        Numeric(10, 2),
         nullable=False,
     )
