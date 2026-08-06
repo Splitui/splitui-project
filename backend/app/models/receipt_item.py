@@ -41,16 +41,7 @@ class ReceiptItem(Base):
     )
 
     created_at: Mapped[datetime] = mapped_column(
-            DateTime(timezone=False),
-            nullable=False,
-            server_default=func.now(),
-        )
-
-    receipt: Mapped["Receipt"] = relationship(
-        back_populates="receipt_items",
-    )
-
-    receipt_item_participants: Mapped[list["ReceiptItemParticipant"]] = relationship(
-        back_populates="receipt_item",
-        cascade="all, delete-orphan",
+        DateTime(timezone=False),
+        nullable=False,
+        server_default=func.now(),
     )

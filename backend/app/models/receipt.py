@@ -20,9 +20,9 @@ class Receipt(Base):
     )
 
     payer_id: Mapped[int] = mapped_column(
-            ForeignKey("participants.id"),
-            nullable=False,
-        )
+        ForeignKey("participants.id"),
+        nullable=False,
+    )
 
     title: Mapped[str] = mapped_column(
         String(100),
@@ -74,17 +74,4 @@ class Receipt(Base):
         DateTime(timezone=False),
         nullable=True,
         onupdate=func.now(),
-    )
-
-    meeting: Mapped["Meeting"] = relationship(
-        back_populates="receipts",
-    )
-
-    payer: Mapped["Participant"] = relationship(
-        back_populates="receipts",
-    )
-
-    receipt_items: Mapped[list["ReceiptItem"]] = relationship(
-        back_populates="receipt",
-        cascade="all, delete-orphan",
     )

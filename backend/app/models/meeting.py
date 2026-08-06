@@ -56,8 +56,3 @@ class Meeting(Base):
         DateTime(timezone=False),
         nullable=True,
     )
-
-    receipts: Mapped[list["Receipt"]] = relationship(
-        back_populates="meeting",
-        cascade="all, delete-orphan",
-    )

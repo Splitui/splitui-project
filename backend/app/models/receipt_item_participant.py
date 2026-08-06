@@ -24,12 +24,3 @@ class ReceiptItemParticipant(Base):
         Numeric(10,2),
         nullable=False,
     )
-
-
-    participant: Mapped["Participant"] = relationship(
-        back_populates="receipt_item_participants",
-    )
-
-    receipt_item: Mapped["ReceiptItem"] = relationship(
-        back_populates="receipt_item_participants",
-    )
