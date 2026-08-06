@@ -1,6 +1,6 @@
 import { Box, Button } from '@mui/material';
 import { useState } from 'react';
-import Slyder from '../components/Slyder';
+import Slider from '../components/sliderComponents/Slider';
 import AddMeeting from '../components/AddMeeting';
 import JoinMeeting from '../components/JoinMeeting';
 export default function Home() {
@@ -11,7 +11,7 @@ export default function Home() {
         <div className="min-h-screen py-8 flex flex-col items-center gap-6">
             <p className="text-xl">Главная</p>
             <Box className="w-full">
-                <Slyder />
+                <Slider />
             </Box>
             <Button variant="contained" onClick={() => setOpenAdd(true)}>
                 Создание встречи

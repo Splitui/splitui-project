@@ -1,28 +1,52 @@
-import {Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Button, useTheme, useMediaQuery, TextField} from "@mui/material";
+import {
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    IconButton,
+    Button,
+    useTheme,
+    useMediaQuery,
+    TextField,
+} from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-export default function JoinMeeting({open, onClose}) {
+export default function JoinMeeting({ open, onClose }) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
     return (
-        <Dialog fullScreen={fullScreen} fullWidth maxWidth='sm' open={open} onClose={onClose}>
-            <DialogTitle sx={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+        <Dialog
+            fullScreen={fullScreen}
+            fullWidth
+            maxWidth="sm"
+            open={open}
+            onClose={onClose}
+        >
+            <DialogTitle
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                }}
+            >
                 Вход в встречу
                 <IconButton onClick={onClose} size="small">
-                    <CloseIcon/>
+                    <CloseIcon />
                 </IconButton>
             </DialogTitle>
             <DialogContent dividers>
                 <div className="mb-2">
                     <p className="mb-1">Имя участника</p>
-                    <TextField fullWidth size="small"/>
+                    <TextField fullWidth size="small" />
                 </div>
                 <div className="mb-2">
                     <p className="mb-1">ID встречи</p>
-                    <TextField fullWidth size="small"/>
+                    <TextField fullWidth size="small" />
                 </div>
             </DialogContent>
-            <DialogActions sx={{justifyContent:'center', pb:3}}>
-                <Button variant="outlined" onClick={onClose}>Кнопка</Button>
+            <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
+                <Button variant="outlined" onClick={onClose}>
+                    Кнопка
+                </Button>
             </DialogActions>
         </Dialog>
     );

@@ -1,22 +1,18 @@
-import {
-    Box,
-    Typography,
-    Accordion,
-    AccordionSummary,
-    AccordionDetails,
-} from '@mui/material';
+import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import clsx from 'clsx';
 
-export default function FaqSlide() {
+export default function FourthSlide() {
     return (
-        <>
-            <Box data-swiper-parallax="-200" className={clsx('mb-7')}>
-                <Typography variant="h4" className={clsx('font-bold')}>
-                    FAQ
-                </Typography>
-            </Box>
-            <Box
+        <div
+            className={clsx(
+                'flex flex-col justify-start items-center text-center w-full',
+            )}
+        >
+            <div data-swiper-parallax="-200" className={clsx('mb-7')}>
+                <h4 className={clsx('font-bold text-3xl')}>FAQ</h4>
+            </div>
+            <div
                 data-swiper-parallax="-100"
                 className={clsx('w-full flex flex-col gap-2')}
             >
@@ -30,15 +26,15 @@ export default function FaqSlide() {
                     }}
                 >
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography className={clsx('font-bold')}>
-                            Нужна ли регистрация?
-                        </Typography>
+                        <p className={clsx('font-bold')}>Нужна ли регистрация?</p>
                     </AccordionSummary>
                     <AccordionDetails className={clsx('border-t-2 border-black')}>
-                        <Typography>Нет, всё работает без аккаунта.</Typography>
+                        <p className={clsx('text-left')}>
+                            Нет, всё работает без аккаунта.
+                        </p>
                     </AccordionDetails>
                 </Accordion>
-            </Box>
-        </>
+            </div>
+        </div>
     );
 }
