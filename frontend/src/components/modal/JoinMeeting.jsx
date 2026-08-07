@@ -21,12 +21,12 @@ export default function JoinMeeting({ open, onClose }) {
             open={open}
             onClose={onClose}
         >
-            <DialogTitle className={clsx('flex items-center justify-between')}>
+            <div className={clsx('flex justify-center')}>
                 Вход в встречу
                 <IconButton onClick={onClose} size="small">
                     <CloseIcon />
                 </IconButton>
-            </DialogTitle>
+            </div>
             <DialogContent dividers>
                 <div className="mb-2">
                     <p className="mb-1">Имя участника</p>
