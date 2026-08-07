@@ -2,7 +2,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy import text
 
 
-def create_participant(
+def create(
         connection: Connection,
         meeting_id: int,
         nickname: str,
@@ -11,7 +11,7 @@ def create_participant(
     result = connection.execute(
         text("""
              INSERT INTO participants (meeting_id, nickname, is_creator)
-             VALUES (:meeting_id, :nickname, :is_creator)
+             VALUES (:meeting_id, :nickname, :is_creator) RETURNING id, meeting_id, nickname, is_creator
              """),
         {
             "meeting_id": meeting_id,
@@ -19,10 +19,10 @@ def create_participant(
             "is_creator": is_creator,
         },
     )
-    return {"id": result.lastrowid, "nickname": nickname}
+    return result.mappings().one()
 
 
-def get_participants(connection: Connection):
+def get_all(connection: Connection):
     result = connection.execute(
         text(
             """
@@ -33,4 +33,25 @@ def get_participants(connection: Connection):
         )
     )
 
+    return result.mappings().all()
+
+
+def get_all_by_meeting_uuid(connection: Connection, meeting_uuid):
+    result = connection.execute(
+        text(
+            """
+            SELECT p.id,
+                   p.nickname,
+                   p.is_creator
+            FROM participants p
+                     JOIN meetings m
+                          ON m.id = p.meeting_id
+            WHERE m.uuid = :meeting_uuid
+            ORDER BY p.id
+            """
+        ),
+        {
+            "meeting_uuid": str(meeting_uuid)
+        }
+    )
     return result.mappings().all()

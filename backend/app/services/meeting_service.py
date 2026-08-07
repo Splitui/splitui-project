@@ -2,24 +2,44 @@ from sqlalchemy.engine import Connection
 
 from app.repositories import meeting_repository, participant_repository
 from app.schemas.meeting import MeetingCreate
+from app.schemas.participants import ParticipantCreate
 
 
 def get_meetings(connection: Connection):
-    return meeting_repository.get_meetings(connection)
+    return meeting_repository.get_all(connection)
+
+
+def get_meeting(connection: Connection, meeting_uuid):
+    return meeting_repository.get_by_uuid(connection, meeting_uuid)
 
 
 def create_meeting(connection: Connection, data: MeetingCreate):
-    meeting_id, meeting_uuid = meeting_repository.create_meeting(
+    meeting = meeting_repository.create(
         connection,
         data.title,
         data.meeting_date,
     )
 
-    participant_repository.create_participant(
+    participant_repository.create(
         connection=connection,
-        meeting_id=meeting_id,
-        nickname=data.creator_name,
+        meeting_id=meeting["id"],
+        nickname=data.creator_nickname,
         is_creator=True
     )
 
-    return {"uuid": meeting_uuid}
+    return meeting
+
+
+def get_participants(connection, meeting_uuid):
+    return participant_repository.get_all_by_meeting_uuid(connection, meeting_uuid)
+
+
+def add_participant(connection, meeting_uuid, data: ParticipantCreate):
+    meeting = meeting_repository.get_by_uuid(connection, meeting_uuid)
+
+    return participant_repository.create(
+        connection,
+        meeting["id"],
+        data.nickname,
+        False
+    )

@@ -8,6 +8,7 @@ from app.services import participant_service
 
 router = APIRouter(
     prefix="/participants",
+    tags=["Участники"],
 )
 
 
@@ -16,11 +17,3 @@ def get_participants(
         connection: Connection = Depends(get_connection),
 ):
     return participant_service.get_participants(connection)
-
-
-@router.post("", status_code=201)
-def create_participant(
-        data: ParticipantCreate,
-        connection: Connection = Depends(get_connection)
-):
-    return participant_service.create_participant(connection, data)
