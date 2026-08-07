@@ -22,7 +22,7 @@ export default function AddMeeting({ open, onClose }) {
             open={open}
             onClose={onClose}
         >
-            <div className={clsx('flex items-center justify-between')}>
+            <div className='flex items-center justify-between'>
                 Создание встречи
                 <IconButton onClick={onClose} size="small">
                     <CloseIcon />
@@ -42,7 +42,7 @@ export default function AddMeeting({ open, onClose }) {
                     <TextField fullWidth size="small" />
                 </div>
             </DialogContent>
-            <div className={clsx('flex justify-center pb-3')}>
+            <div className='flex justify-center pb-3'>
                 <Button variant="outlined" onClick={onClose}>
                     Кнопка
                 </Button>
