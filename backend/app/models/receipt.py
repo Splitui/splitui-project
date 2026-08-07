@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, Numeric, String, func, Boolean, ForeignKey, Text
+from sqlalchemy import DateTime, Numeric, String, func, Boolean, ForeignKey, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -32,12 +32,12 @@ class Receipt(Base):
 
     total_amount: Mapped[Decimal] = mapped_column(
         Numeric(10, 2),
-        default=Decimal("0.00"),
+        server_default=text("0.00"),
     )
 
     cashback_amount: Mapped[Decimal] = mapped_column(
         Numeric(10, 2),
-        default=Decimal("0.00"),
+        server_default=text("0.00"),
     )
 
     purchase_date: Mapped[datetime] = mapped_column(
@@ -62,7 +62,7 @@ class Receipt(Base):
 
     is_confirmed: Mapped[bool] = mapped_column(
         Boolean,
-        default=False,
+        server_default=text("false"),
     )
 
     created_at: Mapped[datetime] = mapped_column(
