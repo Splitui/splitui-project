@@ -1,10 +1,9 @@
 from collections.abc import Generator
-
 from sqlalchemy.engine import Connection
 
-from app.db.session import engine
+from app.db.engine import engine
 
 
 def get_connection() -> Generator[Connection, None, None]:
-    with engine.connect() as connection:
+    with engine.begin() as connection:
         yield connection

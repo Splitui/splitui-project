@@ -31,12 +31,12 @@ class ReceiptItem(Base):
     )
 
     unit_price: Mapped[Decimal] = mapped_column(
-        Numeric(10,2),
+        Numeric(10, 2),
         default=Decimal("0.00"),
     )
 
     amount: Mapped[Decimal] = mapped_column(
-        Numeric(10,2),
+        Numeric(10, 2),
         Computed("unit_price * quantity"),
     )
 

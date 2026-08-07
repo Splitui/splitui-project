@@ -2,16 +2,18 @@ from enum import StrEnum
 from datetime import datetime
 import uuid as uuid_module
 
-from sqlalchemy import DateTime, String, func, Uuid, Boolean, Enum
+from sqlalchemy import DateTime, String, func, Uuid, Boolean, Enum, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
 
 class MeetingStatus(StrEnum):
     ACTIVE = "Активная"
     CALCULATING = "В расчете"
     FINISHED = "Завершена"
     EDITING = "Корректировка"
+
 
 class Meeting(Base):
     __tablename__ = "meetings"
@@ -24,7 +26,6 @@ class Meeting(Base):
     uuid: Mapped[uuid_module.UUID] = mapped_column(
         Uuid,
         nullable=False,
-        default=uuid_module.uuid4(),
         unique=True,
     )
 
@@ -35,7 +36,7 @@ class Meeting(Base):
 
     is_public: Mapped[bool] = mapped_column(
         Boolean,
-        default=False,
+        server_default=text("0")
     )
 
     status: Mapped[MeetingStatus] = mapped_column(
@@ -44,7 +45,7 @@ class Meeting(Base):
             name="meeting_status_enum",
         ),
         nullable=False,
-        default=MeetingStatus.ACTIVE,
+        server_default=MeetingStatus.ACTIVE,
     )
 
     start_date: Mapped[datetime] = mapped_column(

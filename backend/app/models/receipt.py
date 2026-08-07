@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
+
 class Receipt(Base):
     __tablename__ = "receipts"
 
@@ -30,12 +31,12 @@ class Receipt(Base):
     )
 
     total_amount: Mapped[Decimal] = mapped_column(
-        Numeric(10,2),
+        Numeric(10, 2),
         default=Decimal("0.00"),
     )
 
     cashback_amount: Mapped[Decimal] = mapped_column(
-        Numeric(10,2),
+        Numeric(10, 2),
         default=Decimal("0.00"),
     )
 
