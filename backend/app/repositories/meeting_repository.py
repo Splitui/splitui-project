@@ -1,5 +1,4 @@
 from datetime import datetime
-from unittest import result
 import uuid
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
