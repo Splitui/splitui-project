@@ -5,7 +5,6 @@ from app.db.base import Base
 
 
 class BankData(Base):
-    __tablename__ = "bank_data"
 
     id: Mapped[int] = mapped_column(
         primary_key=True,

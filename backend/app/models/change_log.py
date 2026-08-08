@@ -7,7 +7,6 @@ from app.db.base import Base
 
 
 class ChangeLog(Base):
-    __tablename__ = "change_log"
 
     id: Mapped[int] = mapped_column(
         primary_key=True,

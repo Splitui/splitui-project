@@ -6,8 +6,7 @@ from sqlalchemy import ForeignKey, Boolean, String, func, DateTime
 from app.db.base import Base
 
 
-class Participant(Base):
-    __tablename__ = "participants"
+class Participants(Base):
 
     id: Mapped[int] = mapped_column(
         primary_key=True,

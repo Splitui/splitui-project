@@ -1,3 +1,5 @@
+"""Объявление модели позиции в чеке """
+
 from datetime import datetime
 from decimal import Decimal
 
@@ -7,8 +9,25 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 
-class ReceiptItem(Base):
-    __tablename__ = "receipt_items"
+class ReceiptItems(Base):
+    """
+        Модель позиции в чеке
+
+        id: индификатор позиции в системе
+
+        receipt_id: индификатор чека в котором находится позиция
+
+        title: название позиции чека
+        
+        quantity: кол-во этой позиции в чеке
+
+        unit_price: цена за одну позицию
+
+        amount: общая стоимость позиции
+
+        created_at: дата/время добавления в систему 
+    """
+
 
     id: Mapped[int] = mapped_column(
         primary_key=True,

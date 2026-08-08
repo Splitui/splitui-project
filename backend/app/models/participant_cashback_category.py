@@ -5,7 +5,6 @@ from app.db.base import Base
 
 
 class ParticipantCashbackCategory(Base):
-    __tablename__ = "participant_cashback_categories"
 
     participant_id: Mapped[int] = mapped_column(
         ForeignKey("participants.id"),

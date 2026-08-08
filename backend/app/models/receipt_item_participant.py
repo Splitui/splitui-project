@@ -1,3 +1,5 @@
+"""Объявление связи позиции в чеке и и участника чека """
+
 from decimal import Decimal
 
 from sqlalchemy import ForeignKey, Numeric
@@ -7,7 +9,16 @@ from app.db.base import Base
 
 
 class ReceiptItemParticipant(Base):
-    __tablename__ = "receipt_item_participants"
+
+    """
+    Связь позиция-участник
+
+    receipt_item_id: индификатор чека
+
+    participant_id: индификатор участника чека
+
+    share_amount: кол-во которое участник взял себе
+    """
 
     receipt_item_id: Mapped[int] = mapped_column(
         ForeignKey("receipt_items.id"),

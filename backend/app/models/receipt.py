@@ -1,3 +1,5 @@
+"""Объявление модели чека """
+
 from datetime import datetime
 from decimal import Decimal
 
@@ -7,8 +9,36 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 
-class Receipt(Base):
-    __tablename__ = "receipts"
+class Receipts(Base):
+
+    """
+    Модель чека
+
+    id: индификатор чека в системе
+
+    meeting_id: индификатор встречи 
+
+    payer_id: индификатор человека который оплатил чек
+
+    title: название заведения откуда чек
+
+    total_amount: общая сумма чека
+
+    cashback_amount: сумма кешбека с чека
+
+    purchase_date: дата оплаты чека
+
+    category: категория заведения откуда чек
+
+    comment: комментарий к чеку пользователя
+
+    image_url: путь к картинке заведения откуда чек
+
+    created_at: дата/время создания в системе
+
+    updated_at: дата/время последнего обновления в чеке
+
+    """
 
     id: Mapped[int] = mapped_column(
         primary_key=True,

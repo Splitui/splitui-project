@@ -1,3 +1,5 @@
+"""Объявление модели встречи """
+
 from enum import StrEnum
 from datetime import datetime
 import uuid as uuid_module
@@ -15,8 +17,25 @@ class MeetingStatus(StrEnum):
     EDITING = "Корректировка"
 
 
-class Meeting(Base):
-    __tablename__ = "meetings"
+class Meetings(Base):
+
+    """
+    Модель встречи
+
+    id: индификатор встречи в системе
+    
+    uuid: уникальный индификатор встречи для передачи пользователю
+
+    title: название встречи
+
+    is_public: можно ли публиковать данные о встрече в приложении
+
+    status: статус встречи(Активная, В расчете, Завершена, Корректировка)
+
+    start_date: дата/время начала встречи
+
+    end_date: дата/время окончания встречи
+    """
 
     id: Mapped[int] = mapped_column(
         primary_key=True,

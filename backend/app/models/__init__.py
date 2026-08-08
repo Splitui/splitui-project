@@ -1,25 +1,25 @@
-from app.models.meeting import Meeting
-from app.models.participant import Participant
+from app.models.meeting import Meetings
+from app.models.participant import Participants
 from app.models.participant_cashback_category import ParticipantCashbackCategory
-from app.models.cashback_category import CashbackCategory
+from app.models.cashback_category import CashbackCategories
 from app.models.bank_data import BankData
-from app.models.bank import Bank
+from app.models.bank import Banks
 from app.models.debt import Debt
 from app.models.change_log import ChangeLog
-from app.models.receipt import Receipt
-from app.models.receipt_item import ReceiptItem
+from app.models.receipt import Receipts
+from app.models.receipt_item import ReceiptItems
 from app.models.receipt_item_participant import ReceiptItemParticipant
 
 __all__ = [
-    "Meeting",
-    "Participant",
+    "Meetings",
+    "Participants",
     "ParticipantCashbackCategory",
-    "CashbackCategory",
+    "CashbackCategories",
     "BankData",
     "Bank",
     "Debt",
     "ChangeLog",
-    "Receipt",
-    "ReceiptItem",
+    "Receipts",
+    "ReceiptItems",
     "ReceiptItemParticipant",
 ]

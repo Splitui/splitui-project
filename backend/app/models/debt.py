@@ -7,7 +7,6 @@ from app.db.base import Base
 
 
 class Debt(Base):
-    __tablename__ = "debts"
 
     id: Mapped[int] = mapped_column(
         primary_key=True,
