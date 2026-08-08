@@ -8,6 +8,7 @@ dependencies = [
     "fastapi[standard]>=0.141.1",
     "pydantic>=2.13.4",
     "pydantic-settings>=2.12.0",
+    "pytest>=9.1.1",
     "sqlalchemy>=2.0.51",
 ]
 

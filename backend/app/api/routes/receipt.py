@@ -24,6 +24,7 @@ def get_meeting_receipts(
 
 @router.post(
     "/meetings/{meeting_uuid}/receipts",
+    status_code=201,
     summary="Создать чек во встрече",
 )
 def add_receipt_in_meetings(

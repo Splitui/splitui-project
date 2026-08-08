@@ -1,4 +1,4 @@
-""" Объявления функций для работы встречами """
+""" Сервис для работы с бизнес-логикой встреч """
 
 from sqlalchemy.engine import Connection
 
@@ -51,11 +51,11 @@ def create_meeting(connection: Connection, data: MeetingCreate):
 
 def get_participants(connection, meeting_uuid):
     """ 
-        Получение участников встречи по uuid
-    
-        meeting_uuid:  индификатор встречи 
+    Получение участников встречи по uuid
+
+    meeting_uuid:  индификатор встречи 
         
-        """
+    """
     
     return participant_repository.get_all_by_meeting_uuid(connection, meeting_uuid)
 
