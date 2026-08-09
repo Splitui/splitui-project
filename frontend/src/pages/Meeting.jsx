@@ -24,10 +24,7 @@ export default function Meeting() {
                 </h1>
                 <UserAvatar userName={userName} />
             </header>
-            <main>
-                {value === 'members' && <MembersTab />}{' '}
-                {value === 'receipts' && <ReceiptsTab />}
-            </main>
+            <main>{value === 'members' ? <MembersTab /> : <ReceiptsTab />}</main>
             <nav className="fixed bottom-0 left-0 w-full bg-white border-t-2 border-black z-50">
                 <Tabs value={value} onChange={handleChange} variant="fullWidth">
                     <Tab value="members" label="Участники" className="font-bold py-5" />
