@@ -1,10 +1,11 @@
-from uuid import UUID
+"""Модуль с эндпоинтами для работы с позициями чека."""
+
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.engine import Connection
 
 from app.db.dependencies import get_connection
-from app.schemas.receipt_item import ReceiptItemsCreate
+from app.schemas.receipt_items import ReceiptItemsCreate
 from app.services import receipt_items_service
 
 router = APIRouter(
@@ -13,17 +14,31 @@ router = APIRouter(
 )
 
 
-@router.get("/{receipt_id}/items", 
-    summary="Получить позиции чека",
+@router.get(
+    "/{receipt_id}/items",
+    summary="Получить позиции чека"
 )
 def get_meeting_receipts(
-    receipt_id: int,
-    limit: int,
-    offset: int,
-    connection: Connection = Depends(get_connection)
+        receipt_id: int,
+        limit: int,
+        offset: int,
+        connection: Connection = Depends(get_connection)
 ):
-    return receipt_items_service.get_receipt_items_from_receipt(connection,
-                                                                 limit,offset,receipt_id)
+    """Обрабатывает запрос на получение позиций чека.
+
+    :param receipt_id: идентификатор чека.
+    :param limit: максимальное количество позиций в ответе.
+    :param offset: смещение относительно начала списка позиций.
+    :param connection: соединение с базой данных.
+    :return: список позиций чека.
+    """
+    return receipt_items_service.get_items_from_receipt(
+        connection,
+        limit,
+        offset,
+        receipt_id
+    )
+
 
 @router.post(
     "/{receipt_id}/items",
@@ -31,8 +46,15 @@ def get_meeting_receipts(
     summary="Создать позицию в чеке",
 )
 def add_receipt_in_meetings(
-    receipt_id: int,
-    data: ReceiptItemsCreate,
-    connection: Connection = Depends(get_connection),
+        receipt_id: int,
+        data: ReceiptItemsCreate,
+        connection: Connection = Depends(get_connection),
 ):
-    return receipt_items_service.create_receipt_items_in_receipt(connection, receipt_id, data)
+    """Обрабатывает запрос на создание позиции в чеке.
+
+    :param receipt_id: идентификатор чека.
+    :param data: данные для создания позиции чека.
+    :param connection: соединение с базой данных.
+    :return: данные созданной позиции чека.
+    """
+    return receipt_items_service.create_items_in_receipt(connection, receipt_id, data)

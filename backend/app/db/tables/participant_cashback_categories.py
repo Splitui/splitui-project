@@ -1,8 +1,6 @@
-"""
-Модуль структуры таблицы 'Категория кэшбека участника'.
-"""
+"""Модуль структуры таблицы 'Категория кэшбека участника'."""
 
-from sqlalchemy import ForeignKey, Numeric, Table, Column, Integer
+from sqlalchemy import Column, ForeignKey, Integer, Numeric, Table
 
 from app.db.database import metadata
 

@@ -1,6 +1,7 @@
 from uuid import uuid4
 
-from app.services.meeting_service import *
+from app.services.meetings_service import *
+
 
 def test_create_meetings(test_app_client):
     response = test_app_client.post(
@@ -36,10 +37,10 @@ def test_get_meetings(test_app_client):
     response = test_app_client.get("/meetings")
 
     meetings = response.json()
-    
+
     assert response.status_code == 200
     assert meetings[0]["title"] == "Тестовая Встреча"
-    
+
     for i in range(10):
         test_app_client.post(
             "/meetings",
@@ -51,7 +52,7 @@ def test_get_meetings(test_app_client):
         )
     response = test_app_client.get("/meetings")
 
-    
+
     assert len(response.json()) == 11
 
 def test_get_meeting_by_uuid(test_app_client):

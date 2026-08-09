@@ -1,10 +1,19 @@
-"""
-Модуль структуры таблицы 'Позиция чека'.
-"""
+"""Модуль структуры таблицы 'Позиция чека'."""
 
-from sqlalchemy import DateTime, ForeignKey, Numeric, String, func, Integer, Computed, Table, Column, text
+from sqlalchemy import (
+    Column,
+    Computed,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Table,
+    func,
+    text,
+)
 
-from app.db.database import metadata, id_column
+from app.db.database import id_column, metadata
 
 receipt_items_table = Table(
     "receipt_items",

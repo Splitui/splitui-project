@@ -1,10 +1,8 @@
-"""
-Модуль структуры таблицы 'Банковские реквизиты'.
-"""
+"""Модуль структуры таблицы 'Банковские реквизиты'."""
 
-from sqlalchemy import ForeignKey, String, Table, Integer, Column
+from sqlalchemy import Column, ForeignKey, Integer, String, Table
 
-from app.db.database import metadata, id_column
+from app.db.database import id_column, metadata
 
 bank_data_table = Table(
     "bank_data",

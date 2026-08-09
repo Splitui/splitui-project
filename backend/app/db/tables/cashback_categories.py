@@ -1,10 +1,8 @@
-"""
-Модуль структуры таблицы 'Категория кэшбэка'.
-"""
+"""Модуль структуры таблицы 'Категория кэшбэка'."""
 
-from sqlalchemy import String, Text, Column, Integer, Table
+from sqlalchemy import Column, String, Table, Text
 
-from app.db.database import metadata, id_column
+from app.db.database import id_column, metadata
 
 cashback_categories_table = Table(
     "cashback_categories",
