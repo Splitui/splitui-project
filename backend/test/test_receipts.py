@@ -172,19 +172,19 @@ def test_two_meetings_receipts(test_app_client):
         f"/meetings/{first_meeting_uuid}/receipts"
     )
 
-    first_meeting_reciept = response.json()
+    first_meeting_receipt = response.json()
 
     response = test_app_client.get(
         f"/meetings/{second_meeting_uuid}/receipts"
     )
 
-    second_meeting_reciept = response.json()
+    second_meeting_receipt = response.json()
 
-    assert [r["title"] for r in first_meeting_reciept] == [
+    assert [r["title"] for r in first_meeting_receipt] == [
         "Чек первой встречи"
     ]
 
-    assert [r["title"] for r in second_meeting_reciept] == [
+    assert [r["title"] for r in second_meeting_receipt] == [
         "Чек второй встречи"
     ]
 

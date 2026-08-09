@@ -154,3 +154,8 @@ def test_add_and_get_participant(test_app_client):
     assert len(participants) == 12
     assert participants[0]["nickname"] == "Тестовый участник"
     assert participants[0]["is_creator"] == True
+
+    response = test_app_client.get(
+        f"/meetings/{uuid4}/participants"
+    )
+    assert response.status_code == 404

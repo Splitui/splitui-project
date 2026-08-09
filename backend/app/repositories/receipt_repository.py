@@ -62,3 +62,23 @@ def get_all_by_meeting_uuid(connection: Connection, meeting_uuid):
     )
 
     return result.mappings().all()
+
+def update_total_amount(connection: Connection,reciept_id: int,item_amount: float):
+
+    result = connection.execute(
+        text(
+            """
+            UPDATE receipts
+            SET total_amount = total_amount + :item_amount
+            WHERE id = :receipt_id
+            RETURNING total_amount
+            """
+        ),
+        {
+            "receipt_id": reciept_id,
+            "item_amount": float(item_amount)
+        }
+    )
+
+    return result.scalar_one()
+

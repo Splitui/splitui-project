@@ -41,3 +41,11 @@ def create_receipt_in_meeting(connection: Connection,meeting_uuid:UUID, data: Re
             data.is_confirmed
         )
     return receipt
+
+def update_total_amount(connection: Connection,reciept_id: int,item_amount: float):
+    total_amount = receipt_repository.update_total_amount(
+            connection,
+            reciept_id,
+            item_amount,
+        )
+    return total_amount
