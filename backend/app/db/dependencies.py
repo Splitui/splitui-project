@@ -1,9 +1,12 @@
-from collections.abc import Generator
+"""Модуль с зависимостями для получения соединения с базой данных."""
+
 from sqlalchemy.engine import Connection
 
 from app.db.engine import engine
 
 
 def get_connection():
-    with engine.begin() as connection:
+    """Возвращает соединение с базой данных."""
+
+    with engine.connect() as connection:
         yield connection

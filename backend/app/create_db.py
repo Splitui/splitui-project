@@ -1,9 +1,8 @@
-from app.db.base import Base
 from app.db.engine import engine
-
-import app.models
+from app.db.database import metadata
+from app.db import tables
 
 
 def create_database() -> None:
-    Base.metadata.create_all(bind=engine)
+    metadata.create_all(bind=engine)
     print("Таблицы успешно созданы")

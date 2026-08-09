@@ -2,8 +2,8 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 
-import app.models
-from app.db.base import Base
+from app.db import tables
+from app.db.database import metadata
 from app.db.dependencies import get_connection
 from app.main import app
 
@@ -15,7 +15,7 @@ def test_bd_engine(tmp_path):
         url = f"sqlite:///{database_path}",
     )
 
-    Base.metadata.create_all(engine)
+    metadata.create_all(engine)
 
     yield engine
 
