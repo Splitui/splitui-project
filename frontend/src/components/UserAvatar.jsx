@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Avatar, Drawer } from '@mui/material';
 
-export default function UserAvatar() {
+export default function UserAvatar({ userName }) {
     const [isOpen, setIsOpen] = useState(false);
+    const firstLetterUserName = userName ? userName.charAt(0).toUpperCase() : 'Ю';
 
     const handleClickOpen = () => {
         setIsOpen(true);
@@ -15,7 +16,7 @@ export default function UserAvatar() {
     return (
         <>
             <Avatar onClick={handleClickOpen} className="font-bold bg-black">
-                Юзер
+                {firstLetterUserName}
             </Avatar>
 
             <Drawer anchor="bottom" open={isOpen} onClose={handleClickClose}>
@@ -31,6 +32,11 @@ export default function UserAvatar() {
                     </div>
                     <div className="flex flex-col gap-1">
                         <h3 className="text-sm font-bold">Имя</h3>
+                        <input
+                            type="text"
+                            defaultValue={userName}
+                            className="border-2 border-black p-2 outline-none font-bold"
+                        />
                     </div>
                     <div className="flex flex-col gap-1">
                         <h3 className="text-sm font-bold">Реквизиты</h3>
