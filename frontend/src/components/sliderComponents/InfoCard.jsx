@@ -1,16 +1,17 @@
 import clsx from 'clsx';
 
-export default function InfoCard({ title, icon, text, className }) {
+export default function InfoCard({ number, title, icon: Icon, text, className }) {
     return (
         <div
             className={clsx(
-                'border-2 border-black rounded-xl p-2 flex flex-col justify-between items-center leading-normal',
+                'bg-[#F8F4EC] rounded-xl pt-2 pb-3 px-2 flex flex-col items-center justify-center leading-normal text-[#463628]',
                 className,
             )}
         >
-            <p className={clsx('text-[16px] font-bold leading-tight')}>{title}</p>
-            <span className={clsx('text-xl')}>{icon}</span>
-            <p className={clsx('text-[14px] leading-tight')}>{text}</p>
+            <p className="text-3xl font-bold leading-none mb-1">{number}</p>
+            <p className="text-2xl font-bold leading-tight mb-2">{title}</p>
+            <Icon sx={{ fontSize: 32 }} className="mb-2" />
+            <p className="text-xl leading-tight text-[#463628]">{text}</p>
         </div>
     );
 }

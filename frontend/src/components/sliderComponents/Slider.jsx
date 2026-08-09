@@ -10,46 +10,36 @@ import SecondSlide from './SecondSlide';
 import ThirdSlide from './ThirdSlide';
 import FourthSlide from './FourthSlide';
 
-export default function Slider() {
+export default function Slider({ onSlideChange }) {
     return (
-        <div className={clsx('w-full h-[600px]')}>
+        <div className="w-full h-full">
             <Swiper
                 speed={600}
                 parallax={true}
                 mousewheel={true}
                 pagination={{ clickable: true }}
                 modules={[Mousewheel, Parallax, Pagination]}
-                className={clsx('w-full h-full')}
+                onSlideChange={onSlideChange}
+                className="w-full h-full"
+                style={{
+                    '--swiper-pagination-color': '#463628',
+                    '--swiper-pagination-bullet-inactive-color': '#463628',
+                    '--swiper-pagination-bullet-inactive-opacity': 0.3,
+                }}
             >
-                <SwiperSlide
-                    className={clsx(
-                        'flex flex-col justify-start items-center px-16 text-center',
-                    )}
-                >
+                <SwiperSlide className="h-full flex flex-col items-center px-16 text-center">
                     <FirstSlide />
                 </SwiperSlide>
 
-                <SwiperSlide
-                    className={clsx(
-                        'flex flex-col justify-start items-center px-8 text-center',
-                    )}
-                >
+                <SwiperSlide className="h-full flex flex-col items-center px-16 text-center">
                     <SecondSlide />
                 </SwiperSlide>
 
-                <SwiperSlide
-                    className={clsx(
-                        'flex flex-col justify-start items-center px-6 text-center',
-                    )}
-                >
+                <SwiperSlide className="h-full flex flex-col items-center px-16 text-center">
                     <ThirdSlide />
                 </SwiperSlide>
 
-                <SwiperSlide
-                    className={clsx(
-                        'flex flex-col justify-start items-center px-16 text-center',
-                    )}
-                >
+                <SwiperSlide className="h-full flex flex-col items-center px-16 text-center">
                     <FourthSlide />
                 </SwiperSlide>
             </Swiper>

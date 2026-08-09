@@ -1,23 +1,25 @@
 import { useState } from 'react';
 
 function MeetingForm() {
-  const [title, setTitle] = useState('');
+    const [title, setTitle] = useState('');
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        await fetch('/meetings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title,
+                meeting_date: new Date().toISOString(),
+                creator_name: 'User',
+            }),
+        });
+    };
 
-    // fetch доступен глобально без импортов
-    await fetch('/meetings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, meeting_date: new Date().toISOString(), creator_name: "User" })
-    });
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <input value={title} onChange={(e) => setTitle(e.target.value)} />
-      <button type="submit">Создать встречу</button>
-    </form>
-  );
+    return (
+        <form onSubmit={handleSubmit}>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} />
+            <button type="submit">Создать встречу</button>
+        </form>
+    );
 }

@@ -8,16 +8,45 @@ export default function Home() {
     const [openJoin, setOpenJoin] = useState(false);
 
     return (
-        <div className="min-h-screen py-8 flex flex-col items-center gap-6">
-            <p className="text-xl">Главная</p>
-            <Box className="w-full">
+        <div className="h-screen py-8 flex flex-col items-center gap-6 bg-[#F8F4EC]">
+            <Box className="flex flex-col w-full flex-1 min-h-0">
                 <Slider />
             </Box>
-            <Button variant="contained" onClick={() => setOpenAdd(true)}>
+            <Button
+                variant="contained"
+                sx={{
+                    backgroundColor: '#463628',
+                    color: '#F8F4EC',
+                    fontWeight: 'bold',
+                    borderRadius: '12px',
+                    px: 4,
+                    py: 1.5,
+                    '&:hover': {
+                        backgroundColor: '#3a2c20',
+                    },
+                }}
+                onClick={() => setOpenAdd(true)}
+            >
                 Создание встречи
             </Button>
             <AddMeeting open={openAdd} onClose={() => setOpenAdd(false)} />
-            <Button variant="contained" onClick={() => setOpenJoin(true)}>
+            <Button
+                variant="contained"
+                sx={{
+                    backgroundColor: '#EAE0CD',
+                    color: '#463628',
+                    fontWeight: 'bold',
+                    borderRadius: '12px',
+                    px: 4,
+                    py: 1.5,
+                    boxShadow: 'none',
+                    '&:hover': {
+                        backgroundColor: '#ddd0b5',
+                        boxShadow: 'none',
+                    },
+                }}
+                onClick={() => setOpenJoin(true)}
+            >
                 Вход в встречу
             </Button>
             <JoinMeeting open={openJoin} onClose={() => setOpenJoin(false)} />

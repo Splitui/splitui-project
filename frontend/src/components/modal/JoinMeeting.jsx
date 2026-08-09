@@ -21,7 +21,7 @@ export default function JoinMeeting({ open, onClose }) {
             open={open}
             onClose={onClose}
         >
-            <div className='flex justify-center'>
+            <div className="flex justify-center">
                 Вход в встречу
                 <IconButton onClick={onClose} size="small">
                     <CloseIcon />
@@ -37,7 +37,7 @@ export default function JoinMeeting({ open, onClose }) {
                     <TextField fullWidth size="small" />
                 </div>
             </DialogContent>
-            <div className='flex justify-center pb-3'>
+            <div className="flex justify-center pb-3">
                 <Button variant="outlined" onClick={onClose}>
                     Кнопка
                 </Button>
