@@ -21,7 +21,7 @@ def test_create_meetings(test_app_client):
 
 
 def test_get_meetings(test_app_client):
-    response = test_app_client.get("/meetings")
+    response = test_app_client.get("/meetings?limit=20&offset=0")
 
     assert response.json() == []
 
@@ -34,7 +34,7 @@ def test_get_meetings(test_app_client):
             },
         )
 
-    response = test_app_client.get("/meetings")
+    response = test_app_client.get("/meetings?limit=20&offset=0")
 
     meetings = response.json()
 
@@ -50,10 +50,14 @@ def test_get_meetings(test_app_client):
                 "creator_nickname": f"Тестовый участник {i}",
             },
         )
-    response = test_app_client.get("/meetings")
+    response = test_app_client.get("/meetings?limit=20&offset=0")
 
 
     assert len(response.json()) == 11
+
+    response = test_app_client.get("/meetings?limit=5&offset=0")
+
+    assert len(response.json()) == 5
 
 def test_get_meeting_by_uuid(test_app_client):
     response = test_app_client.post(
@@ -128,7 +132,7 @@ def test_add_and_get_participant(test_app_client):
     meeting_uuid = response.json()["uuid"]
 
     response = test_app_client.post(
-        f"/meetings/{meeting_uuid}/participants",
+        f"{meeting_uuid}/participants",
         json={"nickname": "Анна"},
     )
 
@@ -141,12 +145,12 @@ def test_add_and_get_participant(test_app_client):
 
     for i in range(10):
         test_app_client.post(
-            f"/meetings/{meeting_uuid}/participants",
+            f"{meeting_uuid}/participants",
             json={"nickname": "7{i}6"},
         )
 
     response = test_app_client.get(
-        f"/meetings/{meeting_uuid}/participants"
+        f"{meeting_uuid}/participants?limit=20&offset=0"
     )
 
     participants = response.json()
@@ -157,6 +161,16 @@ def test_add_and_get_participant(test_app_client):
     assert participants[0]["is_creator"] == True
 
     response = test_app_client.get(
-        f"/meetings/{uuid4}/participants"
+        f"{meeting_uuid}/participants?limit=5&offset=0"
+    )
+    participants = response.json()
+    
+    assert response.status_code == 200
+    assert len(participants) == 5
+
+    response = test_app_client.get(
+        f"/meetings/{uuid4}/participants?limit=5&offset=0"
     )
     assert response.status_code == 404
+
+

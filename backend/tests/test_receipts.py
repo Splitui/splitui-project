@@ -17,8 +17,9 @@ def test_create_receipts(test_app_client):
 
     meeting_uuid = response.json()["uuid"]
     meeting_id = response.json()["id"]
+    
     response = test_app_client.post(
-        f"/meetings/{meeting_uuid}/participants",
+        f"{meeting_uuid}/participants",
         json={"nickname": "Анна"},
     )
 
@@ -44,7 +45,6 @@ def test_create_receipts(test_app_client):
     assert receipt["title"] == "Ресторан"
     assert receipt["category"] == "Еда"
     assert receipt["comment"] == "Общий ужин"
-    assert receipt["category"] is None
     assert receipt["image_url"] is None
     assert receipt["is_confirmed"] is not None
 
@@ -75,7 +75,7 @@ def test_get_receipts(test_app_client):
     meeting_uuid = response.json()["uuid"]
 
     response = test_app_client.get(
-        f"/meetings/{meeting_uuid}/receipts"
+        f"/meetings/{meeting_uuid}/receipts?limit=5&offset=0"
     )
 
     assert response.status_code == 200
@@ -83,7 +83,7 @@ def test_get_receipts(test_app_client):
 
 
     response = test_app_client.post(
-        f"/meetings/{meeting_uuid}/participants",
+        f"{meeting_uuid}/participants",
         json={"nickname": "Анна"},
     )
 
@@ -103,11 +103,18 @@ def test_get_receipts(test_app_client):
         )
 
     response = test_app_client.get(
-        f"/meetings/{meeting_uuid}/receipts"
+        f"/meetings/{meeting_uuid}/receipts?limit=10&offset=0"
     )
 
     assert response.status_code == 200
     assert len(response.json()) == 10
+
+    response = test_app_client.get(
+        f"/meetings/{meeting_uuid}/receipts?limit=5&offset=0"
+    )
+
+    assert response.status_code == 200
+    assert len(response.json()) == 5
 
     response = test_app_client.get(
         f"/meetings/{uuid4}/receipts"
@@ -139,14 +146,14 @@ def test_two_meetings_receipts(test_app_client):
     second_meeting_uuid = response.json()["uuid"]
 
     response = test_app_client.post(
-        f"/meetings/{first_meeting_uuid}/participants",
+        f"{first_meeting_uuid}/participants",
         json={"nickname": "Анна1"},
     )
 
     first_payer = response.json()
 
     response = test_app_client.post(
-        f"/meetings/{second_meeting_uuid}/participants",
+        f"{second_meeting_uuid}/participants",
         json={"nickname": "Анна2"},
     )
 
@@ -170,13 +177,13 @@ def test_two_meetings_receipts(test_app_client):
 
 
     response = test_app_client.get(
-        f"/meetings/{first_meeting_uuid}/receipts"
+        f"/meetings/{first_meeting_uuid}/receipts?limit=10&offset=0"
     )
 
     first_meeting_receipt = response.json()
 
     response = test_app_client.get(
-        f"/meetings/{second_meeting_uuid}/receipts"
+        f"/meetings/{second_meeting_uuid}/receipts?limit=10&offset=0"
     )
 
     second_meeting_receipt = response.json()

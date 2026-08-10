@@ -25,7 +25,7 @@ def test_bd_engine(tmp_path):
 def test_app_client(test_bd_engine):
 
     def override_get_connection():
-        with test_bd_engine.begin() as connection:
+        with test_bd_engine.connect() as connection:
             yield connection
 
     app.dependency_overrides[get_connection] = override_get_connection
