@@ -24,15 +24,20 @@ def create(
     return result.mappings().one()
 
 
-def get_all(connection: Connection):
+def get_all(connection: Connection,num_limit:int, num_offset: int):
     result = connection.execute(
         text(
             """
             SELECT *
             FROM meetings
             ORDER BY id
+            LIMIT :num_limit OFFSET :num_offset
             """
-        )
+        ),
+        {
+            "num_limit": num_limit,
+            "num_offset": num_offset,
+        },
     )
 
     return result.mappings().all()

@@ -18,9 +18,11 @@ router = APIRouter(
 )
 def get_meeting_receipts(
     meeting_uuid: UUID,
+    limit: int,
+    offset: int,
     connection: Connection = Depends(get_connection)
 ):
-    return receipt_service.get_receipts_from_meeting(connection, meeting_uuid)
+    return receipt_service.get_receipts_from_meeting(connection,limit,offset,meeting_uuid)
 
 @router.post(
     "/meetings/{meeting_uuid}/receipts",

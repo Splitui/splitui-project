@@ -10,7 +10,7 @@ def get_receipt_items_from_receipt(connection: Connection,num_limit: int ,num_of
     return receipt_items_repository.get_all_by_receipt_id(connection,num_limit,
                                                           num_offset,receipt_id)
 
-def create_receipt_items_in_receipt(connection: Connection,receipt_id:int, data: ReceiptItemsCreate):
+def create_items_in_receipt(connection: Connection,receipt_id:int, data: ReceiptItemsCreate):
 
     receipt_item = receipt_items_repository.create(
             connection,

@@ -7,10 +7,10 @@ from app.schemas.meeting import MeetingCreate
 from app.schemas.participants import ParticipantCreate
 
 
-def get_meetings(connection: Connection):
+def get_meetings(connection: Connection, num_limit:int, num_offset: int):
     """ Получение всех встреч в системе """
 
-    return meeting_repository.get_all(connection)
+    return meeting_repository.get_all(connection, num_limit, num_offset)
 
 
 def get_meeting(connection: Connection, meeting_uuid):
@@ -49,7 +49,7 @@ def create_meeting(connection: Connection, data: MeetingCreate):
     return meeting
 
 
-def get_participants(connection, meeting_uuid):
+def get_participants(connection, num_limit: int, num_offset: int, meeting_uuid):
     """ 
     Получение участников встречи по uuid
 
@@ -57,7 +57,7 @@ def get_participants(connection, meeting_uuid):
         
     """
     
-    return participant_repository.get_all_by_meeting_uuid(connection, meeting_uuid)
+    return participant_repository.get_all_by_meeting_uuid(connection,num_limit,num_offset,meeting_uuid)
 
 
 def add_participant(connection, meeting_uuid, data: ParticipantCreate):

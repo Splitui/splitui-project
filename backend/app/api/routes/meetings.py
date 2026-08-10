@@ -16,9 +16,11 @@ router = APIRouter(
 
 @router.get("", summary="Получить список всех встреч")
 def get_meetings(
-        connection: Connection = Depends(get_connection),
+    limit: int,
+    offset: int,
+    connection: Connection = Depends(get_connection),
 ):
-    return meeting_service.get_meetings(connection)
+    return meeting_service.get_meetings(connection,limit,offset)
 
 
 @router.get("/{meeting_uuid}", summary="Получить информацию по встрече")
@@ -32,9 +34,11 @@ def get_meeting(
 @router.get("/{meeting_uuid}/participants", summary="Получить участников встречи")
 def get_participants(
         meeting_uuid: UUID,
+        limit: int,
+        offset: int,
         connection: Connection = Depends(get_connection)
 ):
-    return meeting_service.get_participants(connection, meeting_uuid)
+    return meeting_service.get_participants(connection,limit,offset,meeting_uuid)
 
 
 @router.post("", status_code=201, summary="Создать встречу")

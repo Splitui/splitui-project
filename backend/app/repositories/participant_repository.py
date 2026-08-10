@@ -36,7 +36,7 @@ def get_all(connection: Connection):
     return result.mappings().all()
 
 
-def get_all_by_meeting_uuid(connection: Connection, meeting_uuid):
+def get_all_by_meeting_uuid(connection: Connection,num_limit: int, num_offset: int, meeting_uuid):
     result = connection.execute(
         text(
             """
@@ -48,10 +48,13 @@ def get_all_by_meeting_uuid(connection: Connection, meeting_uuid):
                           ON m.id = p.meeting_id
             WHERE m.uuid = :meeting_uuid
             ORDER BY p.id
+            LIMIT :num_limit OFFSET :num_offset
             """
         ),
         {
-            "meeting_uuid": str(meeting_uuid)
+            "meeting_uuid": str(meeting_uuid),
+            "num_limit": str(num_limit),
+            "num_offset": str(num_offset),
         }
     )
     return result.mappings().all()
