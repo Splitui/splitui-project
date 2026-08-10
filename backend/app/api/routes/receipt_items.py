@@ -39,6 +39,20 @@ def get_meeting_receipts(
         offset,
     )
 
+@router.get(
+    "/{receipt_id}/{items_id}",
+    summary="Получить одну позицию чека"
+)
+def get_receipt_item(
+        receipt_id: int,
+        items_id: int,
+        connection: Connection = Depends(get_connection)
+):
+    return receipt_items_service.get_items_info_by_receipt(
+        connection,
+        receipt_id,
+        items_id,
+    )
 
 @router.post(
     "/{receipt_id}/items",

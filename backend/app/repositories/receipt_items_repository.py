@@ -70,3 +70,24 @@ def get_all_by_receipt_id(
     )
 
     return result.mappings().all()
+
+
+def get_items_info(
+        connection: Connection,
+        items_id: int,
+    ):
+
+    result = connection.execute(
+        text(
+            """
+            SELECT ri.*
+            FROM receipt_items ri
+            WHERE ri.id = :items_id
+            """
+        ),
+        {
+            "items_id": items_id,
+        }
+    )
+
+    return result.mappings().one()

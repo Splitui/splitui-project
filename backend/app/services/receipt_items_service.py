@@ -29,6 +29,17 @@ def get_items_from_receipt(
         num_offset
     )
 
+def get_items_info_by_receipt(
+        connection: Connection,
+        receipt_id: int,
+        items_id: int
+):
+    return receipt_items_repository.get_items_info(
+        connection,
+        receipt_id,
+        items_id,
+    )
+
 
 @transaction
 def create_items_in_receipt(
