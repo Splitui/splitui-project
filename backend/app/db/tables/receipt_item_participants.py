@@ -1,8 +1,6 @@
-"""
-Модуль структуры таблицы 'Участники позиции чека'.
-"""
+"""Модуль структуры таблицы 'Участники позиции чека'."""
 
-from sqlalchemy import ForeignKey, Numeric, Table, Column, Integer
+from sqlalchemy import Column, ForeignKey, Integer, Numeric, Table
 
 from app.db.database import metadata
 

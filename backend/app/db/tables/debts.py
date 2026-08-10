@@ -1,10 +1,8 @@
-"""
-Модуль структуры таблицы 'Долг'.
-"""
+"""Модуль структуры таблицы 'Долг'."""
 
-from sqlalchemy import ForeignKey, Numeric, DateTime, func, Column, Integer, Table
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, Numeric, Table, func
 
-from app.db.database import metadata, id_column
+from app.db.database import id_column, metadata
 
 debts_table = Table(
     "debts",

@@ -1,10 +1,8 @@
-"""
-Модуль структуры таблицы "Банк".
-"""
+"""Модуль структуры таблицы "Банк"."""
 
-from sqlalchemy import Table, Column, Integer, String, Text
+from sqlalchemy import Column, String, Table, Text
 
-from app.db.database import metadata, id_column
+from app.db.database import id_column, metadata
 
 banks_table = Table(
     "banks",

@@ -1,10 +1,8 @@
-"""
-Модуль структуры таблицы 'Журнал изменений'.
-"""
+"""Модуль структуры таблицы 'Журнал изменений'."""
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, func, Table, Column, Integer
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table, Text, func
 
-from app.db.database import metadata, id_column
+from app.db.database import id_column, metadata
 
 change_log_table = Table(
     "change_log",

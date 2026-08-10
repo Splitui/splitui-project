@@ -1,10 +1,8 @@
-"""
-Модуль структуры таблицы 'Участник'.
-"""
+"""Модуль структуры таблицы 'Участник'."""
 
-from sqlalchemy import ForeignKey, Boolean, String, func, DateTime, Table, Column, Integer
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Table, func
 
-from app.db.database import metadata, id_column
+from app.db.database import id_column, metadata
 
 participants_table = Table(
     "participants",

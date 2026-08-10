@@ -1,5 +1,8 @@
-from sqlalchemy.engine import Connection
+"""Модуль с запросами к базе данных для работы с чеками."""
+
 from sqlalchemy import text
+from sqlalchemy.engine import Connection
+
 
 def create(
         connection: Connection,
@@ -11,6 +14,18 @@ def create(
         image_url: str,
         is_confirmed: bool,
 ):
+    """Создаёт новый чек.
+
+    :param connection: соединение с базой данных.
+    :param meeting_id: идентификатор встречи.
+    :param payer_id: идентификатор плательщика.
+    :param title: наименование чека.
+    :param category: категория чека.
+    :param comment: комментарий к чеку.
+    :param image_url: ссылка на изображение чека.
+    :param is_confirmed: признак подтверждения чека.
+    :return: данные созданного чека.
+    """
     result = connection.execute(
         text("""
              INSERT INTO receipts (meeting_id, payer_id, title,
@@ -45,6 +60,13 @@ def get_all(connection: Connection):
 
 
 def get_all_by_meeting_uuid(connection: Connection, num_limit: int, num_offset: int , meeting_uuid):
+    """Возвращает данные чеков указанной встречи.
+
+    :param connection: соединение с базой данных.
+    :param meeting_uuid: UUID встречи.
+    :return: список данных о чеках.
+    """
+
     result = connection.execute(
         text(
             """
@@ -66,8 +88,14 @@ def get_all_by_meeting_uuid(connection: Connection, num_limit: int, num_offset: 
 
     return result.mappings().all()
 
-def update_total_amount(connection: Connection,reciept_id: int,item_amount: float):
+def update_total_amount(connection: Connection, receipt_id: int, item_amount: float):
+    """Обновляет итоговую сумму чека.
 
+    :param connection: соединение с базой данных.
+    :param receipt_id: идентификатор чека.
+    :param item_amount: сумма позиции.
+    :return: обновленная итоговая сумма чека.
+    """
     result = connection.execute(
         text(
             """
@@ -78,7 +106,7 @@ def update_total_amount(connection: Connection,reciept_id: int,item_amount: floa
             """
         ),
         {
-            "receipt_id": reciept_id,
+            "receipt_id": receipt_id,
             "item_amount": float(item_amount)
         }
     )

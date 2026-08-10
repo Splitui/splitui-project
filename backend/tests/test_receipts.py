@@ -1,8 +1,9 @@
 from uuid import uuid4
 
-from app.services.meeting_service import *
-from app.services.participant_service import *
-from app.services.receipt_service import *
+from app.services.meetings_service import *
+from app.services.participants_service import *
+from app.services.receipts_service import *
+
 
 def test_create_receipts(test_app_client):
     response = test_app_client.post(
@@ -20,7 +21,7 @@ def test_create_receipts(test_app_client):
         f"/meetings/{meeting_uuid}/participants",
         json={"nickname": "Анна"},
     )
-    
+
     participant_payer = response.json()
 
     response = test_app_client.post(
@@ -57,7 +58,7 @@ def test_create_receipts(test_app_client):
                 "is_confirmed": False,
             },
         )
-    
+
     assert response.status_code == 404
 
 
@@ -85,7 +86,7 @@ def test_get_receipts(test_app_client):
         f"/meetings/{meeting_uuid}/participants",
         json={"nickname": "Анна"},
     )
-    
+
     participant_payer = response.json()
 
 

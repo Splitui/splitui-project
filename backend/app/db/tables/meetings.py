@@ -1,12 +1,20 @@
-"""
-Модуль структуры таблицы 'Встреча'.
-"""
+"""Модуль структуры таблицы 'Встреча'."""
 
 from enum import StrEnum
 
-from sqlalchemy import DateTime, String, func, Uuid, Boolean, Enum, text, Table, MetaData, Column, Integer
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    String,
+    Table,
+    Uuid,
+    func,
+    text,
+)
 
-from app.db.database import metadata, id_column
+from app.db.database import id_column, metadata
 
 
 class MeetingStatus(StrEnum):
