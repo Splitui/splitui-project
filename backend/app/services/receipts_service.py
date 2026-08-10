@@ -9,14 +9,14 @@ from app.repositories import receipts_repository, meetings_repository
 from app.schemas.receipts import ReceiptCreate
 
 
-def get_receipts_from_meeting(connection: Connection, meeting_uuid: UUID):
+def get_receipts_from_meeting(connection: Connection, num_limit: int, num_offset: int, meeting_uuid: UUID):
     """Возвращает данные чеков указанной встречи.
 
     :param connection: соединение с базой данных.
     :param meeting_uuid: UUID встречи.
     :return: список данных чеков.
     """
-    return receipts_repository.get_all_by_meeting_uuid(connection, meeting_uuid)
+    return receipts_repository.get_all_by_meeting_uuid(connection,num_limit,num_offset,meeting_uuid)
 
 
 @transaction
@@ -28,7 +28,7 @@ def create_receipt_in_meeting(connection: Connection, meeting_uuid: UUID, data: 
     :param data: данные для создания чека.
     :return: данные созданного чека.
     """
-    meeting = meeting_repository.get_by_uuid(
+    meeting = meetings_repository.get_by_uuid(
         connection,
         meeting_uuid,
     )

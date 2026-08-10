@@ -15,7 +15,7 @@ def get_meetings(connection: Connection, num_limit: int, num_offest: int):
     :param connection: соединение с базой данных.
     :return: список данных о встречах.
     """
-    return meeting_repository.get_all(connection, num_limit, num_offest)
+    return meetings_repository.get_all(connection, num_limit, num_offest)
 
 
 def get_meeting(connection: Connection, meeting_uuid):
@@ -25,7 +25,7 @@ def get_meeting(connection: Connection, meeting_uuid):
     :param meeting_uuid: UUID встречи.
     :return: данные встречи.
     """
-    return meeting_repository.get_by_uuid(connection, meeting_uuid)
+    return meetings_repository.get_by_uuid(connection, meeting_uuid)
 
 
 @transaction
@@ -36,13 +36,13 @@ def create_meeting(connection: Connection, data: MeetingCreate):
     :param data: данные для создания встречи.
     :return: данные созданной встречи.
     """
-    meeting = meeting_repository.create(
+    meeting = meetings_repository.create(
         connection,
         data.title,
         data.meeting_date,
     )
 
-    participant_repository.create(
+    participants_repository.create(
         connection=connection,
         meeting_id=meeting["id"],
         nickname=data.creator_nickname,

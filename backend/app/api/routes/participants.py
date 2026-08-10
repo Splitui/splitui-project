@@ -30,7 +30,7 @@ def get_participants(
     :param connection: соединение с базой данных.
     :return: список данных участников встречи.
     """
-    return participant_service.get_participants_from_meeting(
+    return participants_service.get_participants_from_meeting(
         connection,
         meeting_uuid,
         limit,
@@ -51,4 +51,4 @@ def add_participant(
     :param connection: соединение с базой данных.
     :return: данные созданного участника.
     """
-    return participant_service.add_participant(connection, meeting_uuid, data)
+    return participants_service.add_participant(connection, meeting_uuid, data)

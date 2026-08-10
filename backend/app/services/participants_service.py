@@ -22,7 +22,7 @@ def get_participants_from_meeting(
     :param num_offset: смещение относительно начала списка участников.
     :return: список данных участников встречи.
     """
-    return participant_repository.get_all_by_meeting_uuid(
+    return participants_repository.get_all_by_meeting_uuid(
         connection,
         meeting_uuid,
         num_limit,
@@ -39,9 +39,9 @@ def add_participant(connection, meeting_uuid, data: ParticipantCreate):
     :param data: данные для создания участника.
     :return: данные созданного участника.
     """
-    meeting = meeting_repository.get_by_uuid(connection, meeting_uuid)
+    meeting = meetings_repository.get_by_uuid(connection, meeting_uuid)
 
-    return participant_repository.create(
+    return participants_repository.create(
         connection,
         meeting["id"],
         data.nickname,

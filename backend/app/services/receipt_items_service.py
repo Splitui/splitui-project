@@ -8,9 +8,6 @@ from app.repositories.receipts_repository import update_total_amount
 from app.schemas.receipt_items import ReceiptItemsCreate
 
 
-<<<<<<< HEAD
-def create_items_in_receipt(connection: Connection,receipt_id:int, data: ReceiptItemsCreate):
-=======
 def get_items_from_receipt(
         connection: Connection,
         receipt_id: int,
@@ -18,7 +15,6 @@ def get_items_from_receipt(
         num_offset: int
 ):
     """Возвращает позиции указанного чека.
->>>>>>> 732bb3e2271698597a24900e1a7e1c16820bbddc
 
     :param connection: соединение с базой данных.
     :param receipt_id: идентификатор чека.
@@ -57,4 +53,7 @@ def create_items_in_receipt(
 
     total_amount = update_total_amount(connection, receipt_id, receipt_item["amount"])
 
-    return receipt_item, total_amount
+    return {
+        "item": receipt_item,
+        "total_amount": total_amount,
+    }

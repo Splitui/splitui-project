@@ -34,9 +34,9 @@ def get_meeting_receipts(
     """
     return receipt_items_service.get_items_from_receipt(
         connection,
+        receipt_id,
         limit,
         offset,
-        receipt_id
     )
 
 

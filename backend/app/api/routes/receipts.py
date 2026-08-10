@@ -20,6 +20,8 @@ router = APIRouter(
 )
 def get_meeting_receipts(
     meeting_uuid: UUID,
+    limit: int,
+    offset: int,
     connection: Connection = Depends(get_connection)
 ):
     """Обрабатывает запрос на получение чеков встречи.
@@ -28,7 +30,7 @@ def get_meeting_receipts(
     :param connection: соединение с базой данных.
     :return: список чеков встречи.
     """
-    return receipt_service.get_receipts_from_meeting(connection, meeting_uuid)
+    return receipts_service.get_receipts_from_meeting(connection,limit,offset,meeting_uuid)
 
 @router.post(
     "/meetings/{meeting_uuid}/receipts",
@@ -47,4 +49,4 @@ def add_receipt_in_meetings(
     :param connection: соединение с базой данных.
     :return: данные созданного чека.
     """
-    return receipt_service.create_receipt_in_meeting(connection,meeting_uuid, data)
+    return receipts_service.create_receipt_in_meeting(connection,meeting_uuid, data)

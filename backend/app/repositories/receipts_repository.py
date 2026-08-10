@@ -81,8 +81,8 @@ def get_all_by_meeting_uuid(connection: Connection, num_limit: int, num_offset: 
         ),
         {
             "meeting_uuid": str(meeting_uuid),
-            "num_limit": str(num_limit),
-            "num_offset": str(num_offset)
+            "num_limit": num_limit,
+            "num_offset": num_offset,
         }
     )
 
