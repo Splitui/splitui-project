@@ -6,30 +6,33 @@ export default function FourthSlide() {
     return (
         <div
             className={clsx(
-                'flex flex-col justify-start items-center text-center w-full',
+                'flex flex-col justify-start items-center text-center w-full h-full bg-[#EAE0CD] py-8 px-6 rounded-2xl',
             )}
         >
             <div data-swiper-parallax="-200" className={clsx('mb-7')}>
-                <h4 className={clsx('font-bold text-3xl')}>FAQ</h4>
+                <h4 className={clsx('font-bold text-3xl text-[#463628]')}>FAQ</h4>
             </div>
             <div
                 data-swiper-parallax="-100"
                 className={clsx('w-full flex flex-col gap-2')}
             >
                 <Accordion
-                    className={clsx('border-2 border-black rounded-xl')}
+                    className={clsx('bg-[#F8F4EC] rounded-xl')}
                     disableGutters
                     elevation={0}
                     sx={{
                         borderRadius: '12px !important',
                         '&:before': { display: 'none' },
+                        color: '#463628',
                     }}
                 >
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <p className={clsx('font-bold')}>Нужна ли регистрация?</p>
+                    <AccordionSummary
+                        expandIcon={<ExpandMoreIcon sx={{ color: '#463628' }} />}
+                    >
+                        <p>Нужна ли регистрация?</p>
                     </AccordionSummary>
-                    <AccordionDetails className={clsx('border-t-2 border-black')}>
-                        <p className={clsx('text-left')}>
+                    <AccordionDetails className={clsx('border-t border-[#EAE0CD]')}>
+                        <p className={clsx('text-left opacity-70')}>
                             Нет, всё работает без аккаунта.
                         </p>
                     </AccordionDetails>
