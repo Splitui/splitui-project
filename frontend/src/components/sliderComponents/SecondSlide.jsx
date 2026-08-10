@@ -1,4 +1,3 @@
-import clsx from 'clsx';
 import InfoCard from './InfoCard';
 import AddIcon from '@mui/icons-material/Add';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutlined';

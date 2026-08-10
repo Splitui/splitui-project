@@ -1,5 +1,4 @@
 import clsx from 'clsx';
-import InfoCard from './InfoCard';
 import LoginIcon from '@mui/icons-material/Login';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import CallSplitIcon from '@mui/icons-material/CallSplit';

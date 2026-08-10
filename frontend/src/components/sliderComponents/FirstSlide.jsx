@@ -1,4 +1,3 @@
-import clsx from 'clsx';
 import logo from '../logo/logo.png';
 
 export default function FirstSlide() {

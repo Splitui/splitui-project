@@ -1,6 +1,5 @@
 import {
     Dialog,
-    DialogTitle,
     DialogContent,
     IconButton,
     Button,
@@ -9,7 +8,7 @@ import {
     TextField,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import clsx from 'clsx';
+
 export default function JoinMeeting({ open, onClose }) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));

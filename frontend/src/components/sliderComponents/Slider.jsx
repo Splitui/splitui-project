@@ -1,5 +1,4 @@
 import { Swiper, SwiperSlide } from 'swiper/react';
-import clsx from 'clsx';
 import { Mousewheel, Parallax, Pagination } from 'swiper/modules';
 
 import 'swiper/css';
