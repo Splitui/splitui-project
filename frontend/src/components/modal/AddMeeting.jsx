@@ -33,23 +33,23 @@ export default function AddMeeting({ open, onClose }) {
         let meetingDate = null;
         if (rawDate) {
             if (rawDate.includes('.')) {
-                const[d, m, y] = rawDate.split('.');
+                const [d, m, y] = rawDate.split('.');
                 meetingDate = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T00:00:00`;
-            } else{
+            } else {
                 meetingDate = `${rawDate}T00:00:00`;
             }
         }
-        try{
-            const res = await fetch (`${API_URL}/meetings`, {
+        try {
+            const res = await fetch(`${API_URL}/meetings`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
                     title: meetingName,
                     meeting_date: meetingDate,
-                    creator_nickname: adminName
-                })
+                    creator_nickname: adminName,
+                }),
             });
             if (!res.ok) {
                 console.error('Ошибка создания:', await res.text());
@@ -63,7 +63,7 @@ export default function AddMeeting({ open, onClose }) {
             Cookies.set('meetingId', meetingId);
             onClose();
             navigate(`/meeting/${meetingId}`);
-        } catch (e){
+        } catch (e) {
             console.error('Сеть недоступна:', e);
         }
     };
