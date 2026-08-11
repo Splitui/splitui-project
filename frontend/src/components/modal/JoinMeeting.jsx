@@ -16,8 +16,8 @@ export default function JoinMeeting({ open, onClose }) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
-    const [userName, setUserName] = useState('');
-    const [meetingId, setMeetingId] = useState('');
+    const userName = useRef(null);
+    const meetingId = useRef(null);
 
     return (
         <Dialog
@@ -71,8 +71,7 @@ export default function JoinMeeting({ open, onClose }) {
                 <TextField
                     fullWidth
                     label="Твое имя"
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
+                    inputRef={userName}
                     sx={{
                         '& .MuiOutlinedInput-root': {
                             borderRadius: '12px',
@@ -88,8 +87,7 @@ export default function JoinMeeting({ open, onClose }) {
                 <TextField
                     fullWidth
                     label="ID комнаты"
-                    value={meetingId}
-                    onChange={(e) => setMeetingId(e.target.value)}
+                    inputRef={meetingId}
                     sx={{
                         '& .MuiOutlinedInput-root': {
                             borderRadius: '12px',
