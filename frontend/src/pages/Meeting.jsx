@@ -11,8 +11,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import leave from '../components/logo/leave.svg';
 import Cookies from 'js-cookie';
-import MembersTab from '../components/meetingTabs/MembersTab';
-import ReceiptsTab from '../components/meetingTabs/ReceiptsTab';
+import ExpensesTab from '../components/meetingTabs/ExpensesTab';
+import PaymentTab from '../components/meetingTabs/PaymentTab';
 import UserAvatar from '../components/UserAvatar';
 
 const MeetingHeader = ({ navigate, name, date, userName }) => (
@@ -173,7 +173,7 @@ export default function Meeting() {
                 </div>
 
                 <main className="flex-1 overflow-y-auto custom-scrollbar px-2">
-                    {value === 'expenses' ? <MembersTab /> : <ReceiptsTab />}
+                    {value === 'expenses' ? <ExpensesTab /> : <PaymentTab />}
                 </main>
 
                 <MembersDialog open={openMembers} onClose={() => setOpenMembers(false)} />

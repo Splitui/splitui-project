@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Dialog from '@mui/material/Dialog';
 
-export default function ReceiptsTab() {
+export default function PaymentTab() {
     const [isOpen, setIsOpen] = useState(false);
 
     const handleClickOpen = () => {
