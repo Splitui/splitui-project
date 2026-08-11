@@ -1,31 +1,35 @@
 """Модуль с запросами к базе данных для работы с встречами."""
 
-import uuid
-from datetime import datetime
-
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
+
+from app.schemas.receipts import FullReceiptParticipantCreate
 
 
 def create(
         connection: Connection,
         receipt_item_id: int,
-        participant_id: int,
-        share_amount: int,
+        participants: list[FullReceiptParticipantCreate],
+        unit_price: float,
 ):
+    values = [
+    {
+        "receipt_item_id": receipt_item_id,
+        "participant_id": participant.participant_id,
+        "share_amount": float(participant.quantity * unit_price),
+    }
+    for participant in participants
+    ]
+
     result = connection.execute(
         text("""
-             INSERT INTO receipt_item_participants (receipt_item_id, participant_id, share_amount)
-             VALUES (:receipt_item_id, :participant_id, :share_amount) RETURNING *
-             """),
-        {
-            "receipt_item_id": receipt_item_id,
-            "participant_id": participant_id,
-            "share_amount": float(share_amount),
-        },
+            INSERT INTO receipt_item_participants (receipt_item_id, participant_id, share_amount)
+            VALUES (:receipt_item_id,:participant_id,:share_amount)
+        """),
+        values,
     )
 
-    return result.mappings().one()
+    return values
 
 def get_all_amount(
     connection: Connection,
@@ -42,6 +46,27 @@ def get_all_amount(
         },
     )
 
-    return result.scalar_one()\
+    return result.scalar_one()
 
+
+
+def get_all_by_item_id(
+    connection: Connection,
+    receipt_item_id: int,
+):
+    result = connection.execute(
+        text("""
+            SELECT p.id,p.nickname,rip.share_amount
+            FROM receipt_item_participants rip
+            JOIN participants p
+                ON p.id = rip.participant_id
+            WHERE rip.receipt_item_id = :receipt_item_id
+            ORDER BY p.id
+        """),
+        {
+            "receipt_item_id": receipt_item_id,
+        },
+    )
+
+    return result.mappings().all()
     

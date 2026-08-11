@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.engine import Connection
 
 from app.db.dependencies import get_connection
-from app.schemas.receipts import ReceiptCreate
+from app.schemas.receipts import FullReceiptCreate
 from app.services import receipts_service
 
 router = APIRouter(
@@ -32,6 +32,25 @@ def get_meeting_receipts(
     """
     return receipts_service.get_receipts_from_meeting(connection,limit,offset,meeting_uuid)
 
+
+@router.get(
+    "/receipts/{receipt_id}",
+    summary="Получить чек с позициями и участниками",
+)
+def get_full_receipt(
+    receipt_id: int,
+    limit: int ,
+    offset: int,
+    connection: Connection = Depends(get_connection),
+):
+    return receipts_service.get_receipt_full(
+        connection,
+        receipt_id,
+        limit,
+        offset,
+    )
+
+
 @router.post(
     "/meetings/{meeting_uuid}/receipts",
     status_code=201,
@@ -39,7 +58,7 @@ def get_meeting_receipts(
 )
 def add_receipt_in_meetings(
     meeting_uuid: UUID,
-    data: ReceiptCreate,
+    data: FullReceiptCreate,
     connection: Connection = Depends(get_connection),
 ):
     """Обрабатывает запрос на создание чека во встрече.

@@ -1,22 +1,36 @@
-"""Модуль со схемами для работы с чеками."""
+from datetime import datetime
+from decimal import Decimal
 
 from pydantic import BaseModel, Field
 
 
-class ReceiptCreate(BaseModel):
-    """Схема для создания чека.
+class FullReceiptParticipantCreate(BaseModel):
+    participant_id: int = Field(gt=0)
+    quantity: int = Field(gt=0)
 
-    :ivar payer_id: идентификатор плательщика.
-    :ivar title: наименование чека.
-    :ivar category: категория чека.
-    :ivar comment: комментарий к чеку.
-    :ivar image_url: ссылка на изображение чека.
-    :ivar is_confirmed: признак подтверждения чека.
-    """
 
-    payer_id: int
+class FullReceiptItemCreate(BaseModel):
     title: str = Field(min_length=1, max_length=100)
-    category: str | None = Field(default=None, max_length=50)
+    unit_price: Decimal = Field(
+        ge=0,
+        max_digits=10,
+        decimal_places=2,
+    )
+    quantity: int = Field(gt=0)
+    participants: list[
+        FullReceiptParticipantCreate
+    ] = Field(min_length=1)
+
+
+class FullReceiptCreate(BaseModel):
+    payer_id: int = Field(gt=0)
+    title: str = Field(min_length=1, max_length=200)
+    purchase_date: datetime
+    category: str | None = Field(
+        default=None,
+        max_length=50,
+    )
     comment: str | None = None
     image_url: str | None = None
     is_confirmed: bool = False
+    items: list[FullReceiptItemCreate] = Field(min_length=1)

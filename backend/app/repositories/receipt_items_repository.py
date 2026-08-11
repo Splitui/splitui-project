@@ -55,9 +55,7 @@ def get_all_by_receipt_id(
             """
             SELECT ri.*
             FROM receipt_items ri
-                     JOIN receipts r
-                          ON ri.receipt_id = r.id
-            WHERE r.id = :receipt_id
+            WHERE ri.receipt_id = :receipt_id
             ORDER BY ri.id LIMIT :num_limit
             OFFSET :num_offset
             """
