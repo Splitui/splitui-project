@@ -3,7 +3,7 @@ import { Avatar, Drawer } from '@mui/material';
 
 export default function UserAvatar({ userName }) {
     const [isOpen, setIsOpen] = useState(false);
-    const firstLetterUserName = userName ? userName.charAt(0).toUpperCase() : 'Ю';
+    const firstLetterUserName = userName?.charAt(0).toUpperCase() || 'Ю';
 
     const handleClickOpen = () => {
         setIsOpen(true);
@@ -40,6 +40,10 @@ export default function UserAvatar({ userName }) {
                     </div>
                     <div className="flex flex-col gap-1">
                         <h3 className="text-sm font-bold">Реквизиты</h3>
+                        <input
+                            type="text"
+                            className="border-2 border-black p-2 outline-none font-bold"
+                        />
                     </div>
                 </div>
             </Drawer>

@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import Cookies from 'js-cookie';
-import { useState } from 'react';
+import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export default function AddMeeting({ open, onClose }) {
@@ -19,17 +19,18 @@ export default function AddMeeting({ open, onClose }) {
     const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
     const navigate = useNavigate();
 
-    const [meetingName, setMeetingName] = useState('');
-    const [meetingDate, setMeetingDate] = useState('');
-    const [adminName, setAdminName] = useState('');
+    const nameRef = useRef(null);
+    const dateRef = useRef(null);
+    const adminRef = useRef(null);
 
     const handleCreate = () => {
-        Cookies.set('meetingName', meetingName);
-        Cookies.set('meetingDate', meetingDate);
-        Cookies.set('adminName', adminName);
+        Cookies.set('meetingName', nameRef.current.value);
+        Cookies.set('meetingDate', dateRef.current.value);
+        Cookies.set('adminName', adminRef.current.value);
 
         const uuid = Math.random().toString(36).substr(2, 9);
         navigate(`/meeting/${uuid}`);
+        onClose();
     };
 
     return (
@@ -84,8 +85,7 @@ export default function AddMeeting({ open, onClose }) {
                 <TextField
                     fullWidth
                     label="Название комнаты"
-                    value={meetingName}
-                    onChange={(e) => setMeetingName(e.target.value)}
+                    inputRef={nameRef}
                     sx={{
                         '& .MuiOutlinedInput-root': {
                             borderRadius: '12px',
@@ -101,13 +101,14 @@ export default function AddMeeting({ open, onClose }) {
                 <TextField
                     fullWidth
                     label="Дата"
-                    type={meetingDate ? 'date' : 'text'}
+                    type="text"
                     onFocus={(e) => (e.target.type = 'date')}
                     onBlur={(e) => {
-                        if (!meetingDate) e.target.type = 'text';
+                        if (!e.target.value) {
+                            e.target.type = 'text';
+                        }
                     }}
-                    value={meetingDate}
-                    onChange={(e) => setMeetingDate(e.target.value)}
+                    inputRef={dateRef}
                     sx={{
                         '& .MuiOutlinedInput-root': {
                             borderRadius: '12px',
@@ -123,8 +124,7 @@ export default function AddMeeting({ open, onClose }) {
                 <TextField
                     fullWidth
                     label="Имя создателя"
-                    value={adminName}
-                    onChange={(e) => setAdminName(e.target.value)}
+                    inputRef={adminRef}
                     sx={{
                         '& .MuiOutlinedInput-root': {
                             borderRadius: '12px',
