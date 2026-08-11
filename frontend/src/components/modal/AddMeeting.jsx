@@ -14,6 +14,8 @@ import Cookies from 'js-cookie';
 import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+
 export default function AddMeeting({ open, onClose }) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
@@ -23,14 +25,42 @@ export default function AddMeeting({ open, onClose }) {
     const dateRef = useRef(null);
     const adminRef = useRef(null);
 
-    const handleCreate = () => {
-        Cookies.set('meetingName', nameRef.current.value);
-        Cookies.set('meetingDate', dateRef.current.value);
-        Cookies.set('adminName', adminRef.current.value);
+    const handleCreate = async () => {
+        const meetingName = nameRef.current.value.trim();
+        const meetingDate = dateRef.current.value.trim();
+        const adminName = adminRef.current.value.trim();
 
-        const uuid = Math.random().toString(36).substr(2, 9);
-        navigate(`/meeting/${uuid}`);
-        onClose();
+        if (!meetingName || !adminName) {
+            alert('Пожалуйста, заполните все обязательные поля.');
+            return;
+        }
+        try{
+            const res = await fetch (`${API_URL}/meetings`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    title: meetingName,
+                    meeting_date: meetingDate ?`${meetingDate}T00:00:00` : null,
+                    creator_name: adminName
+                })
+            });
+            if (!res.ok) {
+                console.error('Ошибка создания:', await res.text());
+                return;
+            }
+            const data = await res.json();
+            const meetingId = data.uuid;
+            Cookies.set('meetingName', meetingName);
+            Cookies.set('meetingDate', meetingDate);
+            Cookies.set('adminName', adminName);
+            Cookies.set('meetingId', meetingId);
+            onClose();
+            navigate(`/meeting/${meetingId}`);
+        } catch (e){
+            console.error('Сеть недоступна:', e);
+        }
     };
 
     return (
