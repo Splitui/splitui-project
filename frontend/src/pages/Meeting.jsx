@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
     Tabs,
     Tab,
+    Button,
     IconButton,
     Avatar,
     AvatarGroup,
@@ -43,8 +44,8 @@ const MeetingTabs = ({ value, onChange }) => (
                     fontWeight: 'bold',
                     borderRadius: '12px',
                     textTransform: 'none',
-                    backgroundColor: value === 'expenses' ? '#DAB672' : '#463628',
-                    color: value === 'expenses' ? '#463628' : '#DAB672',
+                    backgroundColor: value === 'expenses' ? '#EAE0CD' : '#463628',
+                    color: value === 'expenses' ? '#463628' : '#EAE0CD',
                     '&.Mui-selected': {
                         backgroundColor: '#DAB672',
                         color: '#463628',
@@ -58,8 +59,8 @@ const MeetingTabs = ({ value, onChange }) => (
                     fontWeight: 'bold',
                     borderRadius: '12px',
                     textTransform: 'none',
-                    backgroundColor: value === 'payment' ? '#DAB672' : '#463628',
-                    color: value === 'payment' ? '#463628' : '#DAB672',
+                    backgroundColor: value === 'payment' ? '#EAE0CD' : '#463628',
+                    color: value === 'payment' ? '#463628' : '#EAE0CD',
                     '&.Mui-selected': {
                         backgroundColor: '#DAB672',
                         color: '#463628',
@@ -71,7 +72,7 @@ const MeetingTabs = ({ value, onChange }) => (
 );
 
 const BalanceCard = () => (
-    <div className="bg-[#FDFBF7] w-full max-w-[332px] md:max-w-none min-h-[130px] rounded-[25px] p-4 shadow-sm flex flex-col gap-2 shrink-0">
+    <div className="bg-[#F8F4EC] w-full max-w-[332px] md:max-w-none min-h-[130px] rounded-[25px] p-4 shadow-sm flex flex-col gap-2 shrink-0">
         <div className="flex justify-between items-center">
             <span className="font-bold text-[#463628] uppercase text-sm md:text-base tracking-tight">
                 Всего потрачено:
@@ -100,7 +101,7 @@ const BalanceCard = () => (
 const MembersButton = ({ onClick }) => (
     <button
         onClick={onClick}
-        className="bg-[#FDFBF7] w-[70%] max-w-[280px] h-[56px] rounded-[15px] p-4 flex justify-between items-center shadow-sm active:scale-[0.98] transition-all shrink-0"
+        className="bg-[#F8F4EC] w-[70%] max-w-[280px] h-[56px] rounded-[15px] p-4 flex justify-between items-center shadow-sm active:scale-[0.98] transition-all shrink-0"
     >
         <span className="font-bold text-base uppercase text-[#463628]">Участники</span>
         <AvatarGroup
@@ -110,7 +111,7 @@ const MembersButton = ({ onClick }) => (
                     width: 30,
                     height: 30,
                     fontSize: 12,
-                    border: '2px solid #FDFBF7',
+                    border: '2px solid #F8F4EC',
                 },
             }}
         >
@@ -176,7 +177,35 @@ export default function Meeting() {
                     {value === 'expenses' ? <ExpensesTab /> : <PaymentTab />}
                 </main>
 
-                <MembersDialog open={openMembers} onClose={() => setOpenMembers(false)} />
+                <div className="pt-4 shrink-0">
+                    <Button
+                        variant="contained"
+                        fullWidth
+                        sx={{
+                            backgroundColor: '#463628',
+                            color: '#EAE0CD',
+                            fontWeight: 'bold',
+                            borderRadius: '12px',
+                            py: 2,
+                            fontSize: '1rem',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.1em',
+                            boxShadow: '0px 4px 6px rgba(0,0,0,0.1)',
+                            '&:hover': {
+                                backgroundColor: '#3a2c20',
+                                boxShadow: '0px 6px 10px rgba(0,0,0,0.2)',
+                            },
+                        }}
+                    >
+                        {value === 'expenses' ? 'Добавить расход' : 'Оплатить'}
+                    </Button>
+                </div>
+
+                <MembersDialog
+                    className="#F8F4EC"
+                    open={openMembers}
+                    onClose={() => setOpenMembers(false)}
+                />
             </div>
         </div>
     );
