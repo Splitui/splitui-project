@@ -1,4 +1,4 @@
-export default function MembersTab() {
+export default function ExpensesTab() {
     return (
         <div className="flex flex-col gap-4 p-4">
             <h3 className="font-bold text-lg text-center">Список учаcтников</h3>

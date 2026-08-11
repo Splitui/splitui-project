@@ -8,10 +8,10 @@ export default function InfoCard({ number, title, icon: Icon, text, className })
                 className,
             )}
         >
-            <p className="text-3xl font-bold leading-none mb-1">{number}</p>
-            <p className="text-2xl font-bold leading-tight mb-2">{title}</p>
-            <Icon sx={{ fontSize: 32 }} className="mb-2" />
-            <p className="text-xl leading-tight text-[#463628]">{text}</p>
+            <p className="text-2xl sm:text-3xl font-bold leading-none mb-1">{number}</p>
+            <p className="text-xl sm:text-2xl font-bold leading-tight mb-2">{title}</p>
+            <Icon sx={{ fontSize: 32 }} className="mb-1 sm:mb-2" />
+            <p className="text-sm sm:text-xl leading-tight text-[#463628]">{text}</p>
         </div>
     );
 }
