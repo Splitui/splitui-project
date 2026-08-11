@@ -30,15 +30,6 @@ export default function AddMeeting({ open, onClose }) {
         const rawDate = dateRef.current.value.trim();
         const adminName = adminRef.current.value.trim();
 
-        let meetingDate = null;
-        if (rawDate) {
-            if (rawDate.includes('.')) {
-                const [d, m, y] = rawDate.split('.');
-                meetingDate = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T00:00:00`;
-            } else {
-                meetingDate = `${rawDate}T00:00:00`;
-            }
-        }
         try {
             const res = await fetch(`${API_URL}/meetings`, {
                 method: 'POST',
@@ -47,7 +38,7 @@ export default function AddMeeting({ open, onClose }) {
                 },
                 body: JSON.stringify({
                     title: meetingName,
-                    meeting_date: meetingDate,
+                    meeting_date: new Date(rawDate).toISOString(),
                     creator_nickname: adminName,
                 }),
             });
@@ -136,13 +127,8 @@ export default function AddMeeting({ open, onClose }) {
                 <TextField
                     fullWidth
                     label="Дата"
-                    type="text"
-                    onFocus={(e) => (e.target.type = 'date')}
-                    onBlur={(e) => {
-                        if (!e.target.value) {
-                            e.target.type = 'text';
-                        }
-                    }}
+                    type="date"
+                    slotProps={{ inputLabel: { shrink: true } }}
                     inputRef={dateRef}
                     sx={{
                         '& .MuiOutlinedInput-root': {
