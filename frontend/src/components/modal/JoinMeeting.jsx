@@ -10,7 +10,7 @@ import {
     Box,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { useState } from 'react';
+import { useRef } from 'react';
 
 export default function JoinMeeting({ open, onClose }) {
     const theme = useTheme();
