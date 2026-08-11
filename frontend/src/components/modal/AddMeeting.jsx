@@ -27,12 +27,17 @@ export default function AddMeeting({ open, onClose }) {
 
     const handleCreate = async () => {
         const meetingName = nameRef.current.value.trim();
-        const meetingDate = dateRef.current.value.trim();
+        const rawDate = dateRef.current.value.trim();
         const adminName = adminRef.current.value.trim();
 
-        if (!meetingName || !adminName) {
-            alert('Пожалуйста, заполните все обязательные поля.');
-            return;
+        let meetingDate = null;
+        if (rawDate) {
+            if (rawDate.includes('.')) {
+                const[d, m, y] = rawDate.split('.');
+                meetingDate = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T00:00:00`;
+            } else{
+                meetingDate = `${rawDate}T00:00:00`;
+            }
         }
         try{
             const res = await fetch (`${API_URL}/meetings`, {
@@ -42,8 +47,8 @@ export default function AddMeeting({ open, onClose }) {
                 },
                 body: JSON.stringify({
                     title: meetingName,
-                    meeting_date: meetingDate ?`${meetingDate}T00:00:00` : null,
-                    creator_name: adminName
+                    meeting_date: meetingDate,
+                    creator_nickname: adminName
                 })
             });
             if (!res.ok) {

@@ -16,12 +16,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-<<<<<<< Updated upstream
     allow_methods=["*"],
     allow_headers=["*"],
-=======
-    allow_methods=[""],
-    allow_headers=[""],
->>>>>>> Stashed changes
 )
 app.include_router(api_router)
