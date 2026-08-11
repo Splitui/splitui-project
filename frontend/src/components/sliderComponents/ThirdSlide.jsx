@@ -66,23 +66,23 @@ export default function ThirdSlide() {
                     return (
                         <div
                             key={title}
-                            className="flex items-center gap-3 sm:gap-4 bg-[#f5efe6] border border-[#e5dcc9] rounded-xl p-2 sm:p-3 text-left flex-1"
+                            className="flex items-center gap-2 sm:gap-3 bg-[#f5efe6] border border-[#e5dcc9] rounded-xl p-2 text-left flex-1"
                         >
-                            <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 shrink-0">
+                            <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 shrink-0">
                                 {Icon && (
                                     <Icon
                                         sx={{
-                                            fontSize: { xs: 24, sm: 32 },
+                                            fontSize: { xs: 20, sm: 26 },
                                             color: '#463628',
                                         }}
                                     />
                                 )}
                             </div>
                             <div>
-                                <div className="font-bold text-xl sm:text-2xl leading-tight mb-1 sm:mb-2">
+                                <div className="font-bold text-sm sm:text-lg leading-tight mb-0.5">
                                     {title}
                                 </div>
-                                <div className="text-base sm:text-lg leading-snug text-gray-600">
+                                <div className="text-xs sm:text-sm leading-snug text-gray-600">
                                     {text}
                                 </div>
                             </div>

@@ -148,11 +148,11 @@ export default function Meeting() {
     const [value, setValue] = useState('expenses');
     const [openMembers, setOpenMembers] = useState(false);
     const navigate = useNavigate();
-
-    const meetingName = Cookies.get('meetingName') || 'Встреча сплитуев';
-    const rawDate = Cookies.get('meetingDate') || '';
+    const meeting = JSON.parse(Cookies.get('meeting') || '{}');
+    const meetingName = meeting.name || 'Встреча сплитуев';
+    const rawDate = meeting.date || '';
     const meetingDate = rawDate ? rawDate.split('-').reverse().join('.') : '';
-    const userName = Cookies.get('adminName') || 'Юзер';
+    const userName = meeting.admin || 'Юзер';
 
     const handleChange = (_, newValue) => setValue(newValue);
 

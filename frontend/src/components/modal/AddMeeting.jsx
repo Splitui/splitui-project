@@ -48,10 +48,15 @@ export default function AddMeeting({ open, onClose }) {
             }
             const data = await res.json();
             const meetingId = data.uuid;
-            Cookies.set('meetingName', meetingName);
-            Cookies.set('meetingDate', dateRef.current.value.trim());
-            Cookies.set('adminName', adminName);
-            Cookies.set('meetingId', meetingId);
+            Cookies.set(
+                'meeting',
+                JSON.stringify({
+                    name: meetingName,
+                    date: rawDate,
+                    admin: adminName,
+                    id: meetingId,
+                }),
+            );
             onClose();
             navigate(`/meeting/${meetingId}`);
         } catch (e) {
