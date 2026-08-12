@@ -1,5 +1,5 @@
 """Модуль с бизнес-логикой для работы со встречами."""
-
+from fastapi import HTTPException
 from sqlalchemy.engine import Connection
 
 from app.repositories import meetings_repository, participants_repository
@@ -7,7 +7,7 @@ from app.schemas.meetings import MeetingCreate
 from app.db.dependencies import transaction
 
 
-def get_meetings(connection: Connection, num_limit: int, num_offest: int):
+def get_meetings(connection: Connection, num_limit: int, num_offset: int):
     """Возвращает данные всех встреч.
 
     :param num_limit: максимальное количество встреч в ответе.
@@ -15,7 +15,7 @@ def get_meetings(connection: Connection, num_limit: int, num_offest: int):
     :param connection: соединение с базой данных.
     :return: список данных о встречах.
     """
-    return meetings_repository.get_all(connection, num_limit, num_offest)
+    return meetings_repository.get_all(connection, num_limit, num_offset)
 
 
 def get_meeting(connection: Connection, meeting_uuid):
@@ -25,7 +25,15 @@ def get_meeting(connection: Connection, meeting_uuid):
     :param meeting_uuid: UUID встречи.
     :return: данные встречи.
     """
-    return meetings_repository.get_by_uuid(connection, meeting_uuid)
+    meeting = meetings_repository.get_by_uuid(connection, meeting_uuid)
+    if meeting is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "message": f"Не найдена встреча с uuid {meeting_uuid}"
+            }
+        )
+    return meeting
 
 
 @transaction

@@ -9,17 +9,3 @@ from app.db.tables.participants import participants_table
 from app.db.tables.receipt_item_participants import receipt_item_participants_table
 from app.db.tables.receipt_items import receipt_items_table
 from app.db.tables.receipts import receipts_table
-
-__all__ = [
-    "bank_data_table",
-    "banks_table",
-    "cashback_categories_table",
-    "change_log_table",
-    "debts_table",
-    "meetings_table",
-    "participant_cashback_categories_table",
-    "participants_table",
-    "receipt_item_participants_table",
-    "receipt_items_table",
-    "receipts_table",
-]

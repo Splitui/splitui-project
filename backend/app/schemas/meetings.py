@@ -1,6 +1,7 @@
 """Модуль со схемами для работы со встречами."""
 
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
