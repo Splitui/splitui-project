@@ -10,10 +10,21 @@ class MeetingCreate(BaseModel):
     """Схема для создания встречи.
 
     :ivar title: Название встречи.
-    :ivar meeting_date: Дата и время начала встречи.
+    :ivar start_date: Дата и время начала встречи.
     :ivar creator_nickname: Никнейм создателя встречи.
     """
 
     title: str = Field(min_length=1, max_length=150)
-    meeting_date: datetime = Field(default_factory=datetime.now)
+    start_date: datetime = Field(default_factory=datetime.now)
     creator_nickname: str
+
+
+class MeetingUpdate(BaseModel):
+    """Схема для обновления встречи.
+
+    :ivar title: Название встречи.
+    :ivar start_date: Дата и время начала встречи.
+    """
+
+    title: str | None = Field(None, min_length=1, max_length=150)
+    start_date: datetime | None = None
