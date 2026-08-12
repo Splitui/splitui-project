@@ -124,7 +124,7 @@ def update_total_amount(connection: Connection, receipt_id: int, item_amount: fl
         text(
             """
             UPDATE receipts
-            SET total_amount = total_amount + :item_amount
+            SET total_amount = :item_amount
             WHERE id = :receipt_id
             RETURNING total_amount
             """
@@ -137,3 +137,40 @@ def update_total_amount(connection: Connection, receipt_id: int, item_amount: fl
 
     return result.scalar_one()
 
+def update(
+    connection: Connection,
+    receipt_id: int,
+    payer_id: int,
+    title: str,
+    purchase_date: datetime,
+    category: str | None,
+    comment: str | None,
+    image_url: str | None,
+    is_confirmed: bool,
+):
+    result = connection.execute(
+        text("""
+            UPDATE receipts
+            SET payer_id = :payer_id,
+                title = :title,
+                purchase_date = :purchase_date,
+                category = :category,
+                comment = :comment,
+                image_url = :image_url,
+                is_confirmed = :is_confirmed
+            WHERE id = :receipt_id
+            RETURNING *
+        """),
+        {
+            "receipt_id": receipt_id,
+            "payer_id": payer_id,
+            "title": title,
+            "purchase_date": purchase_date,
+            "category": category,
+            "comment": comment,
+            "image_url": image_url,
+            "is_confirmed": is_confirmed,
+        },
+    )
+
+    return result.mappings().one()

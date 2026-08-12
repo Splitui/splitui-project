@@ -2,12 +2,14 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.engine import Connection
 
 from app.db.dependencies import get_connection
+from app.schemas.parsed_receipts import ParsedReceipt, ReceiptQrRequest
 from app.schemas.receipts import FullReceiptCreate
 from app.services import receipts_service
+from app.utils.receipt_qr_reader import get_receipt, parse_receipt
 
 router = APIRouter(
     prefix="",
@@ -53,7 +55,7 @@ def get_full_receipt(
 
 @router.post(
     "/meetings/{meeting_uuid}/receipts",
-    status_code=201,
+    status_code=200,
     summary="Создать чек во встрече",
 )
 def add_receipt_in_meetings(
@@ -68,4 +70,20 @@ def add_receipt_in_meetings(
     :param connection: соединение с базой данных.
     :return: данные созданного чека.
     """
-    return receipts_service.create_receipt_in_meeting(connection,meeting_uuid, data)
+    return receipts_service.create_or_update_receipt_in_meeting(connection,meeting_uuid, data)
+
+
+@router.post("/qr",
+            response_model=ParsedReceipt,
+            summary="Создать чек во встрече",)
+def read_qr_and_parse(data: ReceiptQrRequest):
+    receipt_info = get_receipt(data.qr_raw)
+
+    if receipt_info is None:
+        raise HTTPException(
+            status_code=422,
+            detail="Не удалось получить данные чека",
+        )
+
+    return parse_receipt(receipt_info)
+

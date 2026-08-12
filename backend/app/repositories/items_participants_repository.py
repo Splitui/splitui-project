@@ -69,4 +69,30 @@ def get_all_by_item_id(
     )
 
     return result.mappings().all()
+
+
+def replace_for_item(
+    connection: Connection,
+    receipt_item_id: int,
+    participants: list[FullReceiptParticipantCreate],
+    unit_price: float,
+):
+    connection.execute(
+        text("""
+            DELETE FROM receipt_item_participants
+            WHERE receipt_item_id = :receipt_item_id
+        """),
+        {
+            "receipt_item_id": receipt_item_id,
+        },
+    )
+
+    if not participants:
+        return []
     
+    return create(
+        connection=connection,
+        receipt_item_id=receipt_item_id,
+        participants=participants,
+        unit_price=unit_price,
+    )

@@ -10,6 +10,7 @@ class FullReceiptParticipantCreate(BaseModel):
 
 
 class FullReceiptItemCreate(BaseModel):
+    id: int | None = Field(default=None, gt=0)
     title: str = Field(min_length=1, max_length=100)
     unit_price: Decimal = Field(
         ge=0,
@@ -23,6 +24,7 @@ class FullReceiptItemCreate(BaseModel):
 
 
 class FullReceiptCreate(BaseModel):
+    id: int | None = Field(default=None, gt=0)
     payer_id: int = Field(gt=0)
     title: str = Field(min_length=1, max_length=200)
     purchase_date: datetime

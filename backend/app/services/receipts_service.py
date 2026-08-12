@@ -60,7 +60,7 @@ def get_receipt_full(connection: Connection, receipt_id: int, num_limit: int, nu
 
 
 @transaction
-def create_receipt_in_meeting(connection: Connection, meeting_uuid: UUID, data: FullReceiptCreate):
+def create_or_update_receipt_in_meeting(connection: Connection, meeting_uuid: UUID, data: FullReceiptCreate):
     """Создаёт чек.
 
     :param connection: соединение с базой данных.
@@ -144,41 +144,144 @@ def create_receipt_in_meeting(connection: Connection, meeting_uuid: UUID, data: 
                 },
             )
 
-    receipt = receipts_repository.create(
-        connection,
-        meeting["id"],
-        data.payer_id,
-        data.title,
-        data.purchase_date,
-        data.category,
-        data.comment,
-        data.image_url,
-        data.is_confirmed,
-    )
-
-    created_items =  []
-    total_amount = 0
-    for item_data in data.items:
-        receipt_item = receipt_items_repository.create(
-            connection=connection,
-            receipt_id=receipt["id"],
-            title=item_data.title,
-            quantity=item_data.quantity,
-            unit_price=item_data.unit_price,
+    if data.id is None:
+        receipt = receipts_repository.create(
+            connection,
+            meeting["id"],
+            data.payer_id,
+            data.title,
+            data.purchase_date,
+            data.category,
+            data.comment,
+            data.image_url,
+            data.is_confirmed,
         )
 
-        item_participants = (
-            items_participants_repository.create(
-                connection=connection,
-                receipt_item_id=receipt_item["id"],
-                participants=item_data.participants,
-                unit_price=item_data.unit_price,
+        existing_items = set()
+
+    else:
+        existing_receipt = (
+            receipts_repository.get_by_id(
+                connection,
+                data.id,
             )
         )
 
-        total_amount += item_data.unit_price * item_data.quantity
+        if existing_receipt is None or existing_receipt["meeting_id"] != meeting["id"]:
+            raise HTTPException(
+                status_code=404,
+                detail="Чек не найден в указанной встрече",
+            )
 
-        created_items.append(
+        receipt = receipts_repository.update(
+            connection=connection,
+            receipt_id=data.id,
+            payer_id=data.payer_id,
+            title=data.title,
+            purchase_date=data.purchase_date,
+            category=data.category,
+            comment=data.comment,
+            image_url=data.image_url,
+            is_confirmed=data.is_confirmed,
+        )
+
+        items = (
+            receipt_items_repository.get_all(
+                connection,
+                data.id,
+            )
+        )
+
+        existing_items = {
+            item["id"]
+            for item in items
+        }
+
+    incoming_items = [
+        item.id
+        for item in data.items
+        if item.id is not None
+    ]
+
+    unique_items = set(incoming_items)
+
+    if len(incoming_items) != len(unique_items):
+        raise HTTPException(
+            status_code=400,
+            detail="ID позиций не должны повторяться",
+        )
+
+    unknown_items = (
+        unique_items - existing_items
+    )
+
+    if unknown_items:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": (
+                    "Некоторые позиции не принадлежат чеку"
+                ),
+                "items": sorted(unknown_items),
+            },
+        )
+
+    deleted_item = (
+        existing_items - unique_items
+    )
+
+    receipt_items_repository.delete_by_ids(
+        connection,
+        receipt["id"],
+        list(deleted_item),
+    )
+
+    result_items = []
+    total_amount = 0
+
+    for item_data in data.items:
+
+        if item_data.id is None:
+        #Вынести в один инсерт
+            receipt_item = receipt_items_repository.create(
+                connection=connection,
+                receipt_id=receipt["id"],
+                title=item_data.title,
+                quantity=item_data.quantity,
+                unit_price=item_data.unit_price,
+            )
+            
+            #Вынести в один инсерт
+            item_participants = (
+                items_participants_repository.create(
+                    connection=connection,
+                    receipt_item_id=receipt_item["id"],
+                    participants=item_data.participants,
+                    unit_price=item_data.unit_price,
+                )
+            )
+
+        else:
+            receipt_item = receipt_items_repository.update(
+                connection=connection,
+                receipt_id=receipt["id"],
+                item_id=item_data.id,
+                title=item_data.title,
+                quantity=item_data.quantity,
+                unit_price=item_data.unit_price,
+            )
+
+            item_participants = (
+                items_participants_repository.replace_for_item(
+                    connection=connection,
+                    receipt_item_id=item_data.id,
+                    participants=item_data.participants,
+                    unit_price=item_data.unit_price,
+                )
+            )
+
+        total_amount += item_data.unit_price * item_data.quantity
+        result_items.append(
             {
                 "item": receipt_item,
                 "participants": item_participants,
@@ -196,7 +299,7 @@ def create_receipt_in_meeting(connection: Connection, meeting_uuid: UUID, data: 
             **receipt,
             "total_amount": total_amount,
         },
-        "items": created_items,
+        "items": result_items,
     }
 
 

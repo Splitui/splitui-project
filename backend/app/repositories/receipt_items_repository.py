@@ -1,6 +1,6 @@
 """Модуль с запросами к базе данных для работы с позициями чека."""
 
-from sqlalchemy import text
+from sqlalchemy import bindparam, text
 from sqlalchemy.engine import Connection
 
 
@@ -69,6 +69,26 @@ def get_all_by_receipt_id(
 
     return result.mappings().all()
 
+def get_all(
+        connection: Connection,
+        receipt_id: int,
+):
+    result = connection.execute(
+            text(
+                """
+                SELECT ri.*
+                FROM receipt_items ri
+                WHERE ri.receipt_id = :receipt_id
+                ORDER BY ri.id
+                """
+            ),
+            {
+                "receipt_id": receipt_id,
+            }
+        )
+    
+    return result.mappings().all()
+
 
 def get_items_info(
         connection: Connection,
@@ -89,3 +109,73 @@ def get_items_info(
     )
 
     return result.mappings().one()
+
+def update(
+    connection: Connection,
+    receipt_id: int,
+    item_id: int,
+    title: str,
+    quantity: int,
+    unit_price: float,
+):
+    result = connection.execute(
+        text("""
+            UPDATE receipt_items
+            SET title = :title,
+                quantity = :quantity,
+                unit_price = :unit_price
+            WHERE id = :item_id
+              AND receipt_id = :receipt_id
+            RETURNING *
+        """),
+        {
+            "receipt_id": receipt_id,
+            "item_id": item_id,
+            "title": title,
+            "quantity": quantity,
+            "unit_price": float(unit_price),
+        },
+    )
+
+    return result.mappings().one_or_none()
+
+
+def delete_by_ids(
+    connection: Connection,
+    receipt_id: int,
+    item_ids: list[int],
+):
+    if not item_ids:
+        return []
+
+    connection.execute(
+        text("""
+        DELETE FROM receipt_item_participants
+        WHERE receipt_item_id IN :item_ids
+        """).bindparams(bindparam(
+            "item_ids",
+            expanding=True,)
+        ),
+        {
+            "item_ids": item_ids,
+        },
+    )
+
+    result = connection.execute(
+        text("""
+        DELETE FROM receipt_items
+        WHERE receipt_id = :receipt_id
+          AND id IN :item_ids
+        RETURNING id
+        """).bindparams(bindparam(
+            "item_ids",
+            expanding=True,
+        )
+    ),
+        {
+            "receipt_id": receipt_id,
+            "item_ids": item_ids,
+        },
+    )
+
+    return result.scalars().all()
