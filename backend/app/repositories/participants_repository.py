@@ -63,7 +63,7 @@ def get_all_by_meeting_uuid(
             """
         ),
         {
-            "meeting_uuid": meeting_uuid.hex,
+            "meeting_uuid": str(meeting_uuid),
             "num_limit": num_limit,
             "num_offset": num_offset
         }

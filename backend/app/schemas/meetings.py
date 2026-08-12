@@ -17,9 +17,3 @@ class MeetingCreate(BaseModel):
     title: str = Field(min_length=1, max_length=150)
     meeting_date: datetime = Field(default_factory=datetime.now)
     creator_nickname: str
-
-class MeetingResponse(BaseModel):
-    id: int
-    uuid: UUID
-    title: str
-    start_date: datetime

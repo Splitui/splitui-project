@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.engine import Connection
 
 from app.db.dependencies import get_connection
-from app.schemas.meetings import MeetingCreate, MeetingResponse
+from app.schemas.meetings import MeetingCreate
 from app.services import meetings_service
 
 router = APIRouter(
@@ -15,7 +15,7 @@ router = APIRouter(
 )
 
 
-@router.get("", summary="Получить список всех встреч", response_model=list[MeetingResponse])
+@router.get("", summary="Получить список всех встреч")
 def get_meetings(
         limit: int,
         offset: int,
@@ -31,7 +31,7 @@ def get_meetings(
     return meetings_service.get_meetings(connection, limit, offset)
 
 
-@router.get("/{meeting_uuid}", summary="Получить информацию по встрече", response_model=MeetingResponse)
+@router.get("/{meeting_uuid}", summary="Получить информацию по встрече")
 def get_meeting(
         meeting_uuid: UUID,
         connection: Connection = Depends(get_connection)
@@ -45,7 +45,7 @@ def get_meeting(
     return meetings_service.get_meeting(connection, meeting_uuid)
 
 
-@router.post("", status_code=201, summary="Создать встречу", response_model=MeetingResponse)
+@router.post("", status_code=201, summary="Создать встречу")
 def create_meeting(
         data: MeetingCreate,
         connection: Connection = Depends(get_connection),

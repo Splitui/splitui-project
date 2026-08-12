@@ -1,5 +1,4 @@
 from datetime import datetime
-from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,6 +7,8 @@ from sqlalchemy import create_engine
 from app.db.database import metadata
 from app.db.dependencies import get_connection
 from app.main import app
+from app.repositories import meetings_repository, participants_repository
+from tests.utils import future_date
 
 
 @pytest.fixture
@@ -39,65 +40,26 @@ def app_client(db_engine):
 
 @pytest.fixture
 def create_meeting(db_engine):
-    meetings_table = metadata.tables["meetings"]
-    participants_table = metadata.tables["participants"]
-
     def _create_meeting(
             title="Тестовая Встреча",
-            start_date="2026-08-08T12:25:47",
+            start_date: datetime = future_date(),
             creator_nickname="Тестовый создатель"
     ):
-        meeting_uuid = uuid4()
-
         with db_engine.begin() as connection:
-            result = connection.execute(
-                meetings_table.insert().values(
-                    uuid=meeting_uuid,
-                    title=title,
-                    start_date=datetime.fromisoformat(start_date)
-                )
-            )
-            meeting_id = result.inserted_primary_key[0]
+            meeting = meetings_repository.create(connection, title, start_date)
+            participants_repository.create(connection, meeting["id"], creator_nickname, True)
 
-            connection.execute(
-                participants_table.insert().values(
-                    meeting_id=meeting_id,
-                    nickname=creator_nickname,
-                    is_creator=True
-                )
-            )
-
-        return {
-            "id": meeting_id,
-            "uuid": meeting_uuid,
-            "title": title,
-            "start_date": start_date,
-            "creator_nickname": creator_nickname,
-        }
+            return meeting
 
     return _create_meeting
 
 
 @pytest.fixture
 def create_participant(db_engine):
-    participants_table = metadata.tables["participants"]
-
     def _create_participant(meeting_id, nickname="Тестовый участник", is_creator=False):
         with db_engine.begin() as connection:
-            result = connection.execute(
-                participants_table.insert().values(
-                    meeting_id=meeting_id,
-                    nickname=nickname,
-                    is_creator=is_creator,
-                )
-            )
-            participant_id = result.inserted_primary_key[0]
+            participant = participants_repository.create(connection, meeting_id, nickname, is_creator)
 
-        return {
-            "id": participant_id,
-            "meeting_id": meeting_id,
-            "nickname": nickname,
-            "is_creator": is_creator,
-        }
+            return participant
 
     return _create_participant

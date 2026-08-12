@@ -1,7 +1,7 @@
 def test_get_participants_includes_creator(app_client, create_meeting):
     meeting = create_meeting(creator_nickname="Тестовый создатель")
 
-    response = app_client.get(f"/{meeting['uuid']}/participants?limit=20&offset=0")
+    response = app_client.get(f"/{meeting['uuid']}/participants?limit=10&offset=0")
 
     assert response.status_code == 200
     participants = response.json()
