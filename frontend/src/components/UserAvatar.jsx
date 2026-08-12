@@ -1,10 +1,38 @@
-import { useState } from 'react';
-import { Avatar, Drawer } from '@mui/material';
+import {
+    Dialog,
+    DialogContent,
+    IconButton,
+    Button,
+    Avatar,
+    TextField,
+    Typography,
+    Box,
+    useMediaQuery,
+    useTheme,
+} from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import PersonIcon from '@mui/icons-material/Person';
+import { useRef, useState } from 'react';
+
+const fieldSx = {
+    '& .MuiOutlinedInput-root': {
+        borderRadius: '10px',
+        '& fieldset': { borderColor: '#463628' },
+        '&:hover fieldset': { borderColor: '#463628' },
+        '&.Mui-focused fieldset': { borderColor: '#463628' },
+    },
+    '& label': { color: '#463628' },
+    '& .MuiInputLabel-root.Mui-focused': { color: '#463628 !important' },
+    '& input': { color: '#463628' },
+};
 
 export default function UserAvatar({ userName }) {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [isOpen, setIsOpen] = useState(false);
     const firstLetterUserName = userName?.charAt(0).toUpperCase() || 'Ю';
-
+    const nameRef = useRef(null);
+    const requisitesRef = useRef(null);
     const handleClickOpen = () => {
         setIsOpen(true);
     };
@@ -12,41 +40,89 @@ export default function UserAvatar({ userName }) {
     const handleClickClose = () => {
         setIsOpen(false);
     };
+    const handleCashbacks = () => {};
 
+    const handleSave = () => {
+        console.log({
+            name: nameRef.current.value.trim(),
+            requisites: requisitesRef.current.value.trim(),
+        });
+        handleClickClose();
+    };
     return (
-        <>
+        <div>
             <Avatar onClick={handleClickOpen} className="font-bold bg-black">
                 {firstLetterUserName}
             </Avatar>
 
-            <Drawer anchor="bottom" open={isOpen} onClose={handleClickClose}>
-                <div className="p-6 flex flex-col gap-4 min-h-[300px]">
-                    <div className="flex justify-between items-center w-full">
-                        <h2 className="text-xl font-bold">Профиль</h2>
-                        <button
-                            onClick={handleClickClose}
-                            className="font-bold text-2xl px-2"
-                        >
-                            ☓
-                        </button>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                        <h3 className="text-sm font-bold">Имя</h3>
-                        <input
-                            type="text"
-                            defaultValue={userName}
-                            className="border-2 border-black p-2 outline-none font-bold"
-                        />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                        <h3 className="text-sm font-bold">Реквизиты</h3>
-                        <input
-                            type="text"
-                            className="border-2 border-black p-2 outline-none font-bold"
-                        />
+            <Dialog
+                fullScreen={isMobile}
+                fullWidth
+                maxWidth="xs"
+                open={isOpen}
+                onClose={handleClickClose}
+                slotProps={{
+                    paper: {
+                        className:
+                            '!bg-[#EAE0CD] rounded-[20px] p-4 sm:p-6 min-h-[500px]',
+                    },
+                }}
+            >
+                <IconButton
+                    onClick={handleClickClose}
+                    className="!absolute top-3 right-3 !text-[#463628]"
+                >
+                    <CloseIcon />
+                </IconButton>
+
+                <div className="text-center pt-4 pb-2">
+                    <div className="font-extrabold text-[#463628] text-3xl">
+                        Мои данные
                     </div>
                 </div>
-            </Drawer>
-        </>
+
+                <div className="flex justify-center pb-3">
+                    <Avatar className="!w-24 !h-24 !bg-[#C7BEB0]">
+                        <PersonIcon className="!text-5xl !text-[#F8F4EC]" />
+                    </Avatar>
+                </div>
+
+                <DialogContent className="flex flex-col gap-6 py-6">
+                    <TextField
+                        fullWidth
+                        label="Имя пользователя"
+                        defaultValue={userName}
+                        inputRef={nameRef}
+                        sx={fieldSx}
+                    />
+                    <TextField
+                        fullWidth
+                        label="Реквизиты"
+                        inputRef={requisitesRef}
+                        sx={fieldSx}
+                    />
+
+                    <Button
+                        fullWidth
+                        variant="outlined"
+                        onClick={handleCashbacks}
+                        className="!border-2 !border-[#463628] !text-[#463628] font-bold !rounded-xl py-3 hover:!bg-[#463628]"
+                    >
+                        МОИ КЭШБЕКИ
+                    </Button>
+                </DialogContent>
+
+                <div className="px-6 pb-2">
+                    <Button
+                        fullWidth
+                        variant="contained"
+                        onClick={handleSave}
+                        className="!bg-[#463628] !text-[#F8F4EC] font-bold !rounded-xl py-3 !text-base !shadow-none hover:!bg-[#3a2c20]"
+                    >
+                        СОХРАНИТЬ
+                    </Button>
+                </div>
+            </Dialog>
+        </div>
     );
 }

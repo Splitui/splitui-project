@@ -15,6 +15,7 @@ import Cookies from 'js-cookie';
 import ExpensesTab from '../components/meetingTabs/ExpensesTab';
 import PaymentTab from '../components/meetingTabs/PaymentTab';
 import UserAvatar from '../components/UserAvatar';
+import AddExpense from '../components/modal/AddExpense';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
@@ -195,6 +196,7 @@ export default function Meeting() {
     const [value, setValue] = useState('expenses');
     const [openMembers, setOpenMembers] = useState(false);
     const [participants, setParticipants] = useState([]);
+    const [openAddExpense, setOpenAddExpense] = useState(false);
     const navigate = useNavigate();
     const meeting = JSON.parse(Cookies.get('meeting') || '{}');
     const meetingId = meeting.id;
@@ -224,6 +226,11 @@ export default function Meeting() {
         fetchParticipants();
     }, [meetingId]);
 
+    const handleBottomButtonClick = () => {
+        if (value === 'expenses') {
+            setOpenAddExpense(true);
+        }
+    };
     return (
         <div className="h-screen bg-[#E8DCC4] flex flex-col items-center overflow-hidden">
             <div className="w-full max-w-4xl flex flex-col h-full p-4 md:p-8">
@@ -252,6 +259,7 @@ export default function Meeting() {
                     <Button
                         variant="contained"
                         fullWidth
+                        onClick={handleBottomButtonClick}
                         sx={{
                             backgroundColor: '#463628',
                             color: '#EAE0CD',
@@ -278,6 +286,10 @@ export default function Meeting() {
                     onClose={() => setOpenMembers(false)}
                     participants={participants}
                     meetingId={meetingId}
+                />
+                <AddExpense
+                    open={openAddExpense}
+                    onClose={() => setOpenAddExpense(false)}
                 />
             </div>
         </div>
