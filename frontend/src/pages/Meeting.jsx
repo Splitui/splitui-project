@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     Tabs,
     Tab,
@@ -15,6 +15,8 @@ import Cookies from 'js-cookie';
 import ExpensesTab from '../components/meetingTabs/ExpensesTab';
 import PaymentTab from '../components/meetingTabs/PaymentTab';
 import UserAvatar from '../components/UserAvatar';
+
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
 const MeetingHeader = ({ navigate, name, date, userName }) => (
     <header className="flex justify-between items-start mb-6 shrink-0">
@@ -44,11 +46,11 @@ const MeetingTabs = ({ value, onChange }) => (
                     fontWeight: 'bold',
                     borderRadius: '12px',
                     textTransform: 'none',
-                    backgroundColor: value === 'expenses' ? '#EAE0CD' : '#463628',
-                    color: value === 'expenses' ? '#463628' : '#EAE0CD',
+                    backgroundColor: value === 'expenses' ? '#463628' : '#DAB672',
+                    color: value === 'expenses' ? '#EAE0CD' : '#463628',
                     '&.Mui-selected': {
-                        backgroundColor: '#DAB672',
-                        color: '#463628',
+                        backgroundColor: '#463628',
+                        color: '#EAE0CD',
                     },
                 }}
             />
@@ -59,11 +61,11 @@ const MeetingTabs = ({ value, onChange }) => (
                     fontWeight: 'bold',
                     borderRadius: '12px',
                     textTransform: 'none',
-                    backgroundColor: value === 'payment' ? '#EAE0CD' : '#463628',
-                    color: value === 'payment' ? '#463628' : '#EAE0CD',
+                    backgroundColor: value === 'payment' ? '#463628' : '#DAB672',
+                    color: value === 'payment' ? '#EAE0CD' : '#463628',
                     '&.Mui-selected': {
-                        backgroundColor: '#DAB672',
-                        color: '#463628',
+                        backgroundColor: '#463628',
+                        color: '#EAE0CD',
                     },
                 }}
             />
@@ -98,7 +100,7 @@ const BalanceCard = () => (
     </div>
 );
 
-const MembersButton = ({ onClick }) => (
+const MembersButton = ({ onClick, participants }) => (
     <button
         onClick={onClick}
         className="bg-[#F8F4EC] w-[70%] max-w-[280px] h-[56px] rounded-[15px] p-4 flex justify-between items-center shadow-sm active:scale-[0.98] transition-all shrink-0"
@@ -115,46 +117,112 @@ const MembersButton = ({ onClick }) => (
                 },
             }}
         >
-            <Avatar>Г</Avatar>
-            <Avatar>К</Avatar>
+            {participants.map((p, idx) => (
+                <Avatar key={idx}>
+                    {p.nickname ? p.nickname[0].toUpperCase() : '?'}
+                </Avatar>
+            ))}
         </AvatarGroup>
     </button>
 );
 
-const MembersDialog = ({ open, onClose }) => (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-        <div className="flex justify-between p-4">
-            <h2 className="text-xl font-bold text-[#463628]">Список участников</h2>
-            <button onClick={onClose} className="text-2xl font-bold">
-                ☓
-            </button>
-        </div>
-        <DialogContent>
-            <div className="flex flex-col gap-3 pb-4">
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
-                    <Avatar>Г</Avatar>
-                    <span className="font-bold text-[#463628]">Галилео Галилей</span>
-                </div>
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
-                    <Avatar>К</Avatar>
-                    <span className="font-bold text-[#463628]">Канеки Кен</span>
-                </div>
+const MembersDialog = ({ open, onClose, participants, meetingId }) => {
+    const handleLink = async () => {
+        const inviteLink = `${window.location.origin}?join=${meetingId}`;
+        await navigator.clipboard.writeText(inviteLink);
+        alert('Успешно скопировано');
+    };
+
+    return (
+        <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
+            <div className="flex justify-between p-4">
+                <h2 className="text-xl font-bold text-[#463628]">Список участников</h2>
+                <IconButton onClick={onClose} className="text-2xl font-bold">
+                    ☓
+                </IconButton>
             </div>
-        </DialogContent>
-    </Dialog>
-);
+            <DialogContent>
+                <Button
+                    fullWidth
+                    variant="outlined"
+                    onClick={handleLink}
+                    sx={{
+                        mb: 3,
+                        py: 1.5,
+                        borderRadius: '12px',
+                        border: '2px solid #463628',
+                        color: '#463628',
+                        fontWeight: 'bold',
+                        fontSize: '0.9rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        '&:hover': {
+                            border: '2px solid #463628',
+                            backgroundColor: '#F8F4EC',
+                        },
+                        '&.MuiButton-outlined': {
+                            borderColor: '#463628',
+                        },
+                    }}
+                >
+                    Добавить участника
+                </Button>
+                <div className="flex flex-col gap-3 pb-4">
+                    {participants.length > 0 ? (
+                        participants.map((p, idx) => (
+                            <div
+                                key={idx}
+                                className="flex items-center gap-3 p-3 rounded-xl bg-white shadow-sm border border-gray-100"
+                            >
+                                <Avatar>
+                                    {p.nickname ? p.nickname[0].toUpperCase() : '?'}
+                                </Avatar>
+                                <span className="font-bold text-[#463628]">
+                                    {p.nickname}
+                                </span>
+                            </div>
+                        ))
+                    ) : (
+                        <h3>Пусто</h3>
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+};
 
 export default function Meeting() {
     const [value, setValue] = useState('expenses');
     const [openMembers, setOpenMembers] = useState(false);
+    const [participants, setParticipants] = useState([]);
     const navigate = useNavigate();
     const meeting = JSON.parse(Cookies.get('meeting') || '{}');
+    const meetingId = meeting.id;
     const meetingName = meeting.name || 'Встреча сплитуев';
     const rawDate = meeting.date || '';
     const meetingDate = rawDate ? rawDate.split('-').reverse().join('.') : '';
     const userName = meeting.admin || 'Юзер';
 
     const handleChange = (_, newValue) => setValue(newValue);
+
+    useEffect(() => {
+        const fetchParticipants = async () => {
+            if (!meetingId) return;
+            try {
+                const res = await fetch(
+                    `${API_URL}/${meetingId}/participants?limit=50&offset=0`,
+                );
+                if (res.ok) {
+                    const data = await res.json();
+                    setParticipants(Array.isArray(data) ? data : []);
+                }
+            } catch (e) {
+                console.error('Участники не загружены: ', e);
+            }
+        };
+
+        fetchParticipants();
+    }, [meetingId]);
 
     return (
         <div className="h-screen bg-[#E8DCC4] flex flex-col items-center overflow-hidden">
@@ -170,7 +238,10 @@ export default function Meeting() {
 
                 <div className="flex flex-col gap-6 mb-8 items-center">
                     <BalanceCard />
-                    <MembersButton onClick={() => setOpenMembers(true)} />
+                    <MembersButton
+                        onClick={() => setOpenMembers(true)}
+                        participants={participants}
+                    />
                 </div>
 
                 <main className="flex-1 overflow-y-auto custom-scrollbar px-2">
@@ -205,6 +276,8 @@ export default function Meeting() {
                     className="#F8F4EC"
                     open={openMembers}
                     onClose={() => setOpenMembers(false)}
+                    participants={participants}
+                    meetingId={meetingId}
                 />
             </div>
         </div>

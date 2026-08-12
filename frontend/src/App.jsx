@@ -8,7 +8,7 @@ function App() {
         <BrowserRouter>
             <Routes>
                 <Route path="/" element={<Home />} />
-                <Route path="/meeting/:meetingUUID" element={<Meeting />} />
+                <Route path="/meetings/:meetingUUID" element={<Meeting />} />
             </Routes>
         </BrowserRouter>
     );

@@ -58,7 +58,7 @@ export default function AddMeeting({ open, onClose }) {
                 }),
             );
             onClose();
-            navigate(`/meeting/${meetingId}`);
+            navigate(`/meetings/${meetingId}`);
         } catch (e) {
             console.error('Сеть недоступна:', e);
         }
