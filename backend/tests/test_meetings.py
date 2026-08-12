@@ -1,12 +1,16 @@
 import uuid
+from datetime import datetime, timedelta
 
 import pytest
 
+from tests.utils import future_date
+
 
 def test_create_meeting_with_valid_data(app_client):
+    meeting_date = future_date()
     payload = {
         "title": "Тестовая Встреча",
-        "meeting_date": "2026-08-08T12:25:47",
+        "meeting_date": meeting_date.isoformat(),
         "creator_nickname": "Тестовый участник",
     }
 
@@ -15,7 +19,7 @@ def test_create_meeting_with_valid_data(app_client):
     assert response.status_code == 201
     meeting = response.json()
     assert meeting["title"] == "Тестовая Встреча"
-    assert meeting["start_date"] == "2026-08-08T12:25:47"
+    assert meeting["start_date"] == meeting_date.isoformat()
 
 
 @pytest.mark.parametrize(
@@ -24,7 +28,7 @@ def test_create_meeting_with_valid_data(app_client):
         pytest.param(
             {
                 "title": "Тестовая Встреча" * 100,
-                "meeting_date": "2026-08-08T12:25:47",
+                "meeting_date": future_date().isoformat(),
                 "creator_nickname": "Тестовый участник",
             },
             id="title_too_long",
@@ -97,7 +101,7 @@ def test_get_meeting_by_uuid_success(app_client, create_meeting):
 
     assert response.status_code == 200
     body = response.json()
-    assert uuid.UUID(body["uuid"]) == meeting_uuid
+    assert body["uuid"] == meeting_uuid
     assert body["title"] == "Тестовая Встреча"
 
 

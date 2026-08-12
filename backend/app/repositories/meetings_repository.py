@@ -26,9 +26,9 @@ def create(
              RETURNING id, uuid, title, start_date
              """),
         {
-            "meeting_uuid": uuid4().hex,
+            "meeting_uuid": str(uuid4()),
             "title": title,
-            "meeting_date": meeting_date,
+            "meeting_date": meeting_date.isoformat(),
         },
     )
 
@@ -73,11 +73,11 @@ def get_by_uuid(connection: Connection, meeting_uuid: UUID):
             """
             SELECT *
             FROM meetings
-            where uuid = :meeting_uuid
+            WHERE uuid = :meeting_uuid
             """
         ),
         {
-            "meeting_uuid": meeting_uuid.hex
+            "meeting_uuid": str(meeting_uuid)
         }
     )
     return result.mappings().one_or_none()
