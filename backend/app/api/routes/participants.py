@@ -38,7 +38,7 @@ def get_participants(
     )
 
 
-@router.post("/{meeting_uuid}/participants", summary="Добавить участника к встрече")
+@router.post("/{meeting_uuid}/participants", status_code=201, summary="Добавить участника к встрече")
 def add_participant(
         meeting_uuid: UUID,
         data: ParticipantCreate,

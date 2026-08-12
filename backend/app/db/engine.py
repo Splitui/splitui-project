@@ -2,9 +2,9 @@
 
 from sqlalchemy import create_engine
 
-DATABASE_URL = "sqlite:///./app.db"
+from app.config import settings
 
 engine = create_engine(
-    DATABASE_URL,
+    settings.DATABASE_URL,
     echo=True,
 )

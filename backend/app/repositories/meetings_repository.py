@@ -1,7 +1,7 @@
 """Модуль с запросами к базе данных для работы с встречами."""
 
-import uuid
 from datetime import datetime
+from uuid import UUID, uuid4
 
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
@@ -22,16 +22,17 @@ def create(
     result = connection.execute(
         text("""
              INSERT INTO meetings (uuid, title, start_date)
-             VALUES (:meeting_uuid, :title, :meeting_date) RETURNING id, uuid, title, start_date
+             VALUES (:meeting_uuid, :title, :meeting_date) 
+             RETURNING id, uuid, title, start_date
              """),
         {
-            "meeting_uuid": str(uuid.uuid4()),
+            "meeting_uuid": uuid4().hex,
             "title": title,
             "meeting_date": meeting_date,
         },
     )
 
-    return result.mappings().one()
+    return result.mappings().one_or_none()
 
 
 def get_all(connection: Connection, num_limit: int, num_offset: int):
@@ -60,7 +61,7 @@ def get_all(connection: Connection, num_limit: int, num_offset: int):
     return result.mappings().all()
 
 
-def get_by_uuid(connection: Connection, meeting_uuid):
+def get_by_uuid(connection: Connection, meeting_uuid: UUID):
     """Возвращает данные встречи по UUID.
 
     :param connection: соединение с базой данных.
@@ -76,7 +77,7 @@ def get_by_uuid(connection: Connection, meeting_uuid):
             """
         ),
         {
-            "meeting_uuid": str(meeting_uuid)
+            "meeting_uuid": meeting_uuid.hex
         }
     )
-    return result.mappings().one()
+    return result.mappings().one_or_none()
