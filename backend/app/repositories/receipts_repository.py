@@ -1,5 +1,8 @@
 """Модуль с запросами к базе данных для работы с чеками."""
 
+from datetime import datetime
+from decimal import Decimal
+
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
@@ -9,6 +12,7 @@ def create(
         meeting_id: int,
         payer_id: int,
         title: str,
+        purchase_date: datetime,
         category: str,
         comment: str,
         image_url: str,
@@ -28,15 +32,16 @@ def create(
     """
     result = connection.execute(
         text("""
-             INSERT INTO receipts (meeting_id, payer_id, title,
+             INSERT INTO receipts (meeting_id, payer_id, title, purchase_date,
              category, comment, image_url, is_confirmed)
-             VALUES (:meeting_id, :payer_id, :title,
+             VALUES (:meeting_id, :payer_id, :title, :purchase_date,
              :category, :comment, :image_url, :is_confirmed) RETURNING *
              """),
         {
             "meeting_id": meeting_id,
             "payer_id": payer_id,
             "title": title,
+            "purchase_date": purchase_date,
             "category": category,
             "comment": comment,
             "image_url": image_url,
@@ -58,6 +63,25 @@ def get_all(connection: Connection):
 
     return result.mappings().all()
 
+
+def get_by_id(
+    connection: Connection,
+    receipt_id: int,
+):
+    result = connection.execute(
+        text(
+            """
+            SELECT *
+            FROM receipts
+            WHERE id = :receipt_id
+            """
+        ),
+        {
+            "receipt_id": receipt_id,
+        },
+    )
+
+    return result.mappings().one_or_none()
 
 def get_all_by_meeting_uuid(connection: Connection, num_limit: int, num_offset: int , meeting_uuid):
     """Возвращает данные чеков указанной встречи.
@@ -100,16 +124,53 @@ def update_total_amount(connection: Connection, receipt_id: int, item_amount: fl
         text(
             """
             UPDATE receipts
-            SET total_amount = total_amount + :item_amount
+            SET total_amount = :item_amount
             WHERE id = :receipt_id
             RETURNING total_amount
             """
         ),
         {
             "receipt_id": receipt_id,
-            "item_amount": float(item_amount)
+            "item_amount": float(item_amount),
         }
     )
 
     return result.scalar_one()
 
+def update(
+    connection: Connection,
+    receipt_id: int,
+    payer_id: int,
+    title: str,
+    purchase_date: datetime,
+    category: str | None,
+    comment: str | None,
+    image_url: str | None,
+    is_confirmed: bool,
+):
+    result = connection.execute(
+        text("""
+            UPDATE receipts
+            SET payer_id = :payer_id,
+                title = :title,
+                purchase_date = :purchase_date,
+                category = :category,
+                comment = :comment,
+                image_url = :image_url,
+                is_confirmed = :is_confirmed
+            WHERE id = :receipt_id
+            RETURNING *
+        """),
+        {
+            "receipt_id": receipt_id,
+            "payer_id": payer_id,
+            "title": title,
+            "purchase_date": purchase_date,
+            "category": category,
+            "comment": comment,
+            "image_url": image_url,
+            "is_confirmed": is_confirmed,
+        },
+    )
+
+    return result.mappings().one()

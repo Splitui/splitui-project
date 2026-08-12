@@ -69,3 +69,25 @@ def get_all_by_meeting_uuid(
         }
     )
     return result.mappings().all()
+
+def get_all(
+        connection: Connection,
+        meeting_uuid: UUID,
+):
+    result = connection.execute(
+        text(
+            """
+            SELECT p.id,p.nickname,p.is_creator
+            FROM participants p
+                        JOIN meetings m
+                            ON m.id = p.meeting_id
+            WHERE m.uuid = :meeting_uuid
+            ORDER BY p.id
+            """
+        ),
+        {
+            "meeting_uuid": str(meeting_uuid),
+    
+        }
+    )
+    return result.mappings().all()
