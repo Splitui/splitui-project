@@ -12,13 +12,27 @@ export default function InviteMeeting({ open, onClose, meetingId, onJoined }) {
         if (!name) return;
 
         try {
+            const meetingRes = await fetch(`${API_URL}/meetings/${meetingId}`);
+            const meetingData = await meetingRes.json();
+
             const res = await fetch(`${API_URL}/${meetingId}/participants`, {
                 method: `Post`,
                 headers: { 'Content-type': 'application/json' },
                 body: JSON.stringify({ nickname: name }),
             });
             if (res.ok) {
-                Cookies.set('meeting', JSON.stringify({ id: meetingId, admin: name }));
+                const meetingDate = meetingData.start_date
+                    ? meetingData.start_date.split(' ')[0]
+                    : '';
+                Cookies.set(
+                    'meeting',
+                    JSON.stringify({
+                        id: meetingId,
+                        admin: name,
+                        name: meetingData.title,
+                        date: meetingDate,
+                    }),
+                );
                 onJoined(meetingId);
             }
         } catch (e) {
