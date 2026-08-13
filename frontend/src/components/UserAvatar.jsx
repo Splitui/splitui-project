@@ -5,26 +5,13 @@ import {
     Button,
     Avatar,
     TextField,
-    Typography,
-    Box,
     useMediaQuery,
     useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import PersonIcon from '@mui/icons-material/Person';
+import { FIELD_SX } from './Options';
 import { useRef, useState } from 'react';
-
-const fieldSx = {
-    '& .MuiOutlinedInput-root': {
-        borderRadius: '10px',
-        '& fieldset': { borderColor: '#463628' },
-        '&:hover fieldset': { borderColor: '#463628' },
-        '&.Mui-focused fieldset': { borderColor: '#463628' },
-    },
-    '& label': { color: '#463628' },
-    '& .MuiInputLabel-root.Mui-focused': { color: '#463628 !important' },
-    '& input': { color: '#463628' },
-};
 
 export default function UserAvatar({ userName }) {
     const theme = useTheme();
@@ -93,13 +80,13 @@ export default function UserAvatar({ userName }) {
                         label="Имя пользователя"
                         defaultValue={userName}
                         inputRef={nameRef}
-                        sx={fieldSx}
+                        sx={FIELD_SX}
                     />
                     <TextField
                         fullWidth
                         label="Реквизиты"
                         inputRef={requisitesRef}
-                        sx={fieldSx}
+                        sx={FIELD_SX}
                     />
 
                     <Button
