@@ -9,15 +9,13 @@ export default function Home() {
     const [openAdd, setOpenAdd] = useState(false);
     const [openJoin, setOpenJoin] = useState(false);
 
-    const [searchParams, setSearchParams] = useSearchParams();
+    const [searchParams] = useSearchParams();
     const navigate = useNavigate();
 
     const inviteId = searchParams.get('join');
     const [openInviteModal, setOpenInviteModal] = useState(!!inviteId);
 
     const handleJoined = (uuid) => {
-        setOpenInviteModal(false);
-        setSearchParams({});
         navigate(`/meetings/${uuid}`);
     };
     return (
