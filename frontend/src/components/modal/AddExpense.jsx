@@ -13,42 +13,9 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import { useEffect, useRef, useState } from 'react';
 import Cookies from 'js-cookie';
-
+import { FIELD_SX, CASHBACK_OPTIONS, MENU_PROPS } from '../Options';
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 const API_BASE = API_URL;
-
-const fieldSx = {
-    '& .MuiOutlinedInput-root': {
-        borderRadius: '12px',
-        '& fieldset': { borderColor: '#463628' },
-        '&:hover fieldset': { borderColor: '#463628' },
-        '&.Mui-focused fieldset': { borderColor: '#463628' },
-    },
-    '& label': { color: '#463628' },
-    '& .MuiInputLabel-root.Mui-focused': { color: '#463628 !important' },
-    '& input': { color: '#463628' },
-    '& .MuiSelect-select': { color: '#463628' },
-};
-
-const menuProps = {
-    slotProps: {
-        paper: {
-            sx: {
-                backgroundColor: '#EAE0CD',
-                '& .MuiMenuItem-root': { color: '#463628' },
-                '& .MuiMenuItem-root.Mui-selected': {
-                    backgroundColor: '#DAB672',
-                },
-                '& .MuiMenuItem-root.Mui-selected:hover': {
-                    backgroundColor: '#c9a25f',
-                },
-                '& .MuiMenuItem-root:hover': {
-                    backgroundColor: 'rgba(70, 54, 40, 0.08)',
-                },
-            },
-        },
-    },
-};
 
 export default function AddExpense({ open, onClose }) {
     const theme = useTheme();
@@ -60,16 +27,11 @@ export default function AddExpense({ open, onClose }) {
     const [paidBy, setPaidBy] = useState('');
     const [payer, setPayer] = useState('');
     const [cashbackCategory, setCashbackCategory] = useState('');
-    const [receipt, setReceipt] = useState(null);
+    const [receipt] = useState(null);
 
     const [usersOptions, setUsersOptions] = useState([]);
     const [usersLoading, setUsersLoading] = useState(false);
     const [usersError, setUsersError] = useState(null);
-
-    const cashbackOptions = [
-        { value: 'food', label: 'Продукты' },
-        { value: 'travel', label: 'Путешествия' },
-    ];
 
     useEffect(() => {
         if (!open) return;
@@ -163,14 +125,14 @@ export default function AddExpense({ open, onClose }) {
                     fullWidth
                     label="Название расхода"
                     inputRef={nameRef}
-                    sx={fieldSx}
+                    sx={FIELD_SX}
                 />
                 <TextField
                     fullWidth
                     label="Сумма"
                     type="number"
                     inputRef={amountRef}
-                    sx={fieldSx}
+                    sx={FIELD_SX}
                 />
 
                 {usersError && (
@@ -185,9 +147,9 @@ export default function AddExpense({ open, onClose }) {
                     label="Кто платил"
                     value={paidBy}
                     onChange={(e) => setPaidBy(e.target.value)}
-                    sx={fieldSx}
+                    sx={FIELD_SX}
                     disabled={usersLoading}
-                    slotProps={{ select: { MenuProps: menuProps } }}
+                    slotProps={{ select: { MenuProps: MENU_PROPS } }}
                 >
                     {usersOptions.map((option) => (
                         <MenuItem key={option.value} value={option.value}>
@@ -201,9 +163,9 @@ export default function AddExpense({ open, onClose }) {
                     label="Кто должен оплатить"
                     value={payer}
                     onChange={(e) => setPayer(e.target.value)}
-                    sx={fieldSx}
+                    sx={FIELD_SX}
                     disabled={usersLoading}
-                    slotProps={{ select: { MenuProps: menuProps } }}
+                    slotProps={{ select: { MenuProps: MENU_PROPS } }}
                 >
                     {usersOptions.map((option) => (
                         <MenuItem key={option.value} value={option.value}>
@@ -217,10 +179,10 @@ export default function AddExpense({ open, onClose }) {
                     label="Категория кэшбека"
                     value={cashbackCategory}
                     onChange={(e) => setCashbackCategory(e.target.value)}
-                    sx={fieldSx}
-                    slotProps={{ select: { MenuProps: menuProps } }}
+                    sx={FIELD_SX}
+                    slotProps={{ select: { MenuProps: MENU_PROPS } }}
                 >
-                    {cashbackOptions.map((option) => (
+                    {CASHBACK_OPTIONS.map((option) => (
                         <MenuItem key={option.value} value={option.value}>
                             {option.label}
                         </MenuItem>
