@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.engine import Connection
 
 from app.db.dependencies import get_connection
-from app.schemas.participants import ParticipantCreate
+from app.schemas.participants import ParticipantCreate, ParticipantUpdate
 from app.services import participants_service
 
 router = APIRouter(
@@ -38,6 +38,22 @@ def get_participants(
     )
 
 
+@router.get("/{meeting_uuid}/participants/{participant_id}", summary="Получить участника встречи")
+def get_participant(
+        meeting_uuid: UUID,
+        participant_id: int,
+        connection: Connection = Depends(get_connection)
+):
+    """Обрабатывает запрос на получение данных конкретного участника встречи.
+
+    :param meeting_uuid: UUID встречи.
+    :param participant_id: идентификатор участника.
+    :param connection: соединение с базой данных.
+    :return: данные участника.
+    """
+    return participants_service.get_participant_from_meeting(connection, meeting_uuid, participant_id)
+
+
 @router.post("/{meeting_uuid}/participants", status_code=201, summary="Добавить участника к встрече")
 def add_participant(
         meeting_uuid: UUID,
@@ -52,3 +68,21 @@ def add_participant(
     :return: данные созданного участника.
     """
     return participants_service.add_participant(connection, meeting_uuid, data)
+
+
+@router.patch("/{meeting_uuid}/participants/{participant_id}", summary="Обновить участника встречи")
+def update_participant(
+        meeting_uuid: UUID,
+        participant_id: int,
+        data: ParticipantUpdate,
+        connection: Connection = Depends(get_connection)
+):
+    """Обрабатывает запрос на частичное обновление данных участника встречи.
+
+    :param meeting_uuid: UUID встречи.
+    :param participant_id: идентификатор участника.
+    :param data: данные для обновления участника.
+    :param connection: соединение с базой данных.
+    :return: обновлённые данные участника.
+    """
+    return participants_service.update_participant(connection, meeting_uuid, participant_id, data)

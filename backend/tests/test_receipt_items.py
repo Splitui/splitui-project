@@ -13,7 +13,7 @@ def test_meetings(test_app_client):
         "/meetings",
         json={
             "title": "Тестовая встреча",
-            "meeting_date": "2026-08-10T12:00:00",
+            "start_date": "2026-08-10T12:00:00",
             "creator_nickname": "Создатель",
         },
     )

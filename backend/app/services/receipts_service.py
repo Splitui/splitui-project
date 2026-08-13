@@ -73,7 +73,7 @@ def create_or_update_receipt_in_meeting(connection: Connection, meeting_uuid: UU
         meeting_uuid,
     )
 
-    participants = participants_repository.get_all(connection,meeting_uuid)
+    participants = participants_repository.get_all(connection, meeting["id"])
 
     meeting_participant = {
         participant["id"]

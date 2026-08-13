@@ -10,7 +10,7 @@ def test_create_receipts(test_app_client):
         "/meetings",
         json={
             "title": "Тестовая Встреча",
-            "meeting_date": "2026-08-08T12:25:47",
+            "start_date": "2026-08-08T12:25:47",
             "creator_nickname": "Тестовый участник",
         },
     )
@@ -67,7 +67,7 @@ def test_get_receipts(test_app_client):
         "/meetings",
         json={
             "title": "Тестовая Встреча",
-            "meeting_date": "2026-08-08T12:25:47",
+            "start_date": "2026-08-08T12:25:47",
             "creator_nickname": "Тестовый участник",
         },
     )
@@ -127,7 +127,7 @@ def test_two_meetings_receipts(test_app_client):
         "/meetings",
         json={
             "title": "Ресторан 1",
-            "meeting_date": "2026-08-08T12:25:47",
+            "start_date": "2026-08-08T12:25:47",
             "creator_nickname": "Тестовый участник",
         },
     )
@@ -138,7 +138,7 @@ def test_two_meetings_receipts(test_app_client):
         "/meetings",
         json={
             "title": "Ресторан 2",
-            "meeting_date": "2026-08-08T12:25:47",
+            "start_date": "2026-08-08T12:25:47",
             "creator_nickname": "Тестовый участник",
         },
     )
@@ -201,7 +201,7 @@ def test_valid_data(test_app_client):
         "/meetings",
         json={
             "title": "Тестовая встреча",
-            "meeting_date": "2026-08-08T12:25:47",
+            "start_date": "2026-08-08T12:25:47",
             "creator_nickname": "Тестовый участник",
         },
     )

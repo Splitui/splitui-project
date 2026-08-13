@@ -6,33 +6,58 @@ from uuid import UUID, uuid4
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
+from app.schemas.meetings import MeetingUpdate
+
 
 def create(
         connection: Connection,
         title: str,
-        meeting_date: datetime,
+        start_date: datetime,
 ):
     """Создаёт новую встречу.
 
     :param connection: соединение с базой данных.
     :param title: название встречи.
-    :param meeting_date: дата начала встречи.
+    :param start_date: дата начала встречи.
     :return: данные созданной встречи.
     """
     result = connection.execute(
         text("""
              INSERT INTO meetings (uuid, title, start_date)
-             VALUES (:meeting_uuid, :title, :meeting_date) 
-             RETURNING id, uuid, title, start_date
+             VALUES (:meeting_uuid, :title, :start_date) RETURNING id, uuid, title, start_date
              """),
         {
             "meeting_uuid": str(uuid4()),
             "title": title,
-            "meeting_date": meeting_date.isoformat(),
+            "start_date": start_date.isoformat(),
         },
     )
 
-    return result.mappings().one_or_none()
+    return dict(result.mappings().one())
+
+
+def update(connection: Connection, meeting_id: int, data: MeetingUpdate):
+    """Обновляет данные встречи.
+
+    Если данные для обновления не переданы, возвращает текущие данные встречи без изменений.
+
+    :param connection: соединение с базой данных.
+    :param meeting_id: идентификатор встречи.
+    :param data: данные для обновления встречи.
+    :return: обновлённые данные встречи.
+    """
+    fields = data.model_dump(exclude_unset=True)
+    if not fields:
+        return get_by_id(connection, meeting_id)
+
+    set_updating = ", ".join(f"{key} = :{key}" for key in fields)
+    fields["meeting_id"] = meeting_id
+
+    result = connection.execute(
+        text(f"UPDATE meetings SET {set_updating} WHERE id = :meeting_id RETURNING *"),
+        fields
+    )
+    return result.mappings().one()
 
 
 def get_all(connection: Connection, num_limit: int, num_offset: int):
@@ -78,6 +103,28 @@ def get_by_uuid(connection: Connection, meeting_uuid: UUID):
         ),
         {
             "meeting_uuid": str(meeting_uuid)
+        }
+    )
+    return result.mappings().one_or_none()
+
+
+def get_by_id(connection: Connection, meeting_id: int):
+    """Возвращает данные встречи по ID.
+
+    :param connection: соединение с базой данных.
+    :param meeting_id: идентификатор встречи.
+    :return: данные встречи.
+    """
+    result = connection.execute(
+        text(
+            """
+            SELECT *
+            FROM meetings
+            WHERE id = :meeting_id
+            """
+        ),
+        {
+            "meeting_id": meeting_id
         }
     )
     return result.mappings().one_or_none()

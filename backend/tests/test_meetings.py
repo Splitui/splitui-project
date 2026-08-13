@@ -7,10 +7,10 @@ from tests.utils import future_date
 
 
 def test_create_meeting_with_valid_data(app_client):
-    meeting_date = future_date()
+    start_date = future_date()
     payload = {
         "title": "Тестовая Встреча",
-        "meeting_date": meeting_date.isoformat(),
+        "start_date": start_date.isoformat(),
         "creator_nickname": "Тестовый участник",
     }
 
@@ -19,7 +19,7 @@ def test_create_meeting_with_valid_data(app_client):
     assert response.status_code == 201
     meeting = response.json()
     assert meeting["title"] == "Тестовая Встреча"
-    assert meeting["start_date"] == meeting_date.isoformat()
+    assert meeting["start_date"] == start_date.isoformat()
 
 
 @pytest.mark.parametrize(
@@ -28,7 +28,7 @@ def test_create_meeting_with_valid_data(app_client):
         pytest.param(
             {
                 "title": "Тестовая Встреча" * 100,
-                "meeting_date": future_date().isoformat(),
+                "start_date": future_date().isoformat(),
                 "creator_nickname": "Тестовый участник",
             },
             id="title_too_long",
@@ -36,10 +36,10 @@ def test_create_meeting_with_valid_data(app_client):
         pytest.param(
             {
                 "title": "Тестовая Встреча",
-                "meeting_date": "2026/08/08",
+                "start_date": "2026/08/08",
                 "creator_nickname": "Тестовый участник",
             },
-            id="invalid_meeting_date",
+            id="invalid_start_date",
         ),
         pytest.param(
             {
