@@ -30,7 +30,7 @@ meetings_table = Table(
     "meetings",
     metadata,
     id_column(),
-    Column("uuid", Uuid, nullable=False, unique=True),
+    Column("uuid", String, nullable=False, unique=True),
     Column("title", String(150), nullable=False),
     Column("is_public", Boolean, nullable=False, server_default=text("0")),
     Column(

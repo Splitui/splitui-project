@@ -8,6 +8,6 @@ banks_table = Table(
     "banks",
     metadata,
     id_column(),
-    Column("name", String(100), nullable=False),
+    Column("name", String(100), nullable=False, unique=True),
     Column("icon_url", Text, nullable=True)
 )

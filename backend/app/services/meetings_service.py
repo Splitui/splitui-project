@@ -1,13 +1,16 @@
 """Модуль с бизнес-логикой для работы со встречами."""
+from collections import defaultdict
+from uuid import UUID
 
+from fastapi import HTTPException
 from sqlalchemy.engine import Connection
 
 from app.repositories import meetings_repository, participants_repository
-from app.schemas.meetings import MeetingCreate
+from app.schemas.meetings import MeetingCreate, MeetingUpdate
 from app.db.dependencies import transaction
 
 
-def get_meetings(connection: Connection, num_limit: int, num_offest: int):
+def get_meetings(connection: Connection, num_limit: int, num_offset: int):
     """Возвращает данные всех встреч.
 
     :param num_limit: максимальное количество встреч в ответе.
@@ -15,17 +18,7 @@ def get_meetings(connection: Connection, num_limit: int, num_offest: int):
     :param connection: соединение с базой данных.
     :return: список данных о встречах.
     """
-    return meetings_repository.get_all(connection, num_limit, num_offest)
-
-
-def get_meeting(connection: Connection, meeting_uuid):
-    """Возвращает данные встречи по её UUID.
-
-    :param connection: соединение с базой данных.
-    :param meeting_uuid: UUID встречи.
-    :return: данные встречи.
-    """
-    return meetings_repository.get_by_uuid(connection, meeting_uuid)
+    return meetings_repository.get_all(connection, num_limit, num_offset)
 
 
 @transaction
@@ -39,14 +32,46 @@ def create_meeting(connection: Connection, data: MeetingCreate):
     meeting = meetings_repository.create(
         connection,
         data.title,
-        data.meeting_date,
+        data.start_date,
     )
 
-    participants_repository.create(
+    participant = participants_repository.create(
         connection=connection,
         meeting_id=meeting["id"],
         nickname=data.creator_nickname,
         is_creator=True
     )
+    meeting["participants"] = [participant]
+    return meeting
 
+
+@transaction
+def update_meeting(connection, meeting_uuid, data: MeetingUpdate):
+    """Обновляет данные встречи.
+
+    :param connection: соединение с базой данных.
+    :param meeting_uuid: UUID встречи.
+    :param data: данные для обновления встречи.
+    :return: обновлённые данные встречи.
+    """
+    meeting = get_meeting_or_error(connection, meeting_uuid)
+    return meetings_repository.update(connection, meeting["id"], data)
+
+
+def get_meeting_or_error(connection: Connection, meeting_uuid: UUID):
+    """Возвращает данные встречи по UUID или бросает 404, если она не найдена.
+
+    :param connection: соединение с базой данных.
+    :param meeting_uuid: UUID встречи.
+    :return: данные встречи.
+    :raises HTTPException: 404, если встреча с указанным UUID не найдена.
+    """
+    meeting = meetings_repository.get_by_uuid(connection, meeting_uuid)
+    if meeting is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "message": f"Не найдена встреча с uuid {meeting_uuid}"
+            }
+        )
     return meeting

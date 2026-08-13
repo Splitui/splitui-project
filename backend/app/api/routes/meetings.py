@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.engine import Connection
 
 from app.db.dependencies import get_connection
-from app.schemas.meetings import MeetingCreate
+from app.schemas.meetings import MeetingCreate, MeetingUpdate
 from app.services import meetings_service
 
 router = APIRouter(
@@ -42,8 +42,7 @@ def get_meeting(
     :param connection: соединение с базой данных.
     :return: данные встречи.
     """
-    return meetings_service.get_meeting(connection, meeting_uuid)
-
+    return meetings_service.get_meeting_or_error(connection, meeting_uuid)
 
 @router.post("", status_code=201, summary="Создать встречу")
 def create_meeting(
@@ -57,3 +56,19 @@ def create_meeting(
     :return: данные созданной встречи.
     """
     return meetings_service.create_meeting(connection, data)
+
+
+@router.patch("/{meeting_uuid}", summary="Обновить встречу")
+def update_meeting(
+        meeting_uuid: UUID,
+        data: MeetingUpdate,
+        connection: Connection = Depends(get_connection)
+):
+    """Обрабатывает запрос на частичное обновление встречи.
+
+    :param meeting_uuid: UUID встречи.
+    :param data: данные для обновления встречи.
+    :param connection: соединение с базой данных.
+    :return: обновлённые данные встречи.
+    """
+    return meetings_service.update_meeting(connection, meeting_uuid, data)

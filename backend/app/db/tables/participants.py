@@ -11,6 +11,5 @@ participants_table = Table(
     Column("meeting_id", Integer, ForeignKey("meetings.id"), nullable=False),
     Column("is_creator", Boolean, nullable=False, server_default="0"),
     Column("nickname", String(50), nullable=False),
-    Column("bank_data_id", Integer, ForeignKey("bank_data.id"), nullable=True),
     Column("created_at", DateTime, nullable=False, server_default=func.now())
 )
