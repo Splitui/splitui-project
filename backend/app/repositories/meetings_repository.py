@@ -57,7 +57,7 @@ def update(connection: Connection, meeting_id: int, data: MeetingUpdate):
         text(f"UPDATE meetings SET {set_updating} WHERE id = :meeting_id RETURNING *"),
         fields
     )
-    return result.mappings().one()
+    return dict(result.mappings().one())
 
 
 def get_all(connection: Connection, num_limit: int, num_offset: int):
@@ -105,7 +105,8 @@ def get_by_uuid(connection: Connection, meeting_uuid: UUID):
             "meeting_uuid": str(meeting_uuid)
         }
     )
-    return result.mappings().one_or_none()
+    row = result.mappings().one_or_none()
+    return dict(row) if row else None
 
 
 def get_by_id(connection: Connection, meeting_id: int):
@@ -127,4 +128,5 @@ def get_by_id(connection: Connection, meeting_id: int):
             "meeting_id": meeting_id
         }
     )
-    return result.mappings().one_or_none()
+    row = result.mappings().one_or_none()
+    return dict(row) if row else None
