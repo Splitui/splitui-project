@@ -103,3 +103,7 @@ def get_participant_or_error(connection: Connection, meeting_id, participant_id)
             }
         )
     return participant
+
+
+def get_creator(connection: Connection, meeting_uuid: UUID):
+    return participants_repository.get_meeting_creator(connection,meeting_uuid)

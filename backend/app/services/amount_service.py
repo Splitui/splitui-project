@@ -34,7 +34,7 @@ def get_amount_info(connection:Connection,meeting_uuid: UUID, participant_id: in
     meeting_amount = receipts_repository.get_meeting_total_amount(connection,meeting_uuid)
 
     if meeting_amount is None:
-            meeting_amount = 0
+        meeting_amount = 0
 
     participant_spend = receipts_repository.get_participant_spend(connection,participant_id,meeting["id"])
 
@@ -44,7 +44,7 @@ def get_amount_info(connection:Connection,meeting_uuid: UUID, participant_id: in
     participant_debt = receipt_items_repository.get_participant_debt(connection,participant_id)
 
     if participant_debt is None:
-            participant_debt = 0
+        participant_debt = 0
 
     return  {
          "meeting_amount": meeting_amount,

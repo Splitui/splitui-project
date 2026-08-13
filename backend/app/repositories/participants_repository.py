@@ -1,5 +1,7 @@
 """Модуль с запросами к базе данных для работы с участниками встреч."""
 
+from uuid import UUID
+
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
@@ -114,4 +116,23 @@ def get_by_id(connection: Connection, meeting_id: int, participant_id: int):
             "meeting_id": meeting_id
         }
     )
+    return result.mappings().one_or_none()
+
+def get_meeting_creator(
+    connection: Connection,
+    meeting_uuid: UUID,
+):
+    result = connection.execute(
+        text("""
+            SELECT p.*
+            FROM participants p
+            JOIN meetings m ON m.id = p.meeting_id
+            WHERE m.uuid = :meeting_uuid
+              AND p.is_creator = TRUE
+        """),
+        {
+            "meeting_uuid": str(meeting_uuid),
+        },
+    )
+
     return result.mappings().one_or_none()

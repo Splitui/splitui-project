@@ -177,15 +177,13 @@ def create_or_update_receipt_in_meeting(connection: Connection, meeting_uuid: UU
             }
         )
 
+    creator = participants_repository.get_meeting_creator(connection,meeting_uuid)
+
     participants = participants_repository.get_all(connection, meeting["id"])
 
     if (
     participant_id != data.payer_id
-    and participant_id not in (
-        participant["id"]
-        for participant in participants
-        if participant["is_creator"]
-    )
+    and participant_id != creator["id"]
     ):
         raise HTTPException(
             status_code=403,
