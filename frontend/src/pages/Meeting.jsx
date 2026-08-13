@@ -12,6 +12,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import leave from '../components/logo/leave.svg';
 import Cookies from 'js-cookie';
+import UserModal from '../components/UserModal';
 import ExpensesTab from '../components/meetingTabs/ExpensesTab';
 import PaymentTab from '../components/meetingTabs/PaymentTab';
 import UserAvatar from '../components/UserAvatar';
@@ -128,6 +129,21 @@ const MembersButton = ({ onClick, participants }) => (
 );
 
 const MembersDialog = ({ open, onClose, participants, meetingId }) => {
+    const [editOpen, setEditOpen] = useState(false);
+    const [selectedName, setSelectedName] = useState('');
+
+    const meetingCookie = JSON.parse(Cookies.get('meeting') || '{}');
+    const myName = meetingCookie.admin || '';
+
+    const handleUserClick = (nickname) => {
+        setSelectedName(nickname);
+        setEditOpen(true);
+    };
+
+    const handleSaveParticipant = (data) => {
+        console.log('Данные из списка участников:', data);
+    };
+
     const handleLink = async () => {
         const inviteLink = `${window.location.origin}?join=${meetingId}`;
         await navigator.clipboard.writeText(inviteLink);
@@ -135,60 +151,73 @@ const MembersDialog = ({ open, onClose, participants, meetingId }) => {
     };
 
     return (
-        <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-            <div className="flex justify-between p-4">
-                <h2 className="text-xl font-bold text-[#463628]">Список участников</h2>
-                <IconButton onClick={onClose} className="text-2xl font-bold">
-                    ☓
-                </IconButton>
-            </div>
-            <DialogContent>
-                <Button
-                    fullWidth
-                    variant="outlined"
-                    onClick={handleLink}
-                    sx={{
-                        mb: 3,
-                        py: 1.5,
-                        borderRadius: '12px',
-                        border: '2px solid #463628',
-                        color: '#463628',
-                        fontWeight: 'bold',
-                        fontSize: '0.9rem',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        '&:hover': {
-                            border: '2px solid #463628',
-                            backgroundColor: '#F8F4EC',
-                        },
-                        '&.MuiButton-outlined': {
-                            borderColor: '#463628',
-                        },
-                    }}
-                >
-                    Добавить участника
-                </Button>
-                <div className="flex flex-col gap-3 pb-4">
-                    {participants.length > 0 ? (
-                        participants.map((p, idx) => (
-                            <div
-                                key={idx}
-                                className="flex items-center gap-3 p-3 rounded-xl bg-white shadow-sm border border-gray-100"
-                            >
-                                <Avatar>
-                                    {p.nickname ? p.nickname[0].toUpperCase() : '?'}
-                                </Avatar>
-                                <span className="font-bold text-[#463628]">
-                                    {p.nickname}
-                                </span>
-                            </div>
-                        ))
-                    ) : (
-                        <h3>Пусто</h3>
-                    )}
+        <>
+            <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
+                <div className="flex justify-between p-4">
+                    <h2 className="text-xl font-bold text-[#463628]">
+                        Список участников
+                    </h2>
+                    <IconButton onClick={onClose} className="text-2xl font-bold">
+                        ☓
+                    </IconButton>
                 </div>
-            </DialogContent>
-        </Dialog>
+                <DialogContent>
+                    <Button
+                        fullWidth
+                        variant="outlined"
+                        onClick={handleLink}
+                        sx={{
+                            mb: 3,
+                            py: 1.5,
+                            borderRadius: '12px',
+                            border: '2px solid #463628',
+                            color: '#463628',
+                            fontWeight: 'bold',
+                            fontSize: '0.9rem',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            '&:hover': {
+                                border: '2px solid #463628',
+                                backgroundColor: '#F8F4EC',
+                            },
+                            '&.MuiButton-outlined': {
+                                borderColor: '#463628',
+                            },
+                        }}
+                    >
+                        Добавить участника
+                    </Button>
+                    <div className="flex flex-col gap-3 pb-4">
+                        {participants.length > 0 ? (
+                            participants.map((p, idx) => (
+                                <div
+                                    key={idx}
+                                    onClick={() => handleUserClick(p.nickname)}
+                                    className="flex items-center gap-3 p-3 rounded-xl bg-white shadow-sm border border-gray-100"
+                                >
+                                    <Avatar>
+                                        {p.nickname ? p.nickname[0].toUpperCase() : '?'}
+                                    </Avatar>
+                                    <span className="font-bold text-[#463628]">
+                                        {p.nickname}
+                                    </span>
+                                </div>
+                            ))
+                        ) : (
+                            <h3>Пусто</h3>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <UserModal
+                open={editOpen}
+                onClose={() => setEditOpen(false)}
+                userName={selectedName}
+                onSave={handleSaveParticipant}
+                isEditable={selectedName === myName}
+            />
+        </>
     );
 };
 
