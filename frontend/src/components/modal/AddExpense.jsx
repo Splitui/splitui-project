@@ -26,7 +26,7 @@ export default function AddExpense({ open, onClose }) {
     const amountRef = useRef(null);
 
     const [paidBy, setPaidBy] = useState('');
-    const [payer, setPayer] = useState('');
+    const [payer, setPayer] = useState([]);
     const [cashbackCategory, setCashbackCategory] = useState('');
     const [receipt] = useState(null);
 
@@ -37,7 +37,8 @@ export default function AddExpense({ open, onClose }) {
     useEffect(() => {
         if (!open) return;
 
-        const meetingUuid = Cookies.get('meetingId');
+        const meeting = JSON.parse(Cookies.get('meeting') || '{}');
+        const meetingUuid = meeting.id;
         if (!meetingUuid) {
             setUsersError('Не найден UUID встречи');
             return;
@@ -84,15 +85,56 @@ export default function AddExpense({ open, onClose }) {
 
     const handleReceiptUpload = () => {};
 
-    const handleSave = () => {
-        console.log({
-            expenseName: nameRef.current.value.trim(),
-            amount: amountRef.current.value.trim(),
-            paidBy,
-            payer,
-            cashbackCategory,
-            receipt,
-        });
+    const handleSave = async () => {
+        const meeting = JSON.parse(Cookies.get('meeting') || '{}');
+        const meetingUuid = meeting.id;
+        if (!meetingUuid) {
+            console.error('Не найден UUID встречи');
+            return;
+        }
+
+        const expenseName = nameRef.current.value.trim();
+        const amount = amountRef.current ? parseFloat(amountRef.current.value) || 0 : 0;
+
+        const body = {
+            payer_id: paidBy,
+            title: expenseName,
+            purchase_date: new Date().toISOString(),
+            category: cashbackCategory || null,
+            comment: '',
+            image_url: null,
+            is_confirmed: false,
+            items: [
+                {
+                    title: expenseName,
+                    unit_price: amount,
+                    quantity: 1,
+                    participants: payer.map((id) => ({
+                        participant_id: id,
+                        quantity: 1,
+                    })),
+                },
+            ],
+        };
+
+        try {
+            const res = await fetch(`${API_BASE}/meetings/${meetingUuid}/receipts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+
+            if (!res.ok) {
+                console.error('Ошибка сохранения:', await res.text());
+                return;
+            }
+
+            const data = await res.json();
+            console.log('Чек создан:', data);
+            onClose();
+        } catch (e) {
+            console.error('Сеть недоступна:', e);
+        }
     };
 
     return (
@@ -104,40 +146,53 @@ export default function AddExpense({ open, onClose }) {
             onClose={onClose}
             slotProps={{
                 paper: {
-                    className: `!bg-[#EAE0CD] p-4 sm:p-6 ${fullScreen ? '!rounded-none' : '!rounded-[20px]'}`,
+                    sx: {
+                        backgroundColor: '#EAE0CD',
+                        p: { xs: 2, sm: 3 },
+                        borderRadius: fullScreen ? 0 : '20px',
+                    },
                 },
             }}
         >
             <IconButton
                 onClick={onClose}
-                className="!absolute top-3 right-3 !text-[#463628]"
+                sx={{ position: 'absolute', top: 12, right: 12, color: '#463628' }}
             >
                 <CloseIcon />
             </IconButton>
 
-            <Box className="text-center pt-4 pb-2">
-                <Typography className="!font-extrabold !text-[#463628] !text-3xl !sm:text-2xl !tracking-[0.02em]">
+            <Box sx={{ textAlign: 'center', pt: 2, pb: 1 }}>
+                <Typography
+                    sx={{
+                        fontWeight: 800,
+                        color: '#463628',
+                        fontSize: { xs: '1.5rem', sm: '1.875rem' },
+                        letterSpacing: '0.02em',
+                    }}
+                >
                     Новый расход
                 </Typography>
             </Box>
 
-            <DialogContent className="flex flex-col gap-6 py-6">
+            <DialogContent
+                sx={{ display: 'flex', flexDirection: 'column', gap: 3, py: 3 }}
+            >
                 <TextField
                     fullWidth
                     label="Название расхода"
                     inputRef={nameRef}
                     sx={FIELD_SX}
                 />
-                <TextField
+                {/*<TextField
                     fullWidth
                     label="Сумма"
                     type="number"
                     inputRef={amountRef}
                     sx={FIELD_SX}
-                />
+                />*/}
 
                 {usersError && (
-                    <Typography className="text-[#d32f2f] text-sm">
+                    <Typography sx={{ color: '#d32f2f', fontSize: '0.875rem' }}>
                         {usersError}
                     </Typography>
                 )}
@@ -166,7 +221,17 @@ export default function AddExpense({ open, onClose }) {
                     onChange={(e) => setPayer(e.target.value)}
                     sx={FIELD_SX}
                     disabled={usersLoading}
-                    slotProps={{ select: { MenuProps: MENU_PROPS } }}
+                    slotProps={{
+                        select: {
+                            multiple: true,
+                            MenuProps: MENU_PROPS,
+                            renderValue: (selected) =>
+                                usersOptions
+                                    .filter((o) => selected.includes(o.value))
+                                    .map((o) => o.label)
+                                    .join(', '),
+                        },
+                    }}
                 >
                     {usersOptions.map((option) => (
                         <MenuItem key={option.value} value={option.value}>
@@ -194,7 +259,13 @@ export default function AddExpense({ open, onClose }) {
                     fullWidth
                     variant="outlined"
                     onClick={handleReceiptView}
-                    className="!border-2 !border-[#463628] !text-[#463628] font-bold !rounded-lg py-3 hover:!bg-[#463628]"
+                    sx={{
+                        border: '2px solid #463628',
+                        color: '#463628',
+                        fontWeight: 'bold',
+                        borderRadius: '8px',
+                        py: 1.5,
+                    }}
                 >
                     ПОСМОТРЕТЬ ЧЕК
                 </Button>
@@ -205,7 +276,16 @@ export default function AddExpense({ open, onClose }) {
                     fullWidth
                     variant="contained"
                     onClick={handleReceiptUpload}
-                    className="!bg-[#DAB672] !text-[#463628] font-bold !rounded-lg py-3 text-base !shadow-none hover:!bg-[#c9a25f]"
+                    sx={{
+                        backgroundColor: '#DAB672',
+                        color: '#463628',
+                        fontWeight: 'bold',
+                        borderRadius: '8px',
+                        py: 1.5,
+                        fontSize: '1rem',
+                        boxShadow: 'none',
+                        '&:hover': { backgroundColor: '#c9a25f', boxShadow: 'none' },
+                    }}
                 >
                     ДОБАВИТЬ ЧЕК
                 </Button>
@@ -213,7 +293,16 @@ export default function AddExpense({ open, onClose }) {
                     fullWidth
                     variant="contained"
                     onClick={handleSave}
-                    className="!bg-[#463628] !text-[#F8F4EC] font-bold !rounded-lg py-3 text-base !shadow-none hover:!bg-[#3a2c20]"
+                    sx={{
+                        backgroundColor: '#463628',
+                        color: '#F8F4EC',
+                        fontWeight: 'bold',
+                        borderRadius: '8px',
+                        py: 1.5,
+                        fontSize: '1rem',
+                        boxShadow: 'none',
+                        '&:hover': { backgroundColor: '#3a2c20', boxShadow: 'none' },
+                    }}
                 >
                     СОХРАНИТЬ РАСХОД
                 </Button>
