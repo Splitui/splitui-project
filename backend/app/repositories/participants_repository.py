@@ -29,7 +29,7 @@ def create(
             "is_creator": is_creator,
         },
     )
-    return result.mappings().one()
+    return dict(result.mappings().one())
 
 
 def update(
@@ -56,7 +56,7 @@ def update(
         },
     )
 
-    return result.mappings().one()
+    return dict(result.mappings().one())
 
 
 def get_all(
@@ -114,4 +114,5 @@ def get_by_id(connection: Connection, meeting_id: int, participant_id: int):
             "meeting_id": meeting_id
         }
     )
-    return result.mappings().one_or_none()
+    row = result.mappings().one_or_none()
+    return dict(row) if row else None

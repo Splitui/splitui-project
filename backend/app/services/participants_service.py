@@ -7,7 +7,7 @@ from sqlalchemy.engine import Connection
 from app.db.dependencies import transaction
 from app.repositories import meetings_repository, participants_repository, bank_data_repository
 from app.schemas.participants import ParticipantCreate, ParticipantUpdate
-from app.services import meetings_service
+from app.services import meetings_service, bank_data_service
 
 
 def get_participants_from_meeting(
@@ -77,12 +77,20 @@ def update_participant(connection, meeting_uuid, participant_id: int, data: Part
     participant = get_participant_or_error(connection, meeting["id"], participant_id)
 
     if data.nickname is not None:
-        participants_repository.update(connection, participant["id"], data.nickname)
+        participant = participants_repository.update(connection, participant["id"], data.nickname)
 
     if data.card_number is not None or data.phone_number is not None:
-        bank_data_repository.update(connection, participant["id"], data.bank_id, data.card_number, data.phone_number)
+        bank = bank_data_service.get_bank_or_error(connection, data.bank_id)
+        bank_data = bank_data_repository.upsert(
+            connection,
+            participant["id"],
+            bank["id"],
+            data.card_number,
+            data.phone_number
+        )
+        participant["bank_data"] = bank_data
 
-    return participants_repository.get_by_id(connection, meeting["id"], participant["id"])
+    return participant
 
 
 def get_participant_or_error(connection: Connection, meeting_id, participant_id):
