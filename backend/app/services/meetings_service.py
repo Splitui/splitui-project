@@ -1,13 +1,12 @@
 """Модуль с бизнес-логикой для работы со встречами."""
-from collections import defaultdict
 from uuid import UUID
 
 from fastapi import HTTPException
 from sqlalchemy.engine import Connection
 
+from app.db.dependencies import transaction
 from app.repositories import meetings_repository, participants_repository
 from app.schemas.meetings import MeetingCreate, MeetingUpdate
-from app.db.dependencies import transaction
 
 
 def get_meetings(connection: Connection, num_limit: int, num_offset: int):

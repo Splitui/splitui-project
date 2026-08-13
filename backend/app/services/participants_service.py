@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy.engine import Connection
 
 from app.db.dependencies import transaction
-from app.repositories import meetings_repository, participants_repository, bank_data_repository
+from app.repositories import participants_repository, bank_data_repository
 from app.schemas.participants import ParticipantCreate, ParticipantUpdate
 from app.services import meetings_service, bank_data_service
 

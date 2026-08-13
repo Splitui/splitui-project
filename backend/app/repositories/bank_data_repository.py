@@ -18,7 +18,7 @@ def create(
     :param bank_id: идентификатор банка.
     :param card_number: номер банковской карты.
     :param phone_number: номер телефона.
-    :return:
+    :return: данные банковских реквизитов.
     """
     result = connection.execute(
         text("""
