@@ -5,6 +5,8 @@ import {
     Button,
     Avatar,
     TextField,
+    Typography,
+    Box,
     useMediaQuery,
     useTheme,
 } from '@mui/material';
