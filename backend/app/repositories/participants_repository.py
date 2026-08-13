@@ -62,7 +62,7 @@ def update(
 def get_all(
         connection: Connection,
         meeting_id: int,
-        num_limit: int | None = None,
+        num_limit: int = -1,
         num_offset: int = 0
 ):
     """Возвращает данные участников указанной встречи.
