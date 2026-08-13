@@ -3,10 +3,21 @@ import { useState } from 'react';
 import Slider from '../components/sliderComponents/Slider';
 import AddMeeting from '../components/Modal/AddMeeting';
 import JoinMeeting from '../components/Modal/JoinMeeting';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import InviteMeeting from '../components/modal/InviteMeeting';
 export default function Home() {
     const [openAdd, setOpenAdd] = useState(false);
     const [openJoin, setOpenJoin] = useState(false);
 
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+
+    const inviteId = searchParams.get('join');
+    const [openInviteModal, setOpenInviteModal] = useState(!!inviteId);
+
+    const handleJoined = (uuid) => {
+        navigate(`/meetings/${uuid}`);
+    };
     return (
         <div className="h-screen py-8 flex flex-col items-center gap-6 bg-[#F8F4EC]">
             <Box className="flex flex-col w-full flex-1 min-h-0">
@@ -50,6 +61,12 @@ export default function Home() {
                 Вход в встречу
             </Button>
             <JoinMeeting open={openJoin} onClose={() => setOpenJoin(false)} />
+            <InviteMeeting
+                open={openInviteModal}
+                onClose={() => setOpenInviteModal(false)}
+                meetingId={inviteId}
+                onJoined={handleJoined}
+            />
         </div>
     );
 }
