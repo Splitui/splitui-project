@@ -10,13 +10,13 @@ def create(
         connection: Connection,
         receipt_item_id: int,
         participants: list[FullReceiptParticipantCreate],
-        unit_price: float,
+        share_amount: float,
 ):
     values = [
     {
         "receipt_item_id": receipt_item_id,
         "participant_id": participant.participant_id,
-        "share_amount": float(participant.quantity * unit_price),
+        "share_amount": float(share_amount),
     }
     for participant in participants
     ]
@@ -75,7 +75,7 @@ def replace_for_item(
     connection: Connection,
     receipt_item_id: int,
     participants: list[FullReceiptParticipantCreate],
-    unit_price: float,
+    share_amount: float,
 ):
     connection.execute(
         text("""
@@ -94,5 +94,42 @@ def replace_for_item(
         connection=connection,
         receipt_item_id=receipt_item_id,
         participants=participants,
-        unit_price=unit_price,
+        share_amount=share_amount,
     )
+
+
+def get_amounts_by_receipt_id(
+    connection: Connection,
+    receipt_id: int,
+    payer_id:int
+):
+    """Возвращает распределённую сумму чека для каждого участника.
+
+    :param connection: соединение с базой данных.
+    :param receipt_id: идентификатор чека.
+    :param payer_id: идентификатор плательщика.
+    :return: список участников с распределёнными суммами.
+    """
+    result = connection.execute(
+        text("""
+            SELECT
+                p.id AS participant_id,
+                p.nickname,
+                SUM(rip.share_amount) AS amount
+            FROM receipt_item_participants rip
+            JOIN receipt_items ri
+                ON ri.id = rip.receipt_item_id
+            JOIN participants p
+                ON p.id = rip.participant_id
+            WHERE ri.receipt_id = :receipt_id 
+                AND p.id != :payer_id
+            GROUP BY p.id, p.nickname
+            ORDER BY p.id
+        """),
+        {
+            "receipt_id": receipt_id,
+            "payer_id": payer_id,
+        },
+    )
+
+    return result.mappings().all()
