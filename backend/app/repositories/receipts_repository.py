@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from decimal import Decimal
+from uuid import UUID
 
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
@@ -174,3 +175,82 @@ def update(
     )
 
     return result.mappings().one()
+
+
+def delete(
+    connection: Connection,
+    receipt_id: int,
+):
+    connection.execute(
+        text("""
+            DELETE FROM receipt_item_participants
+            WHERE receipt_item_id IN (
+                SELECT id
+                FROM receipt_items
+                WHERE receipt_id = :receipt_id
+            )
+        """),
+        {
+            "receipt_id": receipt_id,
+        },
+    )
+
+    connection.execute(
+        text("""
+            DELETE FROM receipt_items
+            WHERE receipt_id = :receipt_id
+        """),
+        {
+            "receipt_id": receipt_id,
+        },
+    )
+
+    result = connection.execute(
+        text("""
+            DELETE FROM receipts
+            WHERE id = :receipt_id
+            RETURNING id
+        """),
+        {
+            "receipt_id": receipt_id,
+        },
+    )
+
+    return result.scalar_one_or_none()
+
+def get_meeting_total_amount(
+    connection: Connection,
+    meeting_uuid: UUID,
+):
+    result = connection.execute(
+        text("""
+            SELECT SUM(r.total_amount) 
+            FROM receipts r JOIN meetings m on m.id == r.meeting_id
+            WHERE m.uuid = :meeting_uuid
+        """),
+        {
+            "meeting_uuid": str(meeting_uuid),
+        },
+    )
+
+    return result.scalar_one_or_none()
+
+def get_participant_spend(
+    connection: Connection,
+    participant_id: int,
+    meeting_id,
+):
+    result = connection.execute(
+        text("""
+            SELECT SUM(total_amount)
+            FROM receipts
+            WHERE payer_id = :participant_id
+            AND meeting_id = :meeting_id
+        """),
+        {
+            "participant_id": participant_id,
+            "meeting_id": meeting_id,
+        },
+    )
+
+    return result.scalar_one_or_none()
