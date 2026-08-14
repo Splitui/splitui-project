@@ -22,8 +22,8 @@ def get_debts(connection: Connection, meeting_uuid: UUID):
 
 
 @transaction
-def recalculate_debts(connection: Connection, meeting_uuid: UUID):
-    """Пересчитывает долги участников встречи на основе чеков.
+def calculate_debts(connection: Connection, meeting_uuid: UUID):
+    """Подсчитывает долги участников встречи на основе чеков.
 
     :param connection: соединение с базой данных.
     :param meeting_uuid: UUID встречи.
@@ -34,7 +34,8 @@ def recalculate_debts(connection: Connection, meeting_uuid: UUID):
     debts = get_debts_by_balances(balances)
     if not debts:
         return []
-    return debts_repository.calculate_for_meeting(connection, meeting["id"], debts)
+    debts_repository.calculate_for_meeting(connection, meeting["id"], debts)
+    return debts_repository.get_all_by_meeting(connection, meeting["id"])
 
 
 def get_debts_by_balances(balances: list[dict]) -> list[dict]:

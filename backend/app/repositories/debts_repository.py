@@ -44,24 +44,23 @@ def calculate_for_meeting(connection: Connection, meeting_id: int, debts: list[d
         {"meeting_id": meeting_id}
     )
 
-    created_debts = []
-    for debt in debts:
-        result = connection.execute(
-            text("""
-                 INSERT INTO debts (meeting_id, debtor_id, creditor_id, amount)
-                 VALUES (:meeting_id, :debtor_id, :creditor_id, :amount)
-                 RETURNING id, meeting_id, debtor_id, creditor_id, amount, created_at
-                 """),
-            {
-                "meeting_id": meeting_id,
-                "debtor_id": debt["debtor_id"],
-                "creditor_id": debt["creditor_id"],
-                "amount": float(debt["amount"]),
-            }
-        )
-        created_debts.append(dict(result.mappings().one()))
+    values = [
+        {
+            "meeting_id": meeting_id,
+            "debtor_id": debt["debtor_id"],
+            "creditor_id": debt["creditor_id"],
+            "amount": float(debt["amount"]),
+        }
+        for debt in debts
+    ]
 
-    return created_debts
+    connection.execute(
+        text("""
+             INSERT INTO debts (meeting_id, debtor_id, creditor_id, amount)
+             VALUES (:meeting_id, :debtor_id, :creditor_id, :amount)
+             """),
+        values
+    )
 
 def get_balances_by_meeting(connection: Connection, meeting_id: int):
     """Возвращает балансы участников встречи.

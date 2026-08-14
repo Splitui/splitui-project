@@ -39,4 +39,4 @@ def calculate_debts(
     :param connection: соединение с базой данных.
     :return: подсчитанный список долгов участников встречи.
     """
-    return debts_service.recalculate_debts(connection, meeting_uuid)
+    return debts_service.calculate_debts(connection, meeting_uuid)
