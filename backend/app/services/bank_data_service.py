@@ -20,13 +20,15 @@ def add_bank_data(connection: Connection, meeting_uuid: UUID, participant_id: in
     """
     meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
     participant = participants_service.get_participant_or_error(connection, meeting["id"], participant_id)
+    bank = get_bank_or_error(connection, data.bank_id)
     return bank_data_repository.create(
         connection,
         participant["id"],
-        data.bank_id,
+        bank["id"],
         data.card_number,
         data.phone_number
     )
+
 
 def get_bank_data(connection: Connection, meeting_uuid: UUID, participant_id: int):
     """Возвращает банковские реквизиты участника встречи.
@@ -48,6 +50,7 @@ def get_bank_data(connection: Connection, meeting_uuid: UUID, participant_id: in
         )
     return bank_data
 
+
 def get_banks(connection: Connection):
     """Возвращает список всех доступных банков.
 
@@ -55,3 +58,22 @@ def get_banks(connection: Connection):
     :return: список банков.
     """
     return bank_data_repository.get_banks(connection)
+
+
+def get_bank_or_error(connection: Connection, bank_id: int) -> dict:
+    """Возвращает данные банка по id или бросает 404, если он не найден.
+
+    :param connection: соединение с базой данных.
+    :param bank_id: идентификатор банка.
+    :return: данные банка.
+    :raises HTTPException: 404, если банк не найден.
+    """
+    bank = bank_data_repository.get_bank_by_id(connection, bank_id)
+    if bank is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "message": f"Не найден банк с id {bank_id}"
+            }
+        )
+    return bank

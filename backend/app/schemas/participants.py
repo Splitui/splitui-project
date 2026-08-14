@@ -11,6 +11,7 @@ class ParticipantCreate(BaseModel):
 
     nickname: str = Field(min_length=1, max_length=50)
 
+
 class ParticipantUpdate(BaseModel):
     """Схема для обновления данных участника.
 
@@ -29,9 +30,6 @@ class ParticipantUpdate(BaseModel):
     def validate_bank_data(self):
         has_card = self.card_number is not None
         has_phone = self.phone_number is not None
-
-        if has_card and has_phone:
-            raise ValueError("Укажите либо номер карты, либо номер телефона")
 
         if (has_card or has_phone) and self.bank_id is None:
             raise ValueError("Не выбран банк")

@@ -19,7 +19,19 @@ def get_receipts_from_meeting(connection: Connection, num_limit: int, num_offset
     """
     return receipts_repository.get_all_by_meeting_uuid(connection,num_limit,num_offset,meeting_uuid)
 
-def get_receipt_full(connection: Connection, receipt_id: int, num_limit: int, num_offset: int):
+def get_receipt_full(connection: Connection,meeting_uuid: UUID, receipt_id: int, num_limit: int, num_offset: int):
+
+    meeting = meetings_repository.get_by_uuid(connection,meeting_uuid) 
+
+    if meeting is None:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Неправильный uuid встречи",
+            }
+        )
+    
+
     receipt = receipts_repository.get_by_id(
         connection,
         receipt_id,
@@ -29,6 +41,12 @@ def get_receipt_full(connection: Connection, receipt_id: int, num_limit: int, nu
         raise HTTPException(
             status_code=404,
             detail="Чек не найден",
+        )
+
+    if meeting["id"] != receipt["meeting_id"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Чек не относится ко встрече",
         )
 
     items = receipt_items_repository.get_all_by_receipt_id(
@@ -59,8 +77,86 @@ def get_receipt_full(connection: Connection, receipt_id: int, num_limit: int, nu
     }
 
 
+def check_item_data(item):
+    participants = [
+        participant.participant_id
+        for participant in item.participants
+        ]
+
+    unique_participants = set(participants)
+
+    if len(unique_participants) != len(participants):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": (
+                    "Один участник не может быть указан "
+                    "несколько раз в одной позиции"
+                ),
+                "item": item.title
+            },
+        )
+
+    quantity = sum(
+        participant.quantity
+        for participant in item.participants
+    )
+
+    if quantity != item.quantity:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": (
+                    "Распределённое количество не совпадает "
+                    "с количеством позиции"
+                ),
+                "item": item.title,
+                "item_quantity": item.quantity,
+                "all_quantity": quantity,
+            },
+        )
+
+def create_or_update_items(connection,receipt_id,item_data):
+    if item_data.id is None:
+        receipt_item = receipt_items_repository.create(
+            connection=connection,
+            receipt_id=receipt_id,
+            title=item_data.title,
+            quantity=item_data.quantity,
+            unit_price=item_data.unit_price,
+        )
+        
+        item_participants = (
+            items_participants_repository.create(
+                connection=connection,
+                receipt_item_id=receipt_item["id"],
+                participants=item_data.participants,
+                unit_price=item_data.unit_price,
+            )
+        )
+    else:
+        receipt_item = receipt_items_repository.update(
+            connection=connection,
+            receipt_id=receipt_id,
+            item_id=item_data.id,
+            title=item_data.title,
+            quantity=item_data.quantity,
+            unit_price=item_data.unit_price,
+        )
+
+        item_participants = (
+            items_participants_repository.replace_for_item(
+                connection=connection,
+                receipt_item_id=item_data.id,
+                participants=item_data.participants,
+                unit_price=item_data.unit_price,
+            )
+        )
+
+    return receipt_item, item_participants
+
 @transaction
-def create_or_update_receipt_in_meeting(connection: Connection, meeting_uuid: UUID, data: FullReceiptCreate):
+def create_or_update_receipt_in_meeting(connection: Connection, meeting_uuid: UUID, participant_id: int, data: FullReceiptCreate):
     """Создаёт чек.
 
     :param connection: соединение с базой данных.
@@ -73,7 +169,28 @@ def create_or_update_receipt_in_meeting(connection: Connection, meeting_uuid: UU
         meeting_uuid,
     )
 
+    if meeting is None:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Неправильный uuid встречи",
+            }
+        )
+
+    creator = participants_repository.get_meeting_creator(connection,meeting_uuid)
+
     participants = participants_repository.get_all(connection, meeting["id"])
+
+    if (
+    participant_id != data.payer_id
+    and participant_id != creator["id"]
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Редактировать чек может только плательщик или создатель встречи"
+            ),
+        )
 
     meeting_participant = {
         participant["id"]
@@ -105,44 +222,7 @@ def create_or_update_receipt_in_meeting(connection: Connection, meeting_uuid: UU
         )
 
     for item in data.items:
-
-        participants = [
-        participant.participant_id
-        for participant in item.participants
-        ]
-
-        unique_participants = set(participants)
-
-        if len(unique_participants) != len(participants):
-            raise HTTPException(
-                status_code=400,
-                detail={
-                    "message": (
-                        "Один участник не может быть указан "
-                        "несколько раз в одной позиции"
-                    ),
-                    "item": item.title
-                },
-            )
-
-        quantity = sum(
-            participant.quantity
-            for participant in item.participants
-        )
-
-        if quantity != item.quantity:
-            raise HTTPException(
-                status_code=400,
-                detail={
-                    "message": (
-                        "Распределённое количество не совпадает "
-                        "с количеством позиции"
-                    ),
-                    "item": item.title,
-                    "item_quantity": item.quantity,
-                    "all_quantity": quantity,
-                },
-            )
+        check_item_data(item)
 
     if data.id is None:
         receipt = receipts_repository.create(
@@ -240,45 +320,7 @@ def create_or_update_receipt_in_meeting(connection: Connection, meeting_uuid: UU
     total_amount = 0
 
     for item_data in data.items:
-
-        if item_data.id is None:
-        #Вынести в один инсерт
-            receipt_item = receipt_items_repository.create(
-                connection=connection,
-                receipt_id=receipt["id"],
-                title=item_data.title,
-                quantity=item_data.quantity,
-                unit_price=item_data.unit_price,
-            )
-            
-            #Вынести в один инсерт
-            item_participants = (
-                items_participants_repository.create(
-                    connection=connection,
-                    receipt_item_id=receipt_item["id"],
-                    participants=item_data.participants,
-                    unit_price=item_data.unit_price,
-                )
-            )
-
-        else:
-            receipt_item = receipt_items_repository.update(
-                connection=connection,
-                receipt_id=receipt["id"],
-                item_id=item_data.id,
-                title=item_data.title,
-                quantity=item_data.quantity,
-                unit_price=item_data.unit_price,
-            )
-
-            item_participants = (
-                items_participants_repository.replace_for_item(
-                    connection=connection,
-                    receipt_item_id=item_data.id,
-                    participants=item_data.participants,
-                    unit_price=item_data.unit_price,
-                )
-            )
+        receipt_item,item_participants = create_or_update_items(connection,receipt["id"],item_data)
 
         total_amount += item_data.unit_price * item_data.quantity
         result_items.append(
@@ -303,3 +345,59 @@ def create_or_update_receipt_in_meeting(connection: Connection, meeting_uuid: UU
     }
 
 
+@transaction
+def delete_receipt(connection: Connection, meeting_uuid: UUID, participant_id: int, receipt_id: int):
+    meeting = meetings_repository.get_by_uuid(
+        connection,
+        meeting_uuid,
+    )
+
+    if meeting is None:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Неправильный uuid встречи",
+            }
+        )
+    
+    receipt = receipts_repository.get_by_id(
+        connection,
+        receipt_id,
+    )
+
+    if (
+        receipt is None
+        or receipt["meeting_id"] != meeting["id"]
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail="Чек не найден в указанной встрече",
+        )
+
+    participant = participants_repository.get_by_id(connection,meeting["id"],participant_id)
+
+    if participant is None:
+        raise HTTPException(
+                status_code=400,
+                detail={
+                    "message": "Неправильный id участника",
+                }
+            )
+
+    if participant_id != receipt["payer_id"] and not participant["is_creator"]:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Удалять чек может только плательщик или создатель встречи"
+            ),
+        )
+        
+
+    deleted_id = receipts_repository.delete(
+        connection,
+        receipt_id,
+    )
+
+    return {
+        "deleted_receipt_id": deleted_id,
+    }
