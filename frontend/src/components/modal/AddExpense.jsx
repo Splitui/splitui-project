@@ -91,7 +91,9 @@ export default function AddExpense({ open, onClose }) {
             console.error('Не найден UUID встречи');
             return;
         }
-
+        if (!paidBy) {
+            return;
+        }
         const expenseName = nameRef.current.value.trim();
         const amount = amountRef.current ? parseFloat(amountRef.current.value) || 0 : 0;
 
@@ -117,7 +119,7 @@ export default function AddExpense({ open, onClose }) {
         };
 
         try {
-            const res = await fetch(`${API_BASE}/meetings/${meetingUuid}/receipts`, {
+            const res = await fetch(`${API_BASE}/meetings/${meetingUuid}/participant/${paidBy}/receipts`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
