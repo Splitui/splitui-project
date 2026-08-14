@@ -1,7 +1,10 @@
+"""Модуль с бизнес-логикой для работы банковскими реквизитами."""
+
 from uuid import UUID
 
 from fastapi import HTTPException
 from sqlalchemy.engine import Connection
+
 from app.db.dependencies import transaction
 from app.repositories import bank_data_repository
 from app.schemas.bank_data import BankDataCreate
