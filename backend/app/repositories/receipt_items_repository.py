@@ -179,3 +179,21 @@ def delete_by_ids(
     )
 
     return result.scalars().all()
+
+def get_participant_debt(
+    connection: Connection,
+    participant_id: int,
+):
+    result = connection.execute(
+        text("""
+        SELECT SUM(share_amount) 
+        FROM receipt_item_participants
+        WHERE participant_id = :participant_id
+        """),
+        {
+            "participant_id": participant_id,
+        },
+    )
+
+    return result.scalar_one_or_none()
+     

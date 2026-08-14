@@ -36,10 +36,11 @@ def get_meeting_receipts(
 
 
 @router.get(
-    "/receipts/{receipt_id}",
+    "/meetings/{meeting_uuid}/receipts/{receipt_id}",
     summary="Получить чек с позициями и участниками",
 )
 def get_full_receipt(
+    meeting_uuid: UUID,
     receipt_id: int,
     limit: int ,
     offset: int,
@@ -47,6 +48,7 @@ def get_full_receipt(
 ):
     return receipts_service.get_receipt_full(
         connection,
+        meeting_uuid,
         receipt_id,
         limit,
         offset,
@@ -54,12 +56,13 @@ def get_full_receipt(
 
 
 @router.post(
-    "/meetings/{meeting_uuid}/receipts",
+    "/meetings/{meeting_uuid}/participant/{participant_id}/receipts",
     status_code=200,
     summary="Создать чек во встрече",
 )
 def add_receipt_in_meetings(
     meeting_uuid: UUID,
+    participant_id: int,
     data: FullReceiptCreate,
     connection: Connection = Depends(get_connection),
 ):
@@ -70,7 +73,7 @@ def add_receipt_in_meetings(
     :param connection: соединение с базой данных.
     :return: данные созданного чека.
     """
-    return receipts_service.create_or_update_receipt_in_meeting(connection,meeting_uuid, data)
+    return receipts_service.create_or_update_receipt_in_meeting(connection,meeting_uuid, participant_id, data)
 
 
 @router.post("/qr",
@@ -87,3 +90,21 @@ def read_qr_and_parse(data: ReceiptQrRequest):
 
     return parse_receipt(receipt_info)
 
+
+@router.delete(
+    "/meetings/{meeting_uuid}/participant/{participant_id}/receipts/{receipt_id}",
+    status_code=200,
+    summary="Удалить чек",
+)
+def delete_receipt(
+    meeting_uuid: UUID,
+    participant_id: int,
+    receipt_id: int,
+    connection: Connection = Depends(get_connection),
+):
+    return receipts_service.delete_receipt(
+        connection,
+        meeting_uuid,
+        participant_id,
+        receipt_id,
+    )

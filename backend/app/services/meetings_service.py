@@ -35,13 +35,13 @@ def create_meeting(connection: Connection, data: MeetingCreate):
         data.start_date,
     )
 
-    participant = participants_repository.create(
+    meeting_creator = participants_repository.create(
         connection=connection,
         meeting_id=meeting["id"],
         nickname=data.creator_nickname,
         is_creator=True
     )
-    meeting["participants"] = [participant]
+    meeting["meeting_creator"] = meeting_creator
     return meeting
 
 

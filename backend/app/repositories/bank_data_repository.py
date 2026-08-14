@@ -33,32 +33,35 @@ def create(
             "phone_number": phone_number
         },
     )
-    return result.mappings().one()
+    return dict(result.mappings().one())
 
 
-def update(
+def upsert(
         connection: Connection,
         participant_id: int,
         bank_id: int,
         card_number: str | None,
         phone_number: str | None
 ):
-    """Обновляет банковские реквизиты участника.
+    """Создаёт или обновляет банковские реквизиты участника (upsert).
 
     :param connection: соединение с базой данных.
     :param participant_id: идентификатор участника.
     :param bank_id: идентификатор банка.
     :param card_number: номер банковской карты.
     :param phone_number: номер телефона.
-    :return: обновлённые данные банковских реквизитов.
+    :return: данные банковских реквизитов после вставки/обновления.
     """
     result = connection.execute(
         text("""
-             UPDATE bank_data
-             SET bank_id      = :bank_id,
-                 card_number  = :card_number,
-                 phone_number = :phone_number
-             WHERE participant_id = :participant_id RETURNING *
+             INSERT INTO bank_data (participant_id, bank_id, card_number, phone_number)
+             VALUES (:participant_id, :bank_id, :card_number, :phone_number)
+             ON CONFLICT (participant_id)
+             DO UPDATE SET
+                 bank_id = excluded.bank_id,
+                 card_number = excluded.card_number,
+                 phone_number = excluded.phone_number
+             RETURNING id, participant_id, bank_id, card_number, phone_number
              """),
         {
             "participant_id": participant_id,
@@ -67,7 +70,7 @@ def update(
             "phone_number": phone_number
         },
     )
-    return result.mappings().one_or_none()
+    return dict(result.mappings().one())
 
 
 def get_bank_data_by_participant_id(connection: Connection, participant_id: int):
@@ -87,7 +90,8 @@ def get_bank_data_by_participant_id(connection: Connection, participant_id: int)
             "participant_id": participant_id
         }
     )
-    return result.mappings().one_or_none()
+    row = result.mappings().one_or_none()
+    return dict(row) if row else None
 
 
 def get_banks(connection: Connection):
@@ -104,3 +108,24 @@ def get_banks(connection: Connection):
              """)
     )
     return result.mappings().all()
+
+
+def get_bank_by_id(connection: Connection, bank_id: int):
+    """Возвращает данные банка по его идентификатору.
+
+    :param connection: соединение с базой данных.
+    :param bank_id: идентификатор банка.
+    :return: данные банка.
+    """
+    result = connection.execute(
+        text("""
+            SELECT *
+            FROM banks
+            WHERE id = :bank_id
+        """),
+        {
+            "bank_id": bank_id
+        }
+    )
+    row = result.mappings().one_or_none()
+    return dict(row) if row else None
