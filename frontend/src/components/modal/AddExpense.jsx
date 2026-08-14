@@ -28,7 +28,6 @@ export default function AddExpense({ open, onClose }) {
     const [paidBy, setPaidBy] = useState('');
     const [payer, setPayer] = useState([]);
     const [cashbackCategory, setCashbackCategory] = useState('');
-    const [receipt] = useState(null);
 
     const [usersOptions, setUsersOptions] = useState([]);
     const [usersLoading, setUsersLoading] = useState(false);

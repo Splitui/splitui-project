@@ -12,8 +12,9 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import Cookies from 'js-cookie';
 import PersonIcon from '@mui/icons-material/Person';
-import { BANKS, FIELD_SX } from './Options';
+import { BANKS, FIELD_SX } from '../Options';
 import { useRef, useState } from 'react';
+import CashbackModal from './CashbackModal';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
@@ -33,6 +34,7 @@ export default function UserModal({
     const cardRef = useRef(null);
     const phoneRef = useRef(null);
     const [bank, setBank] = useState(1);
+    const [cashbackOpen, setCashbackOpen] = useState(false);
 
     const handleSave = async () => {
         const data = {
@@ -148,7 +150,7 @@ export default function UserModal({
                     <Button
                         fullWidth
                         variant="outlined"
-                        onClick={onClose}
+                        onClick={() => setCashbackOpen(true)}
                         className="!border-2 !border-[#463628] !text-[#463628] font-bold !rounded-xl py-3 hover:!bg-[#463628] hover:!text-[#F8F4EC]"
                     >
                         МОИ КЭШБЕКИ
@@ -168,6 +170,8 @@ export default function UserModal({
                     </Button>
                 </div>
             )}
+
+            <CashbackModal open={cashbackOpen} onClose={() => setCashbackOpen(false)} />
         </Dialog>
     );
 }

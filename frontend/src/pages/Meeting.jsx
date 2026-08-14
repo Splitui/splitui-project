@@ -11,8 +11,9 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import leave from '../components/logo/leave.svg';
+import EndMeeting from '../components/modal/EndMeeting';
 import Cookies from 'js-cookie';
-import UserModal from '../components/UserModal';
+import UserModal from '../components/modal/UserModal';
 import ExpensesTab from '../components/meetingTabs/ExpensesTab';
 import PaymentTab from '../components/meetingTabs/PaymentTab';
 import UserAvatar from '../components/UserAvatar';
@@ -238,6 +239,7 @@ const MembersDialog = ({ open, onClose, participants, meetingId }) => {
 };
 
 export default function Meeting() {
+    const [openEndMeeting, setOpenEndMeeting] = useState(false);
     const [value, setValue] = useState('expenses');
     const [openMembers, setOpenMembers] = useState(false);
     const [participants, setParticipants] = useState([]);
@@ -275,6 +277,8 @@ export default function Meeting() {
     const handleBottomButtonClick = () => {
         if (value === 'expenses') {
             setOpenAddExpense(true);
+        } else {
+            setOpenEndMeeting(true);
         }
     };
     return (
@@ -325,7 +329,7 @@ export default function Meeting() {
                             },
                         }}
                     >
-                        {value === 'expenses' ? 'Добавить расход' : 'Оплатить'}
+                        {value === 'expenses' ? 'Добавить расход' : 'Завершить встречу'}
                     </Button>
                 </div>
 
@@ -339,6 +343,15 @@ export default function Meeting() {
                 <AddExpense
                     open={openAddExpense}
                     onClose={() => setOpenAddExpense(false)}
+                />
+
+                <EndMeeting
+                    open={openEndMeeting}
+                    onClose={() => setOpenEndMeeting(false)}
+                    onConfirm={() => {
+                        alert('Встреча завершена!');
+                        setOpenEndMeeting(false);
+                    }}
                 />
             </div>
         </div>

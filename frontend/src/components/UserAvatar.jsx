@@ -1,6 +1,6 @@
 import { Avatar } from '@mui/material';
 import { useState } from 'react';
-import UserModal from './UserModal';
+import UserModal from './modal/UserModal';
 
 export default function UserAvatar({ userName, meetingId, participantId, onNameChange }) {
     const nameString = typeof userName === 'object' ? userName.nickname : userName;
