@@ -119,11 +119,14 @@ export default function AddExpense({ open, onClose }) {
         };
 
         try {
-            const res = await fetch(`${API_BASE}/meetings/${meetingUuid}/participant/${paidBy}/receipts`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
-            });
+            const res = await fetch(
+                `${API_BASE}/meetings/${meetingUuid}/participant/${paidBy}/receipts`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                },
+            );
 
             if (!res.ok) {
                 console.error('Ошибка сохранения:', await res.text());
