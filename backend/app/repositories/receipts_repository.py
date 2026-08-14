@@ -18,6 +18,7 @@ def create(
         comment: str,
         image_url: str,
         is_confirmed: bool,
+        total_amount: float | None
 ):
     """Создаёт новый чек.
 
@@ -31,12 +32,16 @@ def create(
     :param is_confirmed: признак подтверждения чека.
     :return: данные созданного чека.
     """
+
+    if total_amount is None:
+        total_amount = 0
+    
     result = connection.execute(
         text("""
              INSERT INTO receipts (meeting_id, payer_id, title, purchase_date,
-             category, comment, image_url, is_confirmed)
+             category, comment, image_url, is_confirmed,total_amount)
              VALUES (:meeting_id, :payer_id, :title, :purchase_date,
-             :category, :comment, :image_url, :is_confirmed) RETURNING *
+             :category, :comment, :image_url, :is_confirmed,:total_amount) RETURNING *
              """),
         {
             "meeting_id": meeting_id,
@@ -47,6 +52,7 @@ def create(
             "comment": comment,
             "image_url": image_url,
             "is_confirmed": is_confirmed,
+            "total_amount": float(total_amount),
         },
     )
     return result.mappings().one()
@@ -148,7 +154,12 @@ def update(
     comment: str | None,
     image_url: str | None,
     is_confirmed: bool,
+    total_amount: float | None
 ):
+
+    if total_amount is None:
+        total_amount = 0
+    
     result = connection.execute(
         text("""
             UPDATE receipts
@@ -158,7 +169,8 @@ def update(
                 category = :category,
                 comment = :comment,
                 image_url = :image_url,
-                is_confirmed = :is_confirmed
+                is_confirmed = :is_confirmed,
+                total_amount = :total_amount
             WHERE id = :receipt_id
             RETURNING *
         """),
@@ -171,6 +183,7 @@ def update(
             "comment": comment,
             "image_url": image_url,
             "is_confirmed": is_confirmed,
+            "total_amount": float(total_amount),
         },
     )
 
