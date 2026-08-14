@@ -309,6 +309,34 @@ export default function Meeting() {
                 </main>
 
                 <div className="pt-4 shrink-0">
+                    {value === 'expenses' ? (
+                        <Button
+                            variant="contained"
+                            fullWidth
+                            sx={{
+                                backgroundColor: '#DAB672',
+                                color: '#463628',
+                                fontWeight: 'bold',
+                                borderRadius: '12px',
+                                py: 2,
+                                fontSize: '1rem',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.1em',
+                                boxShadow: '0px 4px 6px rgba(0,0,0,0.1)',
+                                '&:hover': {
+                                    backgroundColor: '#c5a363',
+                                    boxShadow: '0px 6px 10px rgba(0,0,0,0.2)',
+                                },
+                            }}
+                        >
+                            ЛУЧШИЙ КЭШБЭК
+                        </Button>
+                    ) : (
+                        ''
+                    )}
+                </div>
+
+                <div className="pt-4 shrink-0">
                     <Button
                         variant="contained"
                         fullWidth
