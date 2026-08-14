@@ -7,16 +7,22 @@ import {
     TextField,
     useMediaQuery,
     useTheme,
+    MenuItem,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import Cookies from 'js-cookie';
 import PersonIcon from '@mui/icons-material/Person';
-import { FIELD_SX } from './Options';
-import { useRef } from 'react';
+import { BANKS, FIELD_SX } from './Options';
+import { useRef, useState } from 'react';
+
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
 export default function UserModal({
     open,
     onClose,
     userName,
+    meetingUUID,
+    participantId,
     onSave,
     isEditable = true,
 }) {
@@ -24,15 +30,43 @@ export default function UserModal({
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const nameRef = useRef(null);
-    const requisitesRef = useRef(null);
+    const cardRef = useRef(null);
+    const phoneRef = useRef(null);
+    const [bank, setBank] = useState(1);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         const data = {
-            name: nameRef.current.value.trim(),
-            requisites: requisitesRef.current.value.trim(),
+            nickname: nameRef.current.value.trim(),
+            card_number: cardRef.current.value.trim() || null,
+            phone_number: phoneRef.current.value.trim() || null,
+            bank_id: Number(bank),
         };
-        onSave(data);
-        onClose();
+        try {
+            const res = await fetch(
+                `${API_URL}/${meetingUUID}/participants/${participantId}`,
+                {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                },
+            );
+
+            if (res.ok) {
+                const cookie = JSON.parse(Cookies.get('meeting') || '{}');
+                Cookies.set(
+                    'meeting',
+                    JSON.stringify({ ...cookie, userName: data.nickname }),
+                );
+
+                alert('Сохранено!');
+                onSave(data.nickname);
+                onClose();
+            } else {
+                alert('Ошибка при сохранении на сервере.');
+            }
+        } catch (e) {
+            alert('Нет связи с сервером', e);
+        }
     };
 
     return (
@@ -56,7 +90,9 @@ export default function UserModal({
             </IconButton>
 
             <div className="text-center pt-4 pb-2">
-                <div className="font-extrabold text-[#463628] text-3xl">Мои данные</div>
+                <div className="font-extrabold text-[#463628] text-3xl">
+                    {isEditable ? 'Мои данные' : 'Данные участника'}
+                </div>
             </div>
 
             <div className="flex justify-center pb-3">
@@ -77,18 +113,43 @@ export default function UserModal({
                 />
                 <TextField
                     fullWidth
-                    label="Реквизиты"
-                    inputRef={requisitesRef}
+                    label="Номер карты"
+                    placeholder="0000 0000 0000 0000"
+                    inputRef={cardRef}
                     sx={FIELD_SX}
                     slotProps={{ input: { readOnly: !isEditable } }}
                 />
+                <TextField
+                    fullWidth
+                    label="Номер телефона"
+                    placeholder="+7 (999) 000-00-00"
+                    inputRef={phoneRef}
+                    sx={FIELD_SX}
+                    slotProps={{ input: { readOnly: !isEditable } }}
+                />
+
+                <TextField
+                    select
+                    fullWidth
+                    label="Выберите банк"
+                    value={bank}
+                    onChange={(e) => setBank(e.target.value)}
+                    sx={FIELD_SX}
+                    slotProps={{ input: { readOnly: !isEditable } }}
+                >
+                    {BANKS.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                            {option.label}
+                        </MenuItem>
+                    ))}
+                </TextField>
 
                 {isEditable && (
                     <Button
                         fullWidth
                         variant="outlined"
                         onClick={onClose}
-                        className="!border-2 !border-[#463628] !text-[#463628] font-bold !rounded-xl py-3 hover:!bg-[#463628]"
+                        className="!border-2 !border-[#463628] !text-[#463628] font-bold !rounded-xl py-3 hover:!bg-[#463628] hover:!text-[#F8F4EC]"
                     >
                         МОИ КЭШБЕКИ
                     </Button>

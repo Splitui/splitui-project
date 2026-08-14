@@ -11,13 +11,96 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useRef } from 'react';
+import Cookies from 'js-cookie';
+import { useNavigate } from 'react-router-dom';
+
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
 export default function JoinMeeting({ open, onClose }) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
+    const navigate = useNavigate();
 
-    const userName = useRef(null);
-    const meetingId = useRef(null);
+    const nameRef = useRef(null);
+    const meetingIdRef = useRef(null);
+
+    const cookie = open ? JSON.parse(Cookies.get('meeting') || '{}') : {};
+    const userName = cookie.userName || '';
+    const defaultMeetingId = cookie.id || '';
+
+    const handleJoin = async () => {
+        const name = nameRef.current.value.trim();
+        const meetingId = meetingIdRef.current.value.trim();
+
+        if (!name || !meetingId) {
+            alert('Введите имя и ID пользователя');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/meetings/${meetingId}`);
+            if (!response.ok) {
+                alert('Комната с таким id не найдена');
+                return;
+            }
+            const meetingData = await response.json();
+
+            let participantId;
+            let isCreator = false;
+            if (cookie.id === meetingId && cookie.participantId) {
+                participantId = cookie.participantId;
+                isCreator = cookie.isCreator;
+
+                if (name !== userName) {
+                    await fetch(`${API_URL}/${meetingId}/participants/${participantId}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ nickname: name }),
+                    });
+                }
+            } else {
+                const participantsResponse = await fetch(
+                    `${API_URL}/${meetingId}/participants?limit=50&offset=0`,
+                );
+                const participantsList = participantsResponse.ok
+                    ? await participantsResponse.json()
+                    : [];
+
+                const existingUser = participantsList.find((p) => p.nickname === name);
+
+                if (existingUser) {
+                    participantId = existingUser.id;
+                    isCreator =
+                        existingUser.is_creator === 1 || existingUser.isCreator === true;
+                } else {
+                    alert('Участник с таким именем не найден в этой комнате!');
+                    return;
+                }
+            }
+
+            const meetingDate = meetingData.start_date
+                ? meetingData.start_date.substring(0, 10)
+                : '';
+
+            Cookies.set(
+                'meeting',
+                JSON.stringify({
+                    id: meetingId,
+                    participantId: participantId,
+                    userName: name,
+                    isCreator: isCreator,
+                    name: meetingData.title,
+                    date: meetingDate,
+                }),
+            );
+
+            onClose();
+            navigate(`/meetings/${meetingId}`);
+        } catch (e) {
+            console.error('Ошибочка', e);
+            alert('Связи с сервером нема');
+        }
+    };
 
     return (
         <Dialog
@@ -71,7 +154,8 @@ export default function JoinMeeting({ open, onClose }) {
                 <TextField
                     fullWidth
                     label="Твое имя"
-                    inputRef={userName}
+                    defaultValue={userName}
+                    inputRef={nameRef}
                     sx={{
                         '& .MuiOutlinedInput-root': {
                             borderRadius: '12px',
@@ -87,7 +171,8 @@ export default function JoinMeeting({ open, onClose }) {
                 <TextField
                     fullWidth
                     label="ID комнаты"
-                    inputRef={meetingId}
+                    defaultValue={defaultMeetingId}
+                    inputRef={meetingIdRef}
                     sx={{
                         '& .MuiOutlinedInput-root': {
                             borderRadius: '12px',
@@ -106,7 +191,7 @@ export default function JoinMeeting({ open, onClose }) {
                 <Button
                     fullWidth
                     variant="contained"
-                    onClick={onClose}
+                    onClick={handleJoin}
                     sx={{
                         backgroundColor: '#463628',
                         color: '#F8F4EC',

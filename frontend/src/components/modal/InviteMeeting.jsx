@@ -16,19 +16,22 @@ export default function InviteMeeting({ open, onClose, meetingId, onJoined }) {
             const meetingData = await meetingRes.json();
 
             const res = await fetch(`${API_URL}/${meetingId}/participants`, {
-                method: `Post`,
+                method: `POST`,
                 headers: { 'Content-type': 'application/json' },
                 body: JSON.stringify({ nickname: name }),
             });
             if (res.ok) {
+                const userData = await res.json();
                 const meetingDate = meetingData.start_date
-                    ? meetingData.start_date.split(' ')[0]
+                    ? meetingData.start_date.substring(0, 10)
                     : '';
                 Cookies.set(
                     'meeting',
                     JSON.stringify({
                         id: meetingId,
-                        admin: name,
+                        participantId: userData.id,
+                        userName: name,
+                        isCreator: false,
                         name: meetingData.title,
                         date: meetingDate,
                     }),

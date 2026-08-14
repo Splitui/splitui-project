@@ -2,13 +2,12 @@ import { Avatar } from '@mui/material';
 import { useState } from 'react';
 import UserModal from './UserModal';
 
-export default function UserAvatar({ userName }) {
-    const firstLetterUserName = userName?.charAt(0).toUpperCase() || 'Ю';
-    const [isOpen, setIsOpen] = useState(false);
+export default function UserAvatar({ userName, meetingId, participantId, onNameChange }) {
+    const nameString = typeof userName === 'object' ? userName.nickname : userName;
+    const name = nameString || 'Юзер';
 
-    const handleSave = (data) => {
-        console.log('Данные из аватара:', data);
-    };
+    const firstLetterUserName = name.charAt(0).toUpperCase();
+    const [isOpen, setIsOpen] = useState(false);
 
     return (
         <>
@@ -22,8 +21,10 @@ export default function UserAvatar({ userName }) {
             <UserModal
                 open={isOpen}
                 onClose={() => setIsOpen(false)}
-                userName={userName}
-                onSave={handleSave}
+                userName={name}
+                meetingUUID={meetingId}
+                participantId={participantId}
+                onSave={onNameChange}
             />
         </>
     );
