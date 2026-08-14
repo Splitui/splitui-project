@@ -20,7 +20,15 @@ import AddExpense from '../components/modal/AddExpense';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
-const MeetingHeader = ({ navigate, name, date, userName }) => (
+const MeetingHeader = ({
+    navigate,
+    name,
+    date,
+    userName,
+    meetingId,
+    participantId,
+    onNameChange,
+}) => (
     <header className="flex justify-between items-start mb-6 shrink-0">
         <IconButton onClick={() => navigate('/')}>
             <img src={leave} alt="leave" className="w-12 h-12 object-contain" />
@@ -29,7 +37,12 @@ const MeetingHeader = ({ navigate, name, date, userName }) => (
             <h1 className="font-bold text-xl text-[#4A3F35] leading-tight">{name}</h1>
             <p className="text-sm text-[#4A3F35] opacity-70">{date}</p>
         </div>
-        <UserAvatar userName={userName} />
+        <UserAvatar
+            userName={userName}
+            meetingId={meetingId}
+            participantId={participantId}
+            onNameChange={onNameChange}
+        />
     </header>
 );
 
@@ -130,13 +143,14 @@ const MembersButton = ({ onClick, participants }) => (
 
 const MembersDialog = ({ open, onClose, participants, meetingId }) => {
     const [editOpen, setEditOpen] = useState(false);
-    const [selectedName, setSelectedName] = useState('');
+    const [selectedUser, setSelectedUser] = useState(null);
 
     const meetingCookie = JSON.parse(Cookies.get('meeting') || '{}');
-    const myName = meetingCookie.admin || '';
+    const myName = meetingCookie.userName || '';
+    const myParticipantId = meetingCookie.participantId;
 
     const handleUserClick = (nickname) => {
-        setSelectedName(nickname);
+        setSelectedUser(nickname);
         setEditOpen(true);
     };
 
@@ -213,9 +227,11 @@ const MembersDialog = ({ open, onClose, participants, meetingId }) => {
             <UserModal
                 open={editOpen}
                 onClose={() => setEditOpen(false)}
-                userName={selectedName}
+                userName={selectedUser}
+                meetingUUID={meetingId}
+                participantId={selectedUser?.id || myParticipantId}
                 onSave={handleSaveParticipant}
-                isEditable={selectedName === myName}
+                isEditable={selectedUser === myName}
             />
         </>
     );
@@ -232,7 +248,8 @@ export default function Meeting() {
     const meetingName = meeting.name || 'Встреча сплитуев';
     const rawDate = meeting.date || '';
     const meetingDate = rawDate ? rawDate.split('-').reverse().join('.') : '';
-    const userName = meeting.admin || 'Юзер';
+    const [currentName, setCurrentName] = useState(meeting.userName || 'Юзер');
+    const participantId = meeting.participantId;
 
     const handleChange = (_, newValue) => setValue(newValue);
 
@@ -267,7 +284,10 @@ export default function Meeting() {
                     navigate={navigate}
                     name={meetingName}
                     date={meetingDate}
-                    userName={userName}
+                    userName={currentName}
+                    meetingId={meetingId}
+                    participantId={participantId}
+                    onNameChange={(newName) => setCurrentName(newName)}
                 />
 
                 <MeetingTabs value={value} onChange={handleChange} />

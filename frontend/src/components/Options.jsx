@@ -35,3 +35,10 @@ export const CASHBACK_OPTIONS = [
     { value: 'food', label: 'Продукты' },
     { value: 'travel', label: 'Путешествия' },
 ];
+
+export const BANKS = [
+    { value: 1, label: 'Сбербанк' },
+    { value: 2, label: 'Т-Банк' },
+    { value: 3, label: 'Альфа-Банк' },
+    { value: 4, label: 'ВТБ' },
+];

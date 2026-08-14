@@ -23,12 +23,12 @@ export default function AddMeeting({ open, onClose }) {
 
     const nameRef = useRef(null);
     const dateRef = useRef(null);
-    const adminRef = useRef(null);
+    const userRef = useRef(null);
 
     const handleCreate = async () => {
         const meetingName = nameRef.current.value.trim();
         const rawDate = dateRef.current.value.trim();
-        const adminName = adminRef.current.value.trim();
+        const userName = userRef.current.value.trim();
 
         try {
             const res = await fetch(`${API_URL}/meetings`, {
@@ -38,8 +38,8 @@ export default function AddMeeting({ open, onClose }) {
                 },
                 body: JSON.stringify({
                     title: meetingName,
-                    meeting_date: new Date(rawDate).toISOString(),
-                    creator_nickname: adminName,
+                    start_date: new Date(rawDate).toISOString(),
+                    creator_nickname: userName,
                 }),
             });
             if (!res.ok) {
@@ -48,12 +48,15 @@ export default function AddMeeting({ open, onClose }) {
             }
             const data = await res.json();
             const meetingId = data.uuid;
+            const creatorId = data.participants?.[0]?.id || data.id;
             Cookies.set(
                 'meeting',
                 JSON.stringify({
                     name: meetingName,
                     date: rawDate,
-                    admin: adminName,
+                    participantId: creatorId,
+                    userName: userName,
+                    isCreator: true,
                     id: meetingId,
                 }),
             );
@@ -150,7 +153,7 @@ export default function AddMeeting({ open, onClose }) {
                 <TextField
                     fullWidth
                     label="Имя создателя"
-                    inputRef={adminRef}
+                    inputRef={userRef}
                     sx={{
                         '& .MuiOutlinedInput-root': {
                             borderRadius: '12px',
