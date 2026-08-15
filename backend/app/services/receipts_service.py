@@ -6,12 +6,26 @@ from fastapi import HTTPException
 from sqlalchemy.engine import Connection
 
 from app.db.dependencies import transaction
-from app.repositories import items_participants_repository, receipt_items_repository, receipts_repository, meetings_repository,participants_repository
-from app.schemas.receipts import FullReceiptCreate
+from app.repositories import (
+    items_participants_repository,
+    meetings_repository,
+    participants_repository,
+    receipt_items_repository,
+    receipts_repository,
+)
+from app.schemas.receipts import FullReceiptParticipantCreate
+from app.services.meetings_service import get_meeting_or_error
+from app.services.receipt_items_service import sync_receipt_items
+from app.services.receipt_validators import (
+    check_missing_and_return_error,
+    validate_receipt_belongs_to_meeting,
+    validate_unique,
+)
 
 
 def get_receipts_from_meeting(connection: Connection, num_limit: int, num_offset: int, meeting_uuid: UUID):
-    """Возвращает данные чеков указанной встречи.
+    """
+    Возвращает данные чеков указанной встречи.
 
     :param connection: соединение с базой данных.
     :param meeting_uuid: UUID встречи.
@@ -20,6 +34,25 @@ def get_receipts_from_meeting(connection: Connection, num_limit: int, num_offset
     return receipts_repository.get_all_by_meeting_uuid(connection,num_limit,num_offset,meeting_uuid)
 
 def get_receipt_full(connection: Connection,meeting_uuid: UUID, receipt_id: int, num_limit: int, num_offset: int):
+
+    """
+    Возвращает чек с позициями, участниками и долгами.
+
+    Проверяет существование встречи и принадлежность чека указанной
+    встрече. Для каждой позиции возвращает связанных с ней участников
+    и распределённые суммы. Также рассчитывает общий долг каждого
+    участника по всем позициям чека, исключая плательщика.
+
+    Ограничение и смещение применяются только к списку позиций.
+    Долги рассчитываются по всем позициям чека независимо от пагинации.
+
+    :param connection: соединение с базой данных.
+    :param meeting_uuid: UUID встречи.
+    :param receipt_id: идентификатор чека.
+    :param num_limit: максимальное количество позиций в ответе.
+    :param num_offset: смещение относительно начала списка позиций.
+    :return: данные чека, позиции с участниками и долги по чеку.
+    """
 
     meeting = meetings_repository.get_by_uuid(connection,meeting_uuid) 
 
@@ -71,119 +104,55 @@ def get_receipt_full(connection: Connection,meeting_uuid: UUID, receipt_id: int,
             "participants": participants,
         })
 
+
+    participant_amounts = (
+        items_participants_repository.get_amounts_by_receipt_id(
+            connection,
+            receipt_id,
+            receipt["payer_id"]
+        )
+    )
+
     return {
         **receipt,
         "items": result_items,
+        "participant_amounts": participant_amounts
     }
 
-
-def check_item_data(item):
-    participants = [
-        participant.participant_id
-        for participant in item.participants
-        ]
-
-    unique_participants = set(participants)
-
-    if len(unique_participants) != len(participants):
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "message": (
-                    "Один участник не может быть указан "
-                    "несколько раз в одной позиции"
-                ),
-                "item": item.title
-            },
-        )
-
-    quantity = sum(
-        participant.quantity
-        for participant in item.participants
-    )
-
-    if quantity != item.quantity:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "message": (
-                    "Распределённое количество не совпадает "
-                    "с количеством позиции"
-                ),
-                "item": item.title,
-                "item_quantity": item.quantity,
-                "all_quantity": quantity,
-            },
-        )
-
-def create_or_update_items(connection,receipt_id,item_data):
-    if item_data.id is None:
-        receipt_item = receipt_items_repository.create(
-            connection=connection,
-            receipt_id=receipt_id,
-            title=item_data.title,
-            quantity=item_data.quantity,
-            unit_price=item_data.unit_price,
-        )
-        
-        item_participants = (
-            items_participants_repository.create(
-                connection=connection,
-                receipt_item_id=receipt_item["id"],
-                participants=item_data.participants,
-                unit_price=item_data.unit_price,
-            )
-        )
-    else:
-        receipt_item = receipt_items_repository.update(
-            connection=connection,
-            receipt_id=receipt_id,
-            item_id=item_data.id,
-            title=item_data.title,
-            quantity=item_data.quantity,
-            unit_price=item_data.unit_price,
-        )
-
-        item_participants = (
-            items_participants_repository.replace_for_item(
-                connection=connection,
-                receipt_item_id=item_data.id,
-                participants=item_data.participants,
-                unit_price=item_data.unit_price,
-            )
-        )
-
-    return receipt_item, item_participants
-
 @transaction
-def create_or_update_receipt_in_meeting(connection: Connection, meeting_uuid: UUID, participant_id: int, data: FullReceiptCreate):
-    """Создаёт чек.
+def create_or_update_receipt_in_meeting(connection,meeting_uuid,participant_id,data):
+
+    """
+    Создаёт или обновляет чек указанной встречи.
+
+    Проверяет существование встречи, права участника на изменение чека
+    и принадлежность переданных участников встрече. Итоговая сумма
+    рассчитывается по позициям либо берётся из total_amount, если позиции
+    отсутствуют.
+
+    При создании сохраняет новый чек. При обновлении проверяет, что чек
+    принадлежит указанной встрече, и обновляет его данные. После этого
+    синхронизирует позиции, связи с участниками и их доли. Если позиции
+    отсутствуют, создаётся одна фиктивная позиция на полную сумму чека.
 
     :param connection: соединение с базой данных.
-    :param meeting_uuid: UUID встречи.
-    :param data: данные для создания чека.
-    :return: данные созданного чека.
+    :param meeting_uuid: UUID встречи, в которой находится чек.
+    :param participant_id: идентификатор участника, выполняющего запрос.
+    :param data: данные для создания или обновления чека.
+    :return: данные созданного или обновлённого чека и его позиций.
     """
-    meeting = meetings_repository.get_by_uuid(
-        connection,
-        meeting_uuid,
-    )
 
-    if meeting is None:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "message": "Неправильный uuid встречи",
-            }
+    meeting = get_meeting_or_error(
+            connection,
+            meeting_uuid,
         )
 
     creator = participants_repository.get_meeting_creator(connection,meeting_uuid)
-
     participants = participants_repository.get_all(connection, meeting["id"])
 
     if (
-    participant_id != data.payer_id
-    and participant_id != creator["id"]
+        participant_id != data.payer_id
+        and participant_id != creator["id"]
     ):
         raise HTTPException(
             status_code=403,
@@ -192,37 +161,54 @@ def create_or_update_receipt_in_meeting(connection: Connection, meeting_uuid: UU
             ),
         )
 
-    meeting_participant = {
+    if data.participants:
+        split_participants = data.participants
+    else:
+        split_participants = [
+            FullReceiptParticipantCreate(
+                participant_id=participant["id"],
+            )
+            for participant in participants
+        ]
+
+    meeting_participants = {
         participant["id"]
         for participant in participants
     }
-    
-    data_participant = {
+
+    data_participants = {
         data.payer_id,
         *(
             participant.participant_id
-            for item in data.items
-            for participant in item.participants
+            for participant in data.participants
         ),
     }
 
-    missing_participant = (
-        data_participant - meeting_participant
-    )
+    check_missing_and_return_error(data_participants,meeting_participants,
+                                   "Некоторые участники не относятся к указанной встрече")
 
-    if missing_participant:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "message": "Некоторые участники не относятся к указанной встрече",
-                "participant_ids": sorted(
-                    missing_participant
-                ),
-            }
+    if data.items is not None:
+        for item in data.items:
+                participant_ids = [
+                    participant.participant_id
+                    for participant in item.participants
+                ]
+                validate_unique(participant_ids,item.title,
+                "Один участник не может быть указан несколько раз в одной позиции")
+
+    total_amount = data.total_amount
+    
+    if data.items is not None:
+        total_amount = sum(
+            item.quantity * item.unit_price
+            for item in data.items
         )
 
-    for item in data.items:
-        check_item_data(item)
+    if total_amount is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Нет информации о стоимости",
+        )
 
     if data.id is None:
         receipt = receipts_repository.create(
@@ -235,6 +221,7 @@ def create_or_update_receipt_in_meeting(connection: Connection, meeting_uuid: UU
             data.comment,
             data.image_url,
             data.is_confirmed,
+            total_amount
         )
 
         existing_items = set()
@@ -247,11 +234,7 @@ def create_or_update_receipt_in_meeting(connection: Connection, meeting_uuid: UU
             )
         )
 
-        if existing_receipt is None or existing_receipt["meeting_id"] != meeting["id"]:
-            raise HTTPException(
-                status_code=404,
-                detail="Чек не найден в указанной встрече",
-            )
+        validate_receipt_belongs_to_meeting(existing_receipt,meeting["id"])
 
         receipt = receipts_repository.update(
             connection=connection,
@@ -263,6 +246,7 @@ def create_or_update_receipt_in_meeting(connection: Connection, meeting_uuid: UU
             comment=data.comment,
             image_url=data.image_url,
             is_confirmed=data.is_confirmed,
+            total_amount=total_amount,
         )
 
         items = (
@@ -277,73 +261,25 @@ def create_or_update_receipt_in_meeting(connection: Connection, meeting_uuid: UU
             for item in items
         }
 
-    incoming_items = [
-        item.id
-        for item in data.items
-        if item.id is not None
-    ]
+    result_items = sync_receipt_items(connection,data.items,existing_items,receipt["id"],
+                                total_amount,split_participants)
 
-    unique_items = set(incoming_items)
-
-    if len(incoming_items) != len(unique_items):
-        raise HTTPException(
-            status_code=400,
-            detail="ID позиций не должны повторяться",
+    participant_amounts = (
+        items_participants_repository.get_amounts_by_receipt_id(
+            connection,
+            receipt["id"],
+            data.payer_id
         )
-
-    unknown_items = (
-        unique_items - existing_items
-    )
-
-    if unknown_items:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "message": (
-                    "Некоторые позиции не принадлежат чеку"
-                ),
-                "items": sorted(unknown_items),
-            },
-        )
-
-    deleted_item = (
-        existing_items - unique_items
-    )
-
-    receipt_items_repository.delete_by_ids(
-        connection,
-        receipt["id"],
-        list(deleted_item),
-    )
-
-    result_items = []
-    total_amount = 0
-
-    for item_data in data.items:
-        receipt_item,item_participants = create_or_update_items(connection,receipt["id"],item_data)
-
-        total_amount += item_data.unit_price * item_data.quantity
-        result_items.append(
-            {
-                "item": receipt_item,
-                "participants": item_participants,
-            }
-        )
-
-    receipts_repository.update_total_amount(
-        connection,
-        receipt["id"],
-        total_amount,
     )
 
     return {
-        "receipt": {
-            **receipt,
-            "total_amount": total_amount,
-        },
-        "items": result_items,
-    }
-
+            "receipt": {
+                **receipt,
+                "total_amount": total_amount,
+            },
+            "items": result_items,
+            "participant_amounts": participant_amounts,
+        }
 
 @transaction
 def delete_receipt(connection: Connection, meeting_uuid: UUID, participant_id: int, receipt_id: int):
