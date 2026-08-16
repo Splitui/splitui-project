@@ -267,3 +267,24 @@ def get_participant_spend(
     )
 
     return result.scalar_one_or_none()
+
+
+def get_payers_without_bank_data(connection: Connection, meeting_id: int) -> list[dict]:
+    """Возвращает данные плательщиков, которые не указали банковские реквизиты.
+
+    :param connection: соединение с базой данных.
+    :param meeting_id: идентификатор встречи.
+    :return: данные плательщиков без банковских реквизитов.
+    """
+    result = connection.execute(
+        text("""
+             SELECT DISTINCT p.id, p.nickname
+             FROM receipts r
+                      JOIN participants p ON p.id = r.payer_id
+                      LEFT JOIN bank_data bd ON bd.participant_id = p.id
+             WHERE r.meeting_id = :meeting_id
+               AND bd.id IS NULL
+             """),
+        {"meeting_id": meeting_id}
+    )
+    return [dict(row) for row in result.mappings().all()]

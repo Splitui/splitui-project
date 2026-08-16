@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, Field, model_validator
 
+from app.schemas.utils.validators import CardNumber, PhoneNumber
+
 
 class BankDataCreate(BaseModel):
     """Схема для создания банковских реквизитов участника встречи.
@@ -11,9 +13,9 @@ class BankDataCreate(BaseModel):
     :ivar phone_number: номер телефона.
     """
 
-    bank_id: int
-    card_number: str | None = Field(None, max_length=25)
-    phone_number: str | None = Field(None, max_length=15)
+    bank_id: int = Field(ge=1)
+    card_number: CardNumber = None
+    phone_number: PhoneNumber = None
 
     @model_validator(mode="after")
     def validate_bank_data(self):
