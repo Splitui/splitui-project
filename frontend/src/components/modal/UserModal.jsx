@@ -12,15 +12,16 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import Cookies from 'js-cookie';
 import PersonIcon from '@mui/icons-material/Person';
-import { BANKS, FIELD_SX } from './Options';
-import { useRef, useState } from 'react';
+import { BANKS, FIELD_SX } from '../Options';
+import { useState } from 'react';
+import CashbackModal from './CashbackModal';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
 export default function UserModal({
     open,
     onClose,
-    userName,
+    user,
     meetingUUID,
     participantId,
     onSave,
@@ -29,43 +30,75 @@ export default function UserModal({
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-    const nameRef = useRef(null);
-    const cardRef = useRef(null);
-    const phoneRef = useRef(null);
+    const [nickname, setNickname] = useState('');
+    const [cardNumber, setCardNumber] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
     const [bank, setBank] = useState(1);
+    const [cashbackOpen, setCashbackOpen] = useState(false);
+
+    const [prevKey, setPrevKey] = useState(null);
+    const currentKey = open ? user?.id || 'open' : null;
+
+    if (currentKey !== prevKey) {
+        setPrevKey(currentKey);
+        if (open && user) {
+            setNickname(user.nickname || '');
+            setCardNumber(user.card_number || '');
+            setPhoneNumber(user.phone_number || '');
+            setBank(user.bank_id || 1);
+        }
+    }
 
     const handleSave = async () => {
-        const data = {
-            nickname: nameRef.current.value.trim(),
-            card_number: cardRef.current.value.trim() || null,
-            phone_number: phoneRef.current.value.trim() || null,
+        const allData = {
+            nickname: nickname.trim(),
+            card_number: cardNumber.trim() || null,
+            phone_number: phoneNumber.trim() || null,
             bank_id: Number(bank),
         };
+
         try {
             const res = await fetch(
-                `${API_URL}/${meetingUUID}/participants/${participantId}`,
+                `${API_URL}/meetings/${meetingUUID}/participants/${participantId}`,
                 {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data),
+                    body: JSON.stringify(allData),
                 },
             );
 
             if (res.ok) {
                 const cookie = JSON.parse(Cookies.get('meeting') || '{}');
-                Cookies.set(
-                    'meeting',
-                    JSON.stringify({ ...cookie, userName: data.nickname }),
-                );
+                if (cookie.participantId === participantId) {
+                    Cookies.set(
+                        'meeting',
+                        JSON.stringify({
+                            id: cookie.id,
+                            participantId: cookie.participantId,
+                            userName: allData.nickname,
+                            card_number: allData.card_number,
+                            phone_number: allData.phone_number,
+                            bank_id: allData.bank_id,
+                            isCreator: cookie.isCreator,
+                            name: cookie.name,
+                            date: cookie.date,
+                        }),
+                    );
+                }
 
                 alert('Сохранено!');
-                onSave(data.nickname);
+                onSave(allData);
                 onClose();
             } else {
-                alert('Ошибка при сохранении на сервере.');
+                const errorData = await res.json();
+                console.error('Ошибка валидации:', errorData);
+                alert(
+                    'Ошибка при сохранении. Проверьте правильность полей (карта/телефон).',
+                );
             }
         } catch (e) {
-            alert('Нет связи с сервером', e);
+            alert('Нет связи с сервером');
+            console.error(e);
         }
     };
 
@@ -103,11 +136,10 @@ export default function UserModal({
 
             <DialogContent className="flex flex-col gap-6 py-6">
                 <TextField
-                    key={userName}
                     fullWidth
                     label="Имя пользователя"
-                    defaultValue={userName}
-                    inputRef={nameRef}
+                    value={nickname}
+                    onChange={(e) => setNickname(e.target.value)}
                     sx={FIELD_SX}
                     slotProps={{ input: { readOnly: !isEditable } }}
                 />
@@ -115,7 +147,8 @@ export default function UserModal({
                     fullWidth
                     label="Номер карты"
                     placeholder="0000 0000 0000 0000"
-                    inputRef={cardRef}
+                    value={cardNumber}
+                    onChange={(e) => setCardNumber(e.target.value)}
                     sx={FIELD_SX}
                     slotProps={{ input: { readOnly: !isEditable } }}
                 />
@@ -123,7 +156,8 @@ export default function UserModal({
                     fullWidth
                     label="Номер телефона"
                     placeholder="+7 (999) 000-00-00"
-                    inputRef={phoneRef}
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
                     sx={FIELD_SX}
                     slotProps={{ input: { readOnly: !isEditable } }}
                 />
@@ -148,7 +182,7 @@ export default function UserModal({
                     <Button
                         fullWidth
                         variant="outlined"
-                        onClick={onClose}
+                        onClick={() => setCashbackOpen(true)}
                         className="!border-2 !border-[#463628] !text-[#463628] font-bold !rounded-xl py-3 hover:!bg-[#463628] hover:!text-[#F8F4EC]"
                     >
                         МОИ КЭШБЕКИ
@@ -168,6 +202,8 @@ export default function UserModal({
                     </Button>
                 </div>
             )}
+
+            <CashbackModal open={cashbackOpen} onClose={() => setCashbackOpen(false)} />
         </Dialog>
     );
 }

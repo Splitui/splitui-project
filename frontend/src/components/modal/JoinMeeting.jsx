@@ -52,15 +52,18 @@ export default function JoinMeeting({ open, onClose }) {
                 isCreator = cookie.isCreator;
 
                 if (name !== userName) {
-                    await fetch(`${API_URL}/${meetingId}/participants/${participantId}`, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ nickname: name }),
-                    });
+                    await fetch(
+                        `${API_URL}/meetings/${meetingId}/participants/${participantId}`,
+                        {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ nickname: name }),
+                        },
+                    );
                 }
             } else {
                 const participantsResponse = await fetch(
-                    `${API_URL}/${meetingId}/participants?limit=50&offset=0`,
+                    `${API_URL}/meetings/${meetingId}/participants?limit=50&offset=0`,
                 );
                 const participantsList = participantsResponse.ok
                     ? await participantsResponse.json()

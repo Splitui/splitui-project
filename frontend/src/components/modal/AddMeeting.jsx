@@ -48,7 +48,7 @@ export default function AddMeeting({ open, onClose }) {
             }
             const data = await res.json();
             const meetingId = data.uuid;
-            const creatorId = data.participants?.[0]?.id || data.id;
+            const creatorId = data.meeting_creator?.id;
             Cookies.set(
                 'meeting',
                 JSON.stringify({
