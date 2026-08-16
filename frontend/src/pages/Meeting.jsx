@@ -9,11 +9,13 @@ import {
     Dialog,
     DialogContent,
 } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
 import { useNavigate } from 'react-router-dom';
 import leave from '../components/logo/leave.svg';
 import EndMeeting from '../components/modal/EndMeeting';
 import Cookies from 'js-cookie';
 import UserModal from '../components/modal/UserModal';
+import EditMeeting from '../components/modal/EditMeeting';
 import ExpensesTab from '../components/meetingTabs/ExpensesTab';
 import PaymentTab from '../components/meetingTabs/PaymentTab';
 import UserAvatar from '../components/UserAvatar';
@@ -29,14 +31,30 @@ const MeetingHeader = ({
     meetingId,
     participantId,
     onSave,
+    onEditClick,
+    isCreator,
 }) => (
     <header className="flex justify-between items-start mb-6 shrink-0">
         <IconButton onClick={() => navigate('/')}>
             <img src={leave} alt="leave" className="w-12 h-12 object-contain" />
         </IconButton>
-        <div className="text-center flex-1 mx-2">
-            <h1 className="font-bold text-xl text-[#4A3F35] leading-tight">{name}</h1>
-            <p className="text-sm text-[#4A3F35] opacity-70">{date}</p>
+        <div className="flex-1 flex justify-center items-center gap-1 ml-4">
+            <div className="text-center">
+                <h1 className="font-bold text-xl text-[#4A3F35] leading-tight">{name}</h1>
+                <p className="text-sm text-[#4A3F35] opacity-70">
+                    {date ? date.split('-').reverse().join('.') : ''}
+                </p>
+            </div>
+
+            {isCreator && (
+                <IconButton
+                    size="small"
+                    onClick={onEditClick}
+                    sx={{ color: '#4A3F35', opacity: 0.6, mt: -1 }}
+                >
+                    <EditIcon fontSize="small" />
+                </IconButton>
+            )}
         </div>
         <UserAvatar
             user={user}
@@ -244,10 +262,13 @@ export default function Meeting() {
     const navigate = useNavigate();
     const meeting = JSON.parse(Cookies.get('meeting') || '{}');
     const meetingId = meeting.id;
-    const meetingName = meeting.name || 'Встреча сплитуев';
-    const rawDate = meeting.date || '';
-    const meetingDate = rawDate ? rawDate.split('-').reverse().join('.') : '';
     const participantId = meeting.participantId;
+
+    const [currentMeetingName, setCurrentMeetingName] = useState(
+        meeting.name || 'Встреча сплитуев',
+    );
+    const [currentMeetingDate, setCurrentMeetingDate] = useState(meeting.date || '');
+    const [openEditMeeting, setOpenEditMeeting] = useState(false);
 
     const currentUser = participants.find((p) => p.id === participantId) || {
         nickname: meeting.userName || `Юзер`,
@@ -337,11 +358,13 @@ export default function Meeting() {
             <div className="w-full max-w-4xl flex flex-col h-full p-4 md:p-8">
                 <MeetingHeader
                     navigate={navigate}
-                    name={meetingName}
-                    date={meetingDate}
+                    name={currentMeetingName}
+                    date={currentMeetingDate}
                     user={currentUser}
                     meetingId={meetingId}
                     participantId={participantId}
+                    isCreator={meeting.isCreator}
+                    onEditClick={() => setOpenEditMeeting(true)}
                     onSave={(data) => handleUpdateParticipant(data, participantId)}
                 />
 
@@ -433,6 +456,18 @@ export default function Meeting() {
                     onConfirm={() => {
                         alert('Встреча завершена!');
                         setOpenEndMeeting(false);
+                    }}
+                />
+
+                <EditMeeting
+                    open={openEditMeeting}
+                    onClose={() => setOpenEditMeeting(false)}
+                    meetingId={meetingId}
+                    meetingName={currentMeetingName}
+                    meetingDate={currentMeetingDate}
+                    onSave={(newName, newDate) => {
+                        setCurrentMeetingName(newName);
+                        setCurrentMeetingDate(newDate);
                     }}
                 />
             </div>
