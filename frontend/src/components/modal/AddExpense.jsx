@@ -9,11 +9,14 @@ import {
     MenuItem,
     Typography,
     Box,
+    Switch,
+    FormControlLabel,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useEffect, useRef, useState } from 'react';
 import Cookies from 'js-cookie';
 import { CASHBACK_OPTIONS, FIELD_SX, MENU_PROPS } from '../Options';
+import Receipt from './Receipt';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 const API_BASE = API_URL;
@@ -33,6 +36,9 @@ export default function AddExpense({ open, onClose }) {
     const [usersOptions, setUsersOptions] = useState([]);
     const [usersLoading, setUsersLoading] = useState(false);
     const [usersError, setUsersError] = useState(null);
+    const [singleItem, setSingleItem] = useState(true);
+    const [receiptOpen, setReceiptOpen] = useState(false);
+    const [receiptItems, setReceiptItems] = useState([]);
 
     useEffect(() => {
         if (!open) return;
@@ -51,7 +57,7 @@ export default function AddExpense({ open, onClose }) {
             setUsersError(null);
             try {
                 const response = await fetch(
-                    `${API_BASE}/${meetingUuid}/participants?limit=100&offset=0`,
+                    `${API_BASE}/meetings/${meetingUuid}/participants?limit=100&offset=0`,
                     { signal: controller.signal },
                 );
 
@@ -81,7 +87,7 @@ export default function AddExpense({ open, onClose }) {
         return () => controller.abort();
     }, [open]);
 
-    const handleReceiptView = () => {};
+    const handleReceiptView = () => setReceiptOpen(true);
 
     const handleReceiptUpload = () => {};
 
@@ -95,8 +101,43 @@ export default function AddExpense({ open, onClose }) {
         if (!paidBy) {
             return;
         }
+        if (!singleItem && receiptItems.length === 0) {
+            setUsersError('Добавьте хотя бы одну позицию в чек');
+            return;
+        }
         const expenseName = nameRef.current.value.trim();
         const amount = amountRef.current ? parseFloat(amountRef.current.value) || 0 : 0;
+
+        const items = singleItem
+            ? [
+                  {
+                      title: expenseName,
+                      unit_price: amount,
+                      quantity: 1,
+                      participants: payer.map((id) => ({
+                          participant_id: id,
+                          quantity: 1,
+                      })),
+                  },
+              ]
+            : receiptItems.map((it) => ({
+                  title: it.title,
+                  unit_price: it.unitPrice,
+                  quantity: it.quantity,
+                  participants: it.participantIds.map((id) => ({
+                      participant_id: id,
+                      quantity: 1,
+                  })),
+              }));
+
+        const totalAmount = items.reduce(
+            (sum, it) => sum + it.unit_price * it.quantity,
+            0,
+        );
+
+        const allParticipantIds = singleItem
+            ? payer
+            : [...new Set(receiptItems.flatMap((it) => it.participantIds))];
 
         const body = {
             payer_id: paidBy,
@@ -106,25 +147,22 @@ export default function AddExpense({ open, onClose }) {
             comment: '',
             image_url: null,
             is_confirmed: false,
-            items: [
-                {
-                    title: expenseName,
-                    unit_price: amount,
-                    quantity: 1,
-                    participants: payer.map((id) => ({
-                        participant_id: id,
-                        quantity: 1,
-                    })),
-                },
-            ],
+            total_amount: totalAmount,
+            participants: allParticipantIds.map((id) => ({
+                participant_id: id,
+            })),
+            items,
         };
 
         try {
-            const res = await fetch(`${API_BASE}/meetings/${meetingUuid}/participant/${paidBy}/receipts`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
-            });
+            const res = await fetch(
+                `${API_BASE}/meetings/${meetingUuid}/participant/${paidBy}/receipts`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                },
+            );
 
             if (!res.ok) {
                 console.error('Ошибка сохранения:', await res.text());
@@ -132,7 +170,6 @@ export default function AddExpense({ open, onClose }) {
             }
 
             const data = await res.json();
-            console.log('Чек создан:', data);
             onClose();
         } catch (e) {
             console.error('Сеть недоступна:', e);
@@ -152,6 +189,12 @@ export default function AddExpense({ open, onClose }) {
                         backgroundColor: '#EAE0CD',
                         p: { xs: 2, sm: 3 },
                         borderRadius: fullScreen ? 0 : '20px',
+                        visibility: receiptOpen ? 'hidden' : 'visible',
+                    },
+                },
+                backdrop: {
+                    sx: {
+                        visibility: receiptOpen ? 'hidden' : 'visible',
                     },
                 },
             }}
@@ -185,13 +228,15 @@ export default function AddExpense({ open, onClose }) {
                     inputRef={nameRef}
                     sx={FIELD_SX}
                 />
-                {/*<TextField
-                    fullWidth
-                    label="Сумма"
-                    type="number"
-                    inputRef={amountRef}
-                    sx={FIELD_SX}
-                />*/}
+                {singleItem && (
+                    <TextField
+                        fullWidth
+                        label="Сумма"
+                        type="number"
+                        inputRef={amountRef}
+                        sx={FIELD_SX}
+                    />
+                )}
 
                 {usersError && (
                     <Typography sx={{ color: '#d32f2f', fontSize: '0.875rem' }}>
@@ -256,41 +301,72 @@ export default function AddExpense({ open, onClose }) {
                         </MenuItem>
                     ))}
                 </TextField>
-
-                <Button
-                    fullWidth
-                    variant="outlined"
-                    onClick={handleReceiptView}
+                {!singleItem && (
+                    <Button
+                        fullWidth
+                        variant="outlined"
+                        onClick={handleReceiptView}
+                        sx={{
+                            border: '2px solid #463628',
+                            color: '#463628',
+                            fontWeight: 'bold',
+                            borderRadius: '8px',
+                            py: 1.5,
+                        }}
+                    >
+                        ПОСМОТРЕТЬ ЧЕК
+                    </Button>
+                )}
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={singleItem}
+                            onChange={(e) => setSingleItem(e.target.checked)}
+                            sx={{
+                                '& .MuiSwitch-switchBase.Mui-checked': {
+                                    color: '#DAB672',
+                                },
+                                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track':
+                                    {
+                                        backgroundColor: '#DAB672',
+                                    },
+                            }}
+                        />
+                    }
+                    label="Одна позиция"
                     sx={{
-                        border: '2px solid #463628',
+                        justifyContent: 'center',
+                        ml: 0,
                         color: '#463628',
-                        fontWeight: 'bold',
-                        borderRadius: '8px',
-                        py: 1.5,
+                        fontWeight: 600,
+                        '& .MuiFormControlLabel-label': {
+                            fontWeight: 600,
+                        },
                     }}
-                >
-                    ПОСМОТРЕТЬ ЧЕК
-                </Button>
+                />
             </DialogContent>
-
-            <Box className="px-6 pb-2 flex flex-col gap-3">
-                <Button
-                    fullWidth
-                    variant="contained"
-                    onClick={handleReceiptUpload}
-                    sx={{
-                        backgroundColor: '#DAB672',
-                        color: '#463628',
-                        fontWeight: 'bold',
-                        borderRadius: '8px',
-                        py: 1.5,
-                        fontSize: '1rem',
-                        boxShadow: 'none',
-                        '&:hover': { backgroundColor: '#c9a25f', boxShadow: 'none' },
-                    }}
-                >
-                    ДОБАВИТЬ ЧЕК
-                </Button>
+            {!singleItem && (
+                <Box className="px-6 pb-2 flex flex-col gap-3">
+                    <Button
+                        fullWidth
+                        variant="contained"
+                        onClick={handleReceiptUpload}
+                        sx={{
+                            backgroundColor: '#DAB672',
+                            color: '#463628',
+                            fontWeight: 'bold',
+                            borderRadius: '8px',
+                            py: 1.5,
+                            fontSize: '1rem',
+                            boxShadow: 'none',
+                            '&:hover': { backgroundColor: '#c9a25f', boxShadow: 'none' },
+                        }}
+                    >
+                        ОТСКАНИРОВАТЬ ЧЕК
+                    </Button>
+                </Box>
+            )}
+            <Box className="px-6 pb-4 flex flex-col gap-3">
                 <Button
                     fullWidth
                     variant="contained"
@@ -309,6 +385,13 @@ export default function AddExpense({ open, onClose }) {
                     СОХРАНИТЬ РАСХОД
                 </Button>
             </Box>
+            <Receipt
+                open={receiptOpen}
+                onClose={() => setReceiptOpen(false)}
+                items={receiptItems}
+                setItems={setReceiptItems}
+                usersOptions={usersOptions}
+            />
         </Dialog>
     );
 }

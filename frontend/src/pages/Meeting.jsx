@@ -258,7 +258,7 @@ export default function Meeting() {
             if (!meetingId) return;
             try {
                 const res = await fetch(
-                    `${API_URL}/${meetingId}/participants?limit=50&offset=0`,
+                    `${API_URL}/meetings/${meetingId}/participants?limit=50&offset=0`,
                 );
                 if (res.ok) {
                     const data = await res.json();
