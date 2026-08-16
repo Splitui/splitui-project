@@ -25,10 +25,10 @@ const MeetingHeader = ({
     navigate,
     name,
     date,
-    userName,
+    user,
     meetingId,
     participantId,
-    onNameChange,
+    onSave,
 }) => (
     <header className="flex justify-between items-start mb-6 shrink-0">
         <IconButton onClick={() => navigate('/')}>
@@ -39,10 +39,10 @@ const MeetingHeader = ({
             <p className="text-sm text-[#4A3F35] opacity-70">{date}</p>
         </div>
         <UserAvatar
-            userName={userName}
+            user={user}
             meetingId={meetingId}
             participantId={participantId}
-            onNameChange={onNameChange}
+            onSave={onSave}
         />
     </header>
 );
@@ -142,23 +142,17 @@ const MembersButton = ({ onClick, participants }) => (
     </button>
 );
 
-const MembersDialog = ({ open, onClose, participants, meetingId }) => {
+const MembersDialog = ({ open, onClose, participants, meetingId, onSave }) => {
     const [editOpen, setEditOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
 
     const meetingCookie = JSON.parse(Cookies.get('meeting') || '{}');
-    const myName = meetingCookie.userName || '';
     const myParticipantId = meetingCookie.participantId;
 
-    const handleUserClick = (nickname) => {
-        setSelectedUser(nickname);
+    const handleUserClick = (user) => {
+        setSelectedUser(user);
         setEditOpen(true);
     };
-
-    const handleSaveParticipant = (data) => {
-        console.log('Данные из списка участников:', data);
-    };
-
     const handleLink = async () => {
         const inviteLink = `${window.location.origin}?join=${meetingId}`;
         await navigator.clipboard.writeText(inviteLink);
@@ -207,7 +201,7 @@ const MembersDialog = ({ open, onClose, participants, meetingId }) => {
                             participants.map((p, idx) => (
                                 <div
                                     key={idx}
-                                    onClick={() => handleUserClick(p.nickname)}
+                                    onClick={() => handleUserClick(p)}
                                     className="flex items-center gap-3 p-3 rounded-xl bg-white shadow-sm border border-gray-100"
                                 >
                                     <Avatar>
@@ -228,11 +222,14 @@ const MembersDialog = ({ open, onClose, participants, meetingId }) => {
             <UserModal
                 open={editOpen}
                 onClose={() => setEditOpen(false)}
-                userName={selectedUser}
+                user={selectedUser}
                 meetingUUID={meetingId}
                 participantId={selectedUser?.id || myParticipantId}
-                onSave={handleSaveParticipant}
-                isEditable={selectedUser === myName}
+                onSave={(data) => {
+                    if (onSave)
+                        onSave({ ...data, id: selectedUser?.id || myParticipantId });
+                }}
+                isEditable={selectedUser?.id === myParticipantId}
             />
         </>
     );
@@ -250,29 +247,83 @@ export default function Meeting() {
     const meetingName = meeting.name || 'Встреча сплитуев';
     const rawDate = meeting.date || '';
     const meetingDate = rawDate ? rawDate.split('-').reverse().join('.') : '';
-    const [currentName, setCurrentName] = useState(meeting.userName || 'Юзер');
     const participantId = meeting.participantId;
 
+    const currentUser = participants.find((p) => p.id === participantId) || {
+        nickname: meeting.userName || `Юзер`,
+        id: participantId,
+        card_number: meeting.card_number || '',
+        phone_number: meeting.phone_number || '',
+        bank_id: meeting.bank_id || 1,
+    };
+
     const handleChange = (_, newValue) => setValue(newValue);
+
+    const handleUpdateParticipant = (updatedData, participantId) => {
+        setParticipants((prev) =>
+            prev.map((p) => (p.id === participantId ? { ...p, ...updatedData } : p)),
+        );
+    };
 
     useEffect(() => {
         const fetchParticipants = async () => {
             if (!meetingId) return;
             try {
                 const res = await fetch(
-                    `${API_URL}/${meetingId}/participants?limit=50&offset=0`,
+                    `${API_URL}/meetings/${meetingId}/participants?limit=50&offset=0`,
                 );
                 if (res.ok) {
-                    const data = await res.json();
-                    setParticipants(Array.isArray(data) ? data : []);
+                    const participants = await res.json();
+                    const fullDataParticipants = await Promise.all(
+                        participants.map(async (p) => {
+                            try {
+                                const bankRes = await fetch(
+                                    `${API_URL}/meetings/${meetingId}/participants/${p.id}/bank_data`,
+                                );
+                                if (bankRes.ok) {
+                                    const bankData = await bankRes.json();
+                                    const enriched = {
+                                        ...p,
+                                        card_number: bankData.card_number,
+                                        phone_number: bankData.phone_number,
+                                        bank_id: bankData.bank_id,
+                                    };
+                                    if (p.id === participantId) {
+                                        const meetingCookie = JSON.parse(
+                                            Cookies.get('meeting') || '{}',
+                                        );
+                                        Cookies.set(
+                                            'meeting',
+                                            JSON.stringify({
+                                                id: meetingCookie.id,
+                                                participantId:
+                                                    meetingCookie.participantId,
+                                                userName: enriched.nickname,
+                                                card_number: enriched.card_number,
+                                                phone_number: enriched.phone_number,
+                                                bank_id: enriched.bank_id,
+                                                isCreator: meetingCookie.isCreator,
+                                                name: meetingCookie.name,
+                                                date: meetingCookie.date,
+                                            }),
+                                        );
+                                    }
+                                    return enriched;
+                                }
+                            } catch (err) {
+                                console.log('Нет данных банка для', p.id, err);
+                            }
+                            return p;
+                        }),
+                    );
+                    setParticipants(fullDataParticipants);
                 }
             } catch (e) {
-                console.error('Участники не загружены: ', e);
+                console.error(e);
             }
         };
-
         fetchParticipants();
-    }, [meetingId]);
+    }, [meetingId, participantId]);
 
     const handleBottomButtonClick = () => {
         if (value === 'expenses') {
@@ -288,10 +339,10 @@ export default function Meeting() {
                     navigate={navigate}
                     name={meetingName}
                     date={meetingDate}
-                    userName={currentName}
+                    user={currentUser}
                     meetingId={meetingId}
                     participantId={participantId}
-                    onNameChange={(newName) => setCurrentName(newName)}
+                    onSave={(data) => handleUpdateParticipant(data, participantId)}
                 />
 
                 <MeetingTabs value={value} onChange={handleChange} />
@@ -367,6 +418,9 @@ export default function Meeting() {
                     onClose={() => setOpenMembers(false)}
                     participants={participants}
                     meetingId={meetingId}
+                    onSave={(data) =>
+                        handleUpdateParticipant(data, data.id || participantId)
+                    }
                 />
                 <AddExpense
                     open={openAddExpense}

@@ -50,7 +50,7 @@ export default function AddExpense({ open, onClose }) {
             setUsersError(null);
             try {
                 const response = await fetch(
-                    `${API_BASE}/${meetingUuid}/participants?limit=100&offset=0`,
+                    `${API_BASE}/meetings/${meetingUuid}/participants?limit=100&offset=0`,
                     { signal: controller.signal },
                 );
 
