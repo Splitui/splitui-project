@@ -5,7 +5,8 @@ from fastapi import HTTPException
 from sqlalchemy.engine import Connection
 
 from app.db.dependencies import transaction
-from app.repositories import meetings_repository, participants_repository
+from app.db.tables.meetings import MeetingStatus
+from app.repositories import meetings_repository, participants_repository, receipts_repository
 from app.schemas.meetings import MeetingCreate, MeetingUpdate
 
 
@@ -55,6 +56,83 @@ def update_meeting(connection, meeting_uuid, data: MeetingUpdate):
     """
     meeting = get_meeting_or_error(connection, meeting_uuid)
     return meetings_repository.update(connection, meeting["id"], data)
+
+
+@transaction
+def calculate_meeting(connection, meeting_uuid):
+    """Переводит встречу в статус 'В расчёте'.
+
+    :param connection: соединение с базой данных.
+    :param meeting_uuid: UUID встречи.
+    :return: обновлённые данные встречи.
+    """
+    meeting = get_meeting_or_error(connection, meeting_uuid)
+
+    if meeting["status"] not in {MeetingStatus.ACTIVE, MeetingStatus.EDITING}:
+        raise HTTPException(
+            status_code=409,
+            detail="Перейти к расчётам можно только из статусов 'Активная' или 'Корректировка'"
+        )
+
+    missing_payers = receipts_repository.get_payers_without_bank_data(connection, meeting["id"])
+    if missing_payers:
+        nicknames = ", ".join(p["nickname"] for p in missing_payers)
+        raise HTTPException(
+            status_code=409,
+            detail="Нельзя перейти к расчётам, "
+                   f"у следующих участников не указаны банковские реквизиты: {nicknames}"
+        )
+
+    return meetings_repository.update_status(
+        connection=connection,
+        meeting_id=meeting["id"],
+        status=MeetingStatus.CALCULATING,
+    )
+
+
+@transaction
+def finish_meeting(connection: Connection, meeting_uuid: UUID):
+    """Завершает встречу.
+
+    :param connection: соединение с базой данных.
+    :param meeting_uuid: UUID встречи.
+    :return: обновлённые данные завершённой встречи.
+    """
+    meeting = get_meeting_or_error(connection, meeting_uuid)
+
+    if meeting["status"] != MeetingStatus.CALCULATING:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Завершить встречу можно только в статусе 'В расчёте'"
+            )
+        )
+
+    return meetings_repository.finish(connection, meeting["id"])
+
+
+@transaction
+def edit_meeting(connection, meeting_uuid):
+    """Переводит встречу в статус «Корректировка».
+
+    :param connection: соединение с базой данных.
+    :param meeting_uuid: UUID встречи.
+    :return: обновлённые данные встречи.
+    """
+    meeting = get_meeting_or_error(connection, meeting_uuid)
+
+    if meeting["status"] != MeetingStatus.CALCULATING:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Вернуть к корректировкам можно только в статусе 'В расчёте'"
+            )
+        )
+    return meetings_repository.update_status(
+        connection=connection,
+        meeting_id=meeting["id"],
+        status=MeetingStatus.EDITING,
+    )
 
 
 def get_meeting_or_error(connection: Connection, meeting_uuid: UUID):
