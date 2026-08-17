@@ -1,8 +1,7 @@
 """Модуль с эндпоинтами для работы с участниками встречи."""
-
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from sqlalchemy.engine import Connection
 
 from app.db.dependencies import get_connection
@@ -20,6 +19,7 @@ def get_participants(
         meeting_uuid: UUID,
         limit: int,
         offset: int,
+        session_id: str = Header(),
         connection: Connection = Depends(get_connection)
 ):
     """Обрабатывает запрос на получение списка участников встречи.
@@ -27,12 +27,14 @@ def get_participants(
     :param meeting_uuid: UUID встречи.
     :param limit: максимальное количество участников в ответе.
     :param offset: смещение относительно начала списка участников.
+    :param session_id: идентификатор сессии участника.
     :param connection: соединение с базой данных.
     :return: список данных участников встречи.
     """
     return participants_service.get_participants_from_meeting(
         connection,
         meeting_uuid,
+        session_id,
         limit,
         offset
     )
@@ -42,16 +44,18 @@ def get_participants(
 def get_participant(
         meeting_uuid: UUID,
         participant_id: int,
+        session_id: str = Header(),
         connection: Connection = Depends(get_connection)
 ):
     """Обрабатывает запрос на получение данных конкретного участника встречи.
 
     :param meeting_uuid: UUID встречи.
     :param participant_id: идентификатор участника.
+    :param session_id: идентификатор сессии участника.
     :param connection: соединение с базой данных.
     :return: данные участника.
     """
-    return participants_service.get_participant_from_meeting(connection, meeting_uuid, participant_id)
+    return participants_service.get_participant_from_meeting(connection, meeting_uuid, session_id, participant_id)
 
 
 @router.post("/meetings/{meeting_uuid}/participants", status_code=201, summary="Добавить участника к встрече")
@@ -75,6 +79,7 @@ def update_participant(
         meeting_uuid: UUID,
         participant_id: int,
         data: ParticipantUpdate,
+        session_id: str = Header(),
         connection: Connection = Depends(get_connection)
 ):
     """Обрабатывает запрос на частичное обновление данных участника встречи.
@@ -82,7 +87,8 @@ def update_participant(
     :param meeting_uuid: UUID встречи.
     :param participant_id: идентификатор участника.
     :param data: данные для обновления участника.
+    :param session_id: идентификатор сессии участника.
     :param connection: соединение с базой данных.
     :return: обновлённые данные участника.
     """
-    return participants_service.update_participant(connection, meeting_uuid, participant_id, data)
+    return participants_service.update_participant(connection, meeting_uuid, participant_id, session_id, data)

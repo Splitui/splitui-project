@@ -1,5 +1,6 @@
 """Модуль с запросами к базе данных для работы с участниками встреч."""
 
+import secrets
 from uuid import UUID
 
 from sqlalchemy import text
@@ -20,15 +21,17 @@ def create(
     :param is_creator: признак создателя встречи.
     :return: данные созданного участника.
     """
+    session_id = secrets.token_urlsafe(32)
     result = connection.execute(
         text("""
-             INSERT INTO participants (meeting_id, nickname, is_creator)
-             VALUES (:meeting_id, :nickname, :is_creator) RETURNING id, meeting_id, nickname, is_creator
+             INSERT INTO participants (meeting_id, nickname, is_creator, session_id)
+             VALUES (:meeting_id, :nickname, :is_creator, :session_id) RETURNING *
              """),
         {
             "meeting_id": meeting_id,
             "nickname": nickname,
             "is_creator": is_creator,
+            "session_id": session_id
         },
     )
     return dict(result.mappings().one())
@@ -50,7 +53,7 @@ def update(
         text("""
              UPDATE participants
              SET nickname = :nickname
-             WHERE id = :participant_id RETURNING *
+             WHERE id = :participant_id RETURNING id, meeting_id, nickname, is_creator
              """),
         {
             "participant_id": participant_id,
@@ -79,6 +82,7 @@ def get_all(
         text(
             """
             SELECT id,
+                   meeting_id,
                    nickname,
                    is_creator
             FROM participants
@@ -106,7 +110,7 @@ def get_by_id(connection: Connection, meeting_id: int, participant_id: int):
     """
     result = connection.execute(
         text("""
-             SELECT *
+             SELECT id, meeting_id, nickname, is_creator
              FROM participants
              WHERE id = :participant_id
                and meeting_id = :meeting_id
@@ -116,25 +120,21 @@ def get_by_id(connection: Connection, meeting_id: int, participant_id: int):
             "meeting_id": meeting_id
         }
     )
-    
+
     row = result.mappings().one_or_none()
     return dict(row) if row else None
 
-def get_meeting_creator(
-    connection: Connection,
-    meeting_uuid: UUID,
-):
-    result = connection.execute(
-        text("""
-            SELECT p.*
-            FROM participants p
-            JOIN meetings m ON m.id = p.meeting_id
-            WHERE m.uuid = :meeting_uuid
-              AND p.is_creator = TRUE
-        """),
-        {
-            "meeting_uuid": str(meeting_uuid),
-        },
-    )
 
-    return result.mappings().one_or_none()
+def get_by_token(connection: Connection, session_id: str):
+    """Возвращает участника по его токену доступа.
+
+    :param connection: соединение с базой данных.
+    :param session_id: идентификатор сессии участника.
+    :return: данные участника или None, если токен не найден.
+    """
+    result = connection.execute(
+        text("SELECT * FROM participants WHERE session_id = :session_id"),
+        {"session_id": session_id}
+    )
+    row = result.mappings().one_or_none()
+    return dict(row) if row else None

@@ -12,17 +12,25 @@ from app.services import meetings_service, participants_service
 
 
 @transaction
-def add_bank_data(connection: Connection, meeting_uuid: UUID, participant_id: int, data: BankDataCreate):
+def add_bank_data(connection: Connection, meeting_uuid: UUID, session_id: str, participant_id: int, data: BankDataCreate):
     """Добавляет банковские реквизиты участника.
 
     :param connection: соединение с базой данных.
     :param meeting_uuid: UUID встречи.
+    :param session_id: идентификатор сессии участника.
     :param participant_id: идентификатор участника.
     :param data: данные для создания банковских реквизитов.
     :return: данные банковских реквизитов.
     """
     meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
+    current_participant = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
     participant = participants_service.get_participant_or_error(connection, meeting["id"], participant_id)
+    if current_participant["id"] != participant["id"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Нельзя добавлять банковские реквизиты другому участнику"
+        )
+
     bank = get_bank_or_error(connection, data.bank_id)
     return bank_data_repository.create(
         connection,
@@ -33,16 +41,24 @@ def add_bank_data(connection: Connection, meeting_uuid: UUID, participant_id: in
     )
 
 
-def get_bank_data(connection: Connection, meeting_uuid: UUID, participant_id: int):
+def get_bank_data(connection: Connection, meeting_uuid: UUID, session_id: str, participant_id: int):
     """Возвращает банковские реквизиты участника встречи.
 
     :param connection: соединение с базой данных.
     :param meeting_uuid: UUID встречи.
+    :param session_id: идентификатор сессии участника.
     :param participant_id: идентификатор участника.
     :return: данные банковских реквизитов участника.
     """
     meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
+    current_participant = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
     participant = participants_service.get_participant_or_error(connection, meeting["id"], participant_id)
+    if current_participant["id"] != participant["id"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Нельзя получить данные о банковских реквизитах другого участника"
+        )
+
     bank_data = bank_data_repository.get_bank_data_by_participant_id(connection, participant["id"])
     if bank_data is None:
         raise HTTPException(

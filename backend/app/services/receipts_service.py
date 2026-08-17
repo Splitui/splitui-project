@@ -13,7 +13,8 @@ from app.repositories import (
     receipt_items_repository,
     receipts_repository,
 )
-from app.schemas.receipts import FullReceiptParticipantCreate
+from app.schemas.receipts import FullReceiptParticipantCreate, FullReceiptCreate
+from app.services import meetings_service, participants_service
 from app.services.meetings_service import get_meeting_or_error
 from app.services.receipt_items_service import sync_receipt_items
 from app.services.change_log_service import (
@@ -25,7 +26,13 @@ from app.services.change_log_service import (
 from app.services.receipt_validators import check_missing_and_return_error, validate_receipt_belongs_to_meeting, validate_unique
 
 
-def get_receipts_from_meeting(connection: Connection, num_limit: int, num_offset: int, meeting_uuid: UUID):
+def get_receipts_from_meeting(
+        connection: Connection,
+        meeting_uuid: UUID,
+        session_id: str,
+        num_limit: int,
+        num_offset: int
+):
     """
     Возвращает данные чеков указанной встречи.
 
@@ -33,9 +40,18 @@ def get_receipts_from_meeting(connection: Connection, num_limit: int, num_offset
     :param meeting_uuid: UUID встречи.
     :return: список данных чеков.
     """
-    return receipts_repository.get_all_by_meeting_uuid(connection,num_limit,num_offset,meeting_uuid)
+    meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
+    _ = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
+    return receipts_repository.get_all_by_meeting_uuid(connection, num_limit, num_offset, meeting["uuid"])
 
-def get_receipt_full(connection: Connection,meeting_uuid: UUID, receipt_id: int, num_limit: int, num_offset: int):
+def get_receipt_full(
+        connection: Connection,
+        meeting_uuid: UUID,
+        session_id: str,
+        receipt_id: int,
+        num_limit: int,
+        num_offset: int
+):
 
     """
     Возвращает чек с позициями, участниками и долгами.
@@ -50,28 +66,16 @@ def get_receipt_full(connection: Connection,meeting_uuid: UUID, receipt_id: int,
 
     :param connection: соединение с базой данных.
     :param meeting_uuid: UUID встречи.
+    :param session_id: идентификатор сессии участника.
     :param receipt_id: идентификатор чека.
     :param num_limit: максимальное количество позиций в ответе.
     :param num_offset: смещение относительно начала списка позиций.
     :return: данные чека, позиции с участниками и долги по чеку.
     """
+    meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
+    _ = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
 
-    meeting = meetings_repository.get_by_uuid(connection,meeting_uuid) 
-
-    if meeting is None:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "message": "Неправильный uuid встречи",
-            }
-        )
-    
-
-    receipt = receipts_repository.get_by_id(
-        connection,
-        receipt_id,
-    )
-
+    receipt = receipts_repository.get_by_id(connection, receipt_id)
     if receipt is None:
         raise HTTPException(
             status_code=404,
@@ -126,7 +130,12 @@ def get_receipt_full(connection: Connection,meeting_uuid: UUID, receipt_id: int,
     action=parse_receipt_action,
     context_parser=parse_receipt_context,
 )
-def create_or_update_receipt_in_meeting(connection,meeting_uuid,participant_id,data):
+def create_or_update_receipt_in_meeting(
+        connection: Connection,
+        meeting_uuid: UUID,
+        session_id: str,
+        data: FullReceiptCreate
+):
 
     """
     Создаёт или обновляет чек указанной встречи.
@@ -143,29 +152,21 @@ def create_or_update_receipt_in_meeting(connection,meeting_uuid,participant_id,d
 
     :param connection: соединение с базой данных.
     :param meeting_uuid: UUID встречи, в которой находится чек.
-    :param participant_id: идентификатор участника, выполняющего запрос.
+    :param session_id: идентификатор сессии участника.
     :param data: данные для создания или обновления чека.
     :return: данные созданного или обновлённого чека и его позиций.
     """
-
-    meeting = get_meeting_or_error(
-            connection,
-            meeting_uuid,
-        )
-
-    creator = participants_repository.get_meeting_creator(connection,meeting_uuid)
-    participants = participants_repository.get_all(connection, meeting["id"])
-
-    if (
-        participant_id != data.payer_id
-        and participant_id != creator["id"]
-    ):
+    meeting = get_meeting_or_error(connection, meeting_uuid)
+    current_participant = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
+    if not (current_participant["is_creator"] or current_participant["id"] == data.payer_id):
         raise HTTPException(
             status_code=403,
             detail=(
-                "Редактировать чек может только плательщик или создатель встречи"
+                "Создавать или редактировать чек может только плательщик или создатель встречи"
             ),
         )
+
+    participants = participants_repository.get_all(connection, meeting["id"])
 
     if data.participants:
         split_participants = data.participants
@@ -304,62 +305,32 @@ def create_or_update_receipt_in_meeting(connection,meeting_uuid,participant_id,d
             "participant_amounts": participant_amounts,
         }
 
+
 @transaction
 @change_log(
     action="receipt.deleted",
     context_parser=parse_deleted_receipt_context,
 )
-def delete_receipt(connection: Connection, meeting_uuid: UUID, participant_id: int, receipt_id: int):
-    meeting = meetings_repository.get_by_uuid(
-        connection,
-        meeting_uuid,
-    )
-
-    if meeting is None:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "message": "Неправильный uuid встречи",
-            }
-        )
-    
-    receipt = receipts_repository.get_by_id(
-        connection,
-        receipt_id,
-    )
-
-    if (
-        receipt is None
-        or receipt["meeting_id"] != meeting["id"]
-    ):
+def delete_receipt(connection: Connection, meeting_uuid: UUID, session_id: str, receipt_id: int):
+    meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
+    current_participant = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
+    receipt = receipts_repository.get_by_id(connection, receipt_id)
+    if receipt is None or receipt["meeting_id"] != meeting["id"]:
         raise HTTPException(
             status_code=404,
             detail="Чек не найден в указанной встрече",
         )
 
-    participant = participants_repository.get_by_id(connection,meeting["id"],participant_id)
-
-    if participant is None:
-        raise HTTPException(
-                status_code=400,
-                detail={
-                    "message": "Неправильный id участника",
-                }
-            )
-
-    if participant_id != receipt["payer_id"] and not participant["is_creator"]:
+    participant = participants_service.get_participant_or_error(connection, meeting["id"], receipt["payer_id"])
+    if not (current_participant["is_creator"] or current_participant["id"] == participant["id"]):
         raise HTTPException(
             status_code=403,
             detail=(
                 "Удалять чек может только плательщик или создатель встречи"
             ),
         )
-        
 
-    deleted_id = receipts_repository.delete(
-        connection,
-        receipt_id,
-    )
+    deleted_id = receipts_repository.delete(connection, receipt_id)
 
     return {
         "deleted_receipt_id": deleted_id,

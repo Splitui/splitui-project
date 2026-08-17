@@ -1,8 +1,8 @@
 """Модуль с эндпоинтами для работы со встречами."""
-
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from sqlalchemy.engine import Connection
 
 from app.db.dependencies import get_connection
@@ -34,15 +34,17 @@ def get_meetings(
 @router.get("/{meeting_uuid}", summary="Получить информацию по встрече")
 def get_meeting(
         meeting_uuid: UUID,
+        session_id: str = Header(),
         connection: Connection = Depends(get_connection)
 ):
     """Обрабатывает запрос на получение информации о встрече.
 
     :param meeting_uuid: UUID встречи.
     :param connection: соединение с базой данных.
+    :param session_id: идентификатор сессии участника.
     :return: данные встречи.
     """
-    return meetings_service.get_meeting_or_error(connection, meeting_uuid)
+    return meetings_service.get_meeting(connection, meeting_uuid, session_id)
 
 
 @router.post("", status_code=201, summary="Создать встречу")
@@ -63,55 +65,63 @@ def create_meeting(
 def update_meeting(
         meeting_uuid: UUID,
         data: MeetingUpdate,
+        session_id: str = Header(),
         connection: Connection = Depends(get_connection)
 ):
     """Обрабатывает запрос на частичное обновление встречи.
 
     :param meeting_uuid: UUID встречи.
     :param data: данные для обновления встречи.
+    :param session_id: идентификатор сессии участника.
     :param connection: соединение с базой данных.
     :return: обновлённые данные встречи.
     """
-    return meetings_service.update_meeting(connection, meeting_uuid, data)
+    return meetings_service.update_meeting(connection, meeting_uuid, session_id, data)
 
 
 @router.post("/{meeting_uuid}/calculate", summary="Начать расчёт встречи")
 def calculate_meeting(
         meeting_uuid: UUID,
+        session_id: str = Header(),
         connection: Connection = Depends(get_connection)
 ):
     """Обрабатывает запрос перехода встречи в статус 'В расчёте'.
 
     :param meeting_uuid: UUID встречи.
+    :param session_id: идентификатор сессии участника.
     :param connection: соединение с базой данных.
     :return: обновленные данные встречи.
     """
-    return meetings_service.calculate_meeting(connection, meeting_uuid)
+    return meetings_service.calculate_meeting(connection, meeting_uuid, session_id)
 
 
 @router.post("/{meeting_uuid}/finish", summary="Завершить встречу")
 def finish_meeting(
         meeting_uuid: UUID,
+        session_id: str = Header(),
         connection: Connection = Depends(get_connection)
 ):
     """Обрабатывает запрос перехода встречи в статус 'Завершена'.
 
     :param meeting_uuid: UUID встречи.
     :param connection: соединение с базой данных.
+    :param session_id: идентификатор сессии участника.
     :return: обновленные данные встречи.
     """
-    return meetings_service.finish_meeting(connection, meeting_uuid)
+    return meetings_service.finish_meeting(connection, meeting_uuid, session_id)
 
 
 @router.post("/{meeting_uuid}/edit", summary="Вернуть встречу к корректировкам")
 def edit_meeting(
         meeting_uuid: UUID,
+        session_id: str = Header(),
         connection: Connection = Depends(get_connection)
 ):
     """Обрабатывает запрос перехода встречи в статус 'Корректировка'.
 
     :param meeting_uuid: UUID встречи.
+    :param session_id: идентификатор сессии участника.
     :param connection: соединение с базой данных.
     :return: обновленные данные встречи.
     """
-    return meetings_service.edit_meeting(connection, meeting_uuid)
+    return meetings_service.edit_meeting(connection, meeting_uuid, session_id)
