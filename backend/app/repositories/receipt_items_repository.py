@@ -187,8 +187,13 @@ def get_participant_debt(
     result = connection.execute(
         text("""
         SELECT SUM(share_amount) 
-        FROM receipt_item_participants
-        WHERE participant_id = :participant_id
+        FROM receipt_item_participants rip
+        JOIN receipt_items ri
+            ON ri.id = rip.receipt_item_id
+        JOIN receipts r
+            ON r.id = ri.receipt_id
+        WHERE rip.participant_id = :participant_id
+            AND r.payer_id != :participant_id
         """),
         {
             "participant_id": participant_id,

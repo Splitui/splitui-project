@@ -16,11 +16,13 @@ from app.repositories import (
 from app.schemas.receipts import FullReceiptParticipantCreate
 from app.services.meetings_service import get_meeting_or_error
 from app.services.receipt_items_service import sync_receipt_items
-from app.services.receipt_validators import (
-    check_missing_and_return_error,
-    validate_receipt_belongs_to_meeting,
-    validate_unique,
+from app.services.change_log_service import (
+    change_log,
+    parse_deleted_receipt_context,
+    parse_receipt_action,
+    parse_receipt_context,
 )
+from app.services.receipt_validators import check_missing_and_return_error, validate_receipt_belongs_to_meeting, validate_unique
 
 
 def get_receipts_from_meeting(connection: Connection, num_limit: int, num_offset: int, meeting_uuid: UUID):
@@ -120,6 +122,10 @@ def get_receipt_full(connection: Connection,meeting_uuid: UUID, receipt_id: int,
     }
 
 @transaction
+@change_log(
+    action=parse_receipt_action,
+    context_parser=parse_receipt_context,
+)
 def create_or_update_receipt_in_meeting(connection,meeting_uuid,participant_id,data):
 
     """
@@ -176,6 +182,19 @@ def create_or_update_receipt_in_meeting(connection,meeting_uuid,participant_id,d
         for participant in participants
     }
 
+    receipt_participant_ids = [
+    participant.participant_id
+    for participant in data.participants
+    ]
+
+    validate_unique(
+        receipt_participant_ids,
+        data.title,
+        (
+            "Один участник не может быть указан несколько раз в одном чеке"
+        ),
+    )
+
     data_participants = {
         data.payer_id,
         *(
@@ -194,7 +213,11 @@ def create_or_update_receipt_in_meeting(connection,meeting_uuid,participant_id,d
                     for participant in item.participants
                 ]
                 validate_unique(participant_ids,item.title,
-                "Один участник не может быть указан несколько раз в одной позиции")
+                    "Один участник не может быть указан несколько раз в одной позиции")
+
+                check_missing_and_return_error(
+                    set(participant_ids), meeting_participants,
+                    "Некоторые участники позиции не относятся к указанной встрече" )
 
     total_amount = data.total_amount
     
@@ -282,6 +305,10 @@ def create_or_update_receipt_in_meeting(connection,meeting_uuid,participant_id,d
         }
 
 @transaction
+@change_log(
+    action="receipt.deleted",
+    context_parser=parse_deleted_receipt_context,
+)
 def delete_receipt(connection: Connection, meeting_uuid: UUID, participant_id: int, receipt_id: int):
     meeting = meetings_repository.get_by_uuid(
         connection,
@@ -336,4 +363,6 @@ def delete_receipt(connection: Connection, meeting_uuid: UUID, participant_id: i
 
     return {
         "deleted_receipt_id": deleted_id,
+        "meeting_id": receipt["meeting_id"],
+        "title": receipt["title"],
     }

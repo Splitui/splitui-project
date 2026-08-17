@@ -102,6 +102,150 @@ def create_participant(db_engine):
 
     return _create_participant
 
+@pytest.fixture
+def create_receipt(db_engine):
+    receipts_table = metadata.tables["receipts"]
+
+    def _create_receipt(
+        meeting_id,
+        payer_id,
+        title = "Тестовый чек",
+        total_amount=1000,
+        purchase_date = None,
+        category = "Еда",
+        comment= None,
+        image_url= None,
+        is_confirmed= False,
+    ):
+
+        values = {
+            "meeting_id": meeting_id,
+            "payer_id": payer_id,
+            "title": title,
+            "total_amount": total_amount,
+            "category": category,
+            "comment": comment,
+            "image_url": image_url,
+            "is_confirmed": is_confirmed,
+        }
+
+        if purchase_date is not None:
+            values["purchase_date"] = purchase_date
+        
+        with db_engine.begin() as connection:
+            result = connection.execute(
+                receipts_table.insert().values(**values)
+            )
+            receipt_id = result.inserted_primary_key[0]
+
+        return {
+            "id": receipt_id,
+            "payer_id": payer_id,
+            "meeting_id": meeting_id,
+        }
+
+    return _create_receipt
+
+
+@pytest.fixture
+def create_receipt_item(db_engine):
+    receipt_items_table = metadata.tables["receipt_items"]
+
+    def _create_receipt_item(
+        receipt_id,
+        title = "Тестовая позиция",
+        quantity = 1,
+        unit_price=100,
+    ):
+        with db_engine.begin() as connection:
+            result = connection.execute(
+                receipt_items_table.insert().values(
+                    receipt_id=receipt_id,
+                    title=title,
+                    quantity=quantity,
+                    unit_price=unit_price,
+                )
+            )
+            receipt_item_id = result.inserted_primary_key[0]
+
+        return {
+            "receipt_id": receipt_id,
+            "id": receipt_item_id,
+        }
+
+    return _create_receipt_item
+
+
+@pytest.fixture
+def create_item_participant(db_engine):
+    item_participants_table = metadata.tables[
+        "receipt_item_participants"
+    ]
+
+    def _create_item_participant(
+        receipt_item_id,
+        participant_id,
+        share_amount,
+    ):
+        with db_engine.begin() as connection:
+            connection.execute(
+                item_participants_table.insert().values(
+                    receipt_item_id=receipt_item_id,
+                    participant_id=participant_id,
+                    share_amount=share_amount,
+                )
+            )
+
+        return {
+            "receipt_item_id": receipt_item_id,
+            "participant_id": participant_id,
+        }
+
+    return _create_item_participant
+
+
+@pytest.fixture
+def create_meeting_with_participants(
+    create_meeting,
+    create_participant,
+):
+    def _create_meeting_with_participants(
+        meeting_title: str = "Тестовая встреча",
+        creator_nickname: str = "Создатель",
+        payer_nickname: str = "Плательщик",
+        participant_names: list[str] | None = None,
+    ):
+        if participant_names is None:
+            participant_names = [
+                "Первый участник",
+                "Второй участник",
+            ]
+
+        meeting = create_meeting(
+            title=meeting_title,
+            creator_nickname=creator_nickname,
+        )
+
+        payer = create_participant(
+            meeting_id=meeting["id"],
+            nickname=payer_nickname,
+        )
+
+        participants = [
+            create_participant(
+                meeting_id=meeting["id"],
+                nickname=nickname,
+            )
+            for nickname in participant_names
+        ]
+
+        return {
+            "meeting": meeting,
+            "payer": payer,
+            "participants": participants,
+        }
+
+    return _create_meeting_with_participants
 
 @pytest.fixture
 def create_bank(db_engine):
