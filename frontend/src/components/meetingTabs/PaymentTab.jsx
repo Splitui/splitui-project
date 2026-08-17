@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { PAYMENTS } from '../Options';
 
 export default function PaymentTab() {
+    const [payments, setPayments] = useState(PAYMENTS);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
 
     const handleActionClick = (row) => {
@@ -19,6 +20,13 @@ export default function PaymentTab() {
 
     const handleCloseTransaction = () => {
         setSelectedTransaction(null);
+    };
+
+    const markDone = (id) => {
+        setPayments((prev) =>
+            prev.map((p) => (p.id === id ? { ...p, isCompleted: true } : p)),
+        );
+        handleCloseTransaction();
     };
 
     return (
@@ -34,7 +42,7 @@ export default function PaymentTab() {
             >
                 <Table>
                     <TableBody>
-                        {PAYMENTS.map((row) => (
+                        {payments.map((row) => (
                             <TableRow
                                 key={row.id}
                                 sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
@@ -46,6 +54,7 @@ export default function PaymentTab() {
                                         fontSize: '1rem',
                                         borderBottom: '1px solid #F0F0F0',
                                         py: 2.5,
+                                        opacity: row.isCompleted ? 0.5 : 1,
                                     }}
                                 >
                                     {row.name}
@@ -57,12 +66,16 @@ export default function PaymentTab() {
                                     sx={{
                                         fontWeight: 'bold',
                                         fontSize: '0.875rem',
-                                        cursor: 'pointer',
+                                        cursor: row.isCompleted ? 'default' : 'pointer',
+                                        textDecoration: row.isCompleted
+                                            ? 'line-through'
+                                            : 'none',
                                         color:
                                             row.action === 'получение'
                                                 ? '#32935ADE'
                                                 : '#C12D2DDE',
                                         borderBottom: '1px solid #F0F0F0',
+                                        pointerEvents: row.isCompleted ? 'none' : 'auto',
                                         py: 2.5,
                                         '&:hover': {
                                             opacity: 0.7,
@@ -79,6 +92,7 @@ export default function PaymentTab() {
                                         color: '#463628',
                                         fontSize: '1rem',
                                         borderBottom: '1px solid #F0F0F0',
+                                        opacity: row.isCompleted ? 0.5 : 1,
                                         py: 2.5,
                                     }}
                                 >
@@ -94,6 +108,7 @@ export default function PaymentTab() {
                 open={!!selectedTransaction}
                 onClose={handleCloseTransaction}
                 transaction={selectedTransaction}
+                onConfirm={() => markDone(selectedTransaction.id)}
             />
         </>
     );

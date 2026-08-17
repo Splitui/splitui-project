@@ -1,6 +1,6 @@
 import { Dialog, Typography, Button } from '@mui/material';
 
-export default function TransactionModal({ open, onClose, transaction }) {
+export default function TransactionModal({ open, onClose, transaction, onConfirm }) {
     if (!transaction) return null;
 
     const isPayment = transaction.action === 'оплата';
@@ -44,7 +44,7 @@ export default function TransactionModal({ open, onClose, transaction }) {
 
             <Button
                 fullWidth
-                onClick={onClose}
+                onClick={onConfirm}
                 className="!bg-[#463628] !text-[#F8F4EC] !font-bold !rounded-xl !py-3 !text-sm sm:!text-base !shadow-none hover:!bg-[#3a2c20]"
             >
                 {isPayment ? 'ОТПРАВИЛ' : 'ПОЛУЧИЛ'}

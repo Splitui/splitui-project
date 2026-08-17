@@ -107,14 +107,14 @@ const MeetingTabs = ({ value, onChange }) => (
     </div>
 );
 
-const BalanceCard = () => (
+const BalanceCard = ({ data }) => (
     <div className="bg-[#F8F4EC] w-full max-w-[332px] md:max-w-none min-h-[130px] rounded-[25px] p-4 shadow-sm flex flex-col gap-2 shrink-0">
         <div className="flex justify-between items-center">
             <span className="font-bold text-[#463628] uppercase text-sm md:text-base tracking-tight">
                 Всего потрачено:
             </span>
             <span className="text-[#DAB672] font-black text-xl md:text-2xl">
-                65840,34
+                {data.meeting_amount}
             </span>
         </div>
         <div className="flex justify-between items-center">
@@ -122,14 +122,16 @@ const BalanceCard = () => (
                 Должен я:
             </span>
             <span className="text-[#DAB672] font-black text-xl md:text-2xl">
-                15743,55
+                {data.participant_debt}
             </span>
         </div>
         <div className="flex justify-between items-center border-t border-gray-50 pt-1">
             <span className="font-bold text-[#463628] uppercase text-sm md:text-base tracking-tight">
                 Должны мне:
             </span>
-            <span className="text-[#DAB672] font-black text-xl md:text-2xl">2500,00</span>
+            <span className="text-[#DAB672] font-black text-xl md:text-2xl">
+                {data.participant_spend}
+            </span>
         </div>
     </div>
 );
@@ -270,6 +272,12 @@ export default function Meeting() {
     const [currentMeetingDate, setCurrentMeetingDate] = useState(meeting.date || '');
     const [openEditMeeting, setOpenEditMeeting] = useState(false);
 
+    const [balance, setBalance] = useState({
+        meeting_amount: 0,
+        participant_debt: 0,
+        participant_spend: 0,
+    });
+
     const currentUser = participants.find((p) => p.id === participantId) || {
         nickname: meeting.userName || `Юзер`,
         id: participantId,
@@ -285,6 +293,24 @@ export default function Meeting() {
             prev.map((p) => (p.id === participantId ? { ...p, ...updatedData } : p)),
         );
     };
+
+    useEffect(() => {
+        const fetchBalance = async () => {
+            if (!meetingId || !participantId) return;
+            try {
+                const res = await fetch(
+                    `${API_URL}/amount/${meetingId}/${participantId}`,
+                );
+                if (res.ok) {
+                    const data = await res.json();
+                    setBalance(data);
+                }
+            } catch (e) {
+                console.error('Ошибочка с балансом', e);
+            }
+        };
+        fetchBalance();
+    }, [meetingId, participantId]);
 
     useEffect(() => {
         const fetchParticipants = async () => {
@@ -371,7 +397,7 @@ export default function Meeting() {
                 <MeetingTabs value={value} onChange={handleChange} />
 
                 <div className="flex flex-col gap-6 mb-8 items-center">
-                    <BalanceCard />
+                    <BalanceCard data={balance} />
                     <MembersButton
                         onClick={() => setOpenMembers(true)}
                         participants={participants}

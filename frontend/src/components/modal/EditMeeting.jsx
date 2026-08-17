@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Cookies from 'js-cookie';
 import { Button, Dialog, DialogContent, IconButton, TextField } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import { FIELD_SX } from '../Options';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
@@ -55,22 +56,29 @@ export default function EditMeeting({
             onClose={onClose}
             fullWidth
             maxWidth="xs"
-            PaperProps={{ sx: { borderRadius: '20px', p: 2, bg: '#F8F4EC' } }}
+            slotProps={{
+                paper: {
+                    className: '!bg-[#F8F4EC] !rounded-[25px] !p-4 !shadow-lg',
+                },
+            }}
         >
-            <IconButton onClick={onClose} sx={{ position: 'absolute', right: 8, top: 8 }}>
+            <IconButton
+                onClick={onClose}
+                className="!absolute !right-3 !top-3 !text-[#463628]"
+            >
                 <CloseIcon />
             </IconButton>
             <DialogContent>
-                <h6 className="font-bold mb-3 text-center color-[#463628]">
-                    Редактировать встречу
-                </h6>
                 <div className="flex flex-col gap-3">
+                    <h6 className="!text-[#463628] !font-black !text-center !text-2xl !uppercase !mb-8 !tracking-wider">
+                        Редактировать встречу
+                    </h6>
                     <TextField
                         fullWidth
                         label="Название встречи"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                        sx={FIELD_SX}
                     />
                     <TextField
                         fullWidth
@@ -79,12 +87,12 @@ export default function EditMeeting({
                         value={date}
                         onChange={(e) => setDate(e.target.value)}
                         slotProps={{ inputLabel: { shrink: true } }}
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                        sx={FIELD_SX}
                     />
                     <Button
                         variant="contained"
                         onClick={handleSave}
-                        className="bg-[#463628] color-[#EAE0CD] py-1.5 font-bold br-12px"
+                        className="!bg-[#463628] !text-[#F8F4EC] !font-bold !py-4 !rounded-xl !text-base !shadow-none hover:!bg-[#3a2c20] !transition-colors"
                     >
                         СОХРАНИТЬ ИЗМЕНЕНИЯ
                     </Button>

@@ -167,8 +167,6 @@ export default function AddExpense({ open, onClose }) {
                 console.error('Ошибка сохранения:', await res.text());
                 return;
             }
-
-            const data = await res.json();
             onClose();
         } catch (e) {
             console.error('Сеть недоступна:', e);
@@ -295,7 +293,7 @@ export default function AddExpense({ open, onClose }) {
                     slotProps={{ select: { MenuProps: MENU_PROPS } }}
                 >
                     {CASHBACK_OPTIONS.map((option) => (
-                        <MenuItem key={option.value} value={option.value}>
+                        <MenuItem key={option.id} value={option.id}>
                             {option.label}
                         </MenuItem>
                     ))}

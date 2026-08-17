@@ -192,6 +192,11 @@ export default function UserModal({
 
             {isEditable && (
                 <div className="px-6 pb-2">
+                    <p className="text-[10px] text-[#463628] opacity-70 text-center mb-3 leading-tight">
+                        Нажимая «Сохранить», вы подтверждаете согласие на обработку
+                        персональных данных. Указанные данные будут видны другим
+                        участникам этой встречи.
+                    </p>
                     <Button
                         fullWidth
                         variant="contained"
