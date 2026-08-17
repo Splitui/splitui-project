@@ -21,6 +21,7 @@ def get_meetings(connection: Connection, num_limit: int, num_offset: int):
     """
     return meetings_repository.get_all(connection, num_limit, num_offset)
 
+
 def get_meeting(connection: Connection, meeting_uuid: UUID, session_id: str):
     """Возвращает данные встречи.
 
@@ -32,6 +33,7 @@ def get_meeting(connection: Connection, meeting_uuid: UUID, session_id: str):
     meeting = get_meeting_or_error(connection, meeting_uuid)
     _ = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
     return meeting
+
 
 @transaction
 def create_meeting(connection: Connection, data: MeetingCreate):

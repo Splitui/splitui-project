@@ -21,7 +21,7 @@ def get_all_categories(connection: Connection):
     return cashback_repository.get_all_categories(connection)
 
 
-def get_cashback_categories(connection: Connection, meeting_uuid: UUID, session_id: str, participant_id):
+def get_cashback_categories(connection: Connection, meeting_uuid: UUID, session_id: str):
     """Возвращает выбранные категории кешбека участника.
 
     :param connection: соединение с базой данных.
@@ -31,8 +31,7 @@ def get_cashback_categories(connection: Connection, meeting_uuid: UUID, session_
     :return: список категорий кешбека участника.
     """
     meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
-    _ = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
-    participant = participants_service.get_participant_or_error(connection, meeting["id"], participant_id)
+    participant = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
     return cashback_repository.get_by_participant_id(connection, participant["id"])
 
 
@@ -41,7 +40,6 @@ def update_cashback_categories(
         connection: Connection,
         meeting_uuid: UUID,
         session_id: str,
-        participant_id: int,
         data: ParticipantCashbackCategoriesUpdate,
 ):
     """Полностью заменяет набор категорий кешбека участника.
@@ -49,18 +47,11 @@ def update_cashback_categories(
     :param connection: соединение с базой данных.
     :param meeting_uuid: UUID встречи.
     :param session_id: идентификатор сессии участника.
-    :param participant_id: идентификатор участника.
     :param data: новый список категорий кешбека с процентами.
     :return: актуальный список категорий кешбека участника.
     """
     meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
-    current_participant = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
-    participant = participants_service.get_participant_or_error(connection, meeting["id"], participant_id)
-    if current_participant["id"] != participant["id"]:
-        raise HTTPException(
-            status_code=403,
-            detail="Нельзя обновлять данные о выбранных категориях кешбэка другому участнику"
-        )
+    participant = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
 
     if meeting["status"] not in {MeetingStatus.ACTIVE, MeetingStatus.EDITING}:
         raise HTTPException(
@@ -84,17 +75,14 @@ def update_cashback_categories(
     return cashback_repository.replace_all_for_participant(connection, participant["id"], categories)
 
 
-def get_best_cashback(connection: Connection, meeting_uuid: UUID, session_id: str, category_id: int):
+def get_best_cashback(connection: Connection, meeting_id: int, category_id: int):
     """Возвращает список участников с лучшим кешбеком по указанной категории.
 
     :param connection: соединение с базой данных.
-    :param meeting_uuid: UUID встречи.
-    :param session_id: идентификатор сессии участника.
+    :param meeting_id: идентификатор встречи.
     :param category_id: идентификатор категории кешбека.
     :return: список участников, отсортированных по проценту кешбека по убыванию.
     """
-    meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
-    _ = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
     existing_category_ids = {c["id"] for c in cashback_repository.get_all_categories(connection)}
     if category_id not in existing_category_ids:
         raise HTTPException(
@@ -102,4 +90,4 @@ def get_best_cashback(connection: Connection, meeting_uuid: UUID, session_id: st
             detail=f"Не найдена категория кешбека с id {category_id}"
         )
 
-    return cashback_repository.get_best_cashback_by_category(connection, meeting["id"], category_id)
+    return cashback_repository.get_best_cashback_by_category(connection, meeting_id, category_id)

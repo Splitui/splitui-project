@@ -28,8 +28,7 @@ from app.services.receipt_validators import check_missing_and_return_error, vali
 
 def get_receipts_from_meeting(
         connection: Connection,
-        meeting_uuid: UUID,
-        session_id: str,
+        meeting_id: int,
         num_limit: int,
         num_offset: int
 ):
@@ -37,22 +36,20 @@ def get_receipts_from_meeting(
     Возвращает данные чеков указанной встречи.
 
     :param connection: соединение с базой данных.
-    :param meeting_uuid: UUID встречи.
+    :param meeting_id: идентификатор встречи.
+    :param num_limit: максимальное количество чеков в ответе.
+    :param num_offset: смещение относительно начала списка чеков.
     :return: список данных чеков.
     """
-    meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
-    _ = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
-    return receipts_repository.get_all_by_meeting_uuid(connection, num_limit, num_offset, meeting["uuid"])
+    return receipts_repository.get_all_by_meeting_uuid(connection, meeting_id, num_limit, num_offset)
 
 def get_receipt_full(
         connection: Connection,
-        meeting_uuid: UUID,
-        session_id: str,
+        meeting_id: int,
         receipt_id: int,
         num_limit: int,
         num_offset: int
 ):
-
     """
     Возвращает чек с позициями, участниками и долгами.
 
@@ -65,16 +62,12 @@ def get_receipt_full(
     Долги рассчитываются по всем позициям чека независимо от пагинации.
 
     :param connection: соединение с базой данных.
-    :param meeting_uuid: UUID встречи.
-    :param session_id: идентификатор сессии участника.
+    :param meeting_id: идентификатор встречи.
     :param receipt_id: идентификатор чека.
     :param num_limit: максимальное количество позиций в ответе.
     :param num_offset: смещение относительно начала списка позиций.
     :return: данные чека, позиции с участниками и долги по чеку.
     """
-    meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
-    _ = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
-
     receipt = receipts_repository.get_by_id(connection, receipt_id)
     if receipt is None:
         raise HTTPException(
@@ -82,7 +75,7 @@ def get_receipt_full(
             detail="Чек не найден",
         )
 
-    if meeting["id"] != receipt["meeting_id"]:
+    if meeting_id != receipt["meeting_id"]:
         raise HTTPException(
             status_code=400,
             detail="Чек не относится ко встрече",
@@ -136,7 +129,6 @@ def create_or_update_receipt_in_meeting(
         session_id: str,
         data: FullReceiptCreate
 ):
-
     """
     Создаёт или обновляет чек указанной встречи.
 

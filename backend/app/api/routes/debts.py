@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Header
 from sqlalchemy.engine import Connection
 
+from app.api.dependencies import get_meeting_for_participant
 from app.db.dependencies import get_connection
 from app.services import debts_service
 
@@ -16,18 +17,16 @@ router = APIRouter(
 
 @router.get("/meetings/{meeting_uuid}/debts", summary="Получить долги участников встречи")
 def get_debts(
-        meeting_uuid: UUID,
-        session_id: str = Header(),
+        meeting: dict = Depends(get_meeting_for_participant),
         connection: Connection = Depends(get_connection)
 ):
     """Обрабатывает запрос на получение списка долгов участников встречи.
 
-    :param meeting_uuid: UUID встречи.
-    :param session_id: идентификатор сессии участника.
+    :param meeting: данные встречи.
     :param connection: соединение с базой данных.
     :return: список долгов участников встречи.
     """
-    return debts_service.get_debts(connection, meeting_uuid, session_id)
+    return debts_service.get_debts(connection, meeting["id"])
 
 
 @router.post("/meetings/{meeting_uuid}/debts", summary="Посчитать долги")

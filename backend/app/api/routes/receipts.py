@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.engine import Connection
 
+from app.api.dependencies import get_meeting_for_participant
 from app.db.dependencies import get_connection
 from app.schemas.parsed_receipts import ParsedReceipt, ReceiptQrRequest
 from app.schemas.receipts import FullReceiptCreate
@@ -21,20 +22,20 @@ router = APIRouter(
     summary="Получить чеки встречи",
 )
 def get_meeting_receipts(
-    meeting_uuid: UUID,
     limit: int,
     offset: int,
-    session_id: str = Header(),
+    meeting: dict = Depends(get_meeting_for_participant),
     connection: Connection = Depends(get_connection)
 ):
     """Обрабатывает запрос на получение чеков встречи.
 
-    :param meeting_uuid: UUID встречи.
-    :param session_id: идентификатор сессии участника.
+    :param limit: максимальное количество чеков в ответе.
+    :param offset: смещение относительно начала списка чеков.
+    :param meeting: данные встречи.
     :param connection: соединение с базой данных.
     :return: список чеков встречи.
     """
-    return receipts_service.get_receipts_from_meeting(connection, meeting_uuid, session_id, limit, offset)
+    return receipts_service.get_receipts_from_meeting(connection, meeting["id"], limit, offset)
 
 
 @router.get(
@@ -42,21 +43,14 @@ def get_meeting_receipts(
     summary="Получить чек с позициями и участниками",
 )
 def get_full_receipt(
-    meeting_uuid: UUID,
     receipt_id: int,
     limit: int,
     offset: int,
-    session_id: str = Header(),
+    meeting: dict = Depends(get_meeting_for_participant),
     connection: Connection = Depends(get_connection),
 ):
-    return receipts_service.get_receipt_full(
-        connection,
-        meeting_uuid,
-        session_id,
-        receipt_id,
-        limit,
-        offset,
-    )
+
+    return receipts_service.get_receipt_full(connection, meeting["id"], receipt_id, limit, offset)
 
 
 @router.post(

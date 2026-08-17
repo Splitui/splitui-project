@@ -1,10 +1,10 @@
 """Модуль с эндпоинтами для работы со встречами."""
-from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header
 from sqlalchemy.engine import Connection
 
+from app.api.dependencies import get_meeting_for_participant
 from app.db.dependencies import get_connection
 from app.schemas.meetings import MeetingCreate, MeetingUpdate
 from app.services import meetings_service
@@ -33,18 +33,14 @@ def get_meetings(
 
 @router.get("/{meeting_uuid}", summary="Получить информацию по встрече")
 def get_meeting(
-        meeting_uuid: UUID,
-        session_id: str = Header(),
-        connection: Connection = Depends(get_connection)
+        meeting: dict = Depends(get_meeting_for_participant)
 ):
     """Обрабатывает запрос на получение информации о встрече.
 
-    :param meeting_uuid: UUID встречи.
-    :param connection: соединение с базой данных.
-    :param session_id: идентификатор сессии участника.
+    :param meeting: данные встречи.
     :return: данные встречи.
     """
-    return meetings_service.get_meeting(connection, meeting_uuid, session_id)
+    return meeting
 
 
 @router.post("", status_code=201, summary="Создать встречу")

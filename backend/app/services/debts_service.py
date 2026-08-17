@@ -10,17 +10,14 @@ from app.repositories import debts_repository
 from app.services import meetings_service, participants_service
 
 
-def get_debts(connection: Connection, meeting_uuid: UUID, session_id: str):
+def get_debts(connection: Connection, meeting_id: int):
     """Возвращает список долгов участников встречи.
 
     :param connection: соединение с базой данных.
-    :param meeting_uuid: UUID встречи.
-    :param session_id: идентификатор сессии участника.
+    :param meeting_id: идентификатор встречи.
     :return: список долгов встречи.
     """
-    meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
-    _ = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
-    return debts_repository.get_all_by_meeting(connection, meeting["id"])
+    return debts_repository.get_all_by_meeting(connection, meeting_id)
 
 
 @transaction

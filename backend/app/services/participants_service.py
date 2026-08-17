@@ -14,42 +14,30 @@ from app.services import meetings_service, bank_data_service
 
 def get_participants_from_meeting(
         connection: Connection,
-        meeting_uuid: UUID,
-        session_id: str,
+        meeting_id: int,
         num_limit: int,
         num_offset: int
 ):
     """Возвращает список участников встречи.
 
     :param connection: соединение с базой данных.
-    :param meeting_uuid: UUID встречи.
-    :param session_id: идентификатор сессии участника.
+    :param meeting_id: идентификатор встречи.
     :param num_limit: максимальное количество участников в ответе.
     :param num_offset: смещение относительно начала списка участников.
     :return: список данных участников встречи.
     """
-    meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
-    _ = get_participant_by_session_id(connection, meeting["id"], session_id)
-    return participants_repository.get_all(
-        connection,
-        meeting["id"],
-        num_limit,
-        num_offset
-    )
+    return participants_repository.get_all(connection, meeting_id, num_limit, num_offset)
 
 
-def get_participant_from_meeting(connection: Connection, meeting_uuid: UUID, session_id: str, participant_id: int):
+def get_participant_from_meeting(connection: Connection, meeting_id: int, participant_id: int):
     """Возвращает данные конкретного участника встречи.
 
     :param connection: соединение с базой данных.
-    :param meeting_uuid: UUID встречи.
-    :param session_id: идентификатор сессии участника.
+    :param meeting_id: идентификатор встречи.
     :param participant_id: идентификатор участника.
     :return: данные участника.
     """
-    meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
-    _ = get_participant_by_session_id(connection, meeting["id"], session_id)
-    participant = get_participant_or_error(connection, meeting["id"], participant_id)
+    participant = get_participant_or_error(connection, meeting_id, participant_id)
     participant["bank_data"] = bank_data_repository.get_bank_data_by_participant_id(connection, participant["id"])
     return participant
 
@@ -88,7 +76,6 @@ def add_participant(connection: Connection, meeting_uuid: UUID, data: Participan
 def update_participant(
         connection: Connection,
         meeting_uuid: UUID,
-        participant_id: int,
         session_id: str,
         data: ParticipantUpdate
 ):
@@ -96,19 +83,12 @@ def update_participant(
 
     :param connection: соединение с базой данных.
     :param meeting_uuid: UUID встречи.
-    :param participant_id: идентификатор участника.
     :param session_id: идентификатор сессии участника.
     :param data: данные для обновления участника.
     :return: обновлённые данные участника.
     """
     meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
-    current_participant = get_participant_by_session_id(connection, meeting["id"], session_id)
-    participant = get_participant_or_error(connection, meeting["id"], participant_id)
-    if current_participant["id"] != participant["id"]:
-        raise HTTPException(
-            status_code=403,
-            detail="Нельзя редоктировать данные другому участнику"
-        )
+    participant = get_participant_by_session_id(connection, meeting["id"], session_id)
 
     if meeting["status"] not in {MeetingStatus.ACTIVE, MeetingStatus.EDITING}:
         raise HTTPException(
@@ -161,7 +141,7 @@ def get_participant_by_session_id(connection: Connection, meeting_id: int, sessi
     :param session_id: идентификатор сессии участника.
     :return: данные текущего участника.
     """
-    current_participant = participants_repository.get_by_token(connection, session_id)
+    current_participant = participants_repository.get_by_session_id(connection, session_id)
     if current_participant is None:
         raise HTTPException(status_code=401, detail="Невалидный токен участника")
 
