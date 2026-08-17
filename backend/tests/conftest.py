@@ -3,10 +3,11 @@ from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, update
 
 from app.db.database import metadata
 from app.db.dependencies import get_connection
+from app.db.tables.meetings import MeetingStatus
 from app.main import app
 from tests.utils import future_date
 
@@ -245,3 +246,38 @@ def create_meeting_with_participants(
         }
 
     return _create_meeting_with_participants
+
+@pytest.fixture
+def create_bank(db_engine):
+    banks_table = metadata.tables["banks"]
+
+    def _create_bank():
+        with db_engine.begin() as connection:
+            result = connection.execute(
+                banks_table.insert().values(
+                    name="Сбербанк"
+                )
+            )
+            bank_id = result.inserted_primary_key[0]
+
+        return {
+            "id": bank_id,
+        }
+
+    return _create_bank
+
+
+@pytest.fixture
+def change_meeting_status(db_engine):
+    meetings_table = metadata.tables["meetings"]
+
+    def _change_meeting_status(meeting_id, status: MeetingStatus):
+        with db_engine.begin() as connection:
+            stmt = (
+                update(meetings_table)
+                .where(meetings_table.c.id == meeting_id)
+                .values(status=status)
+            )
+            connection.execute(stmt)
+
+    return _change_meeting_status

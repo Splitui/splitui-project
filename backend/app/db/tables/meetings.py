@@ -9,9 +9,8 @@ from sqlalchemy import (
     Enum,
     String,
     Table,
-    Uuid,
     func,
-    text,
+    text, CheckConstraint,
 )
 
 from app.db.database import id_column, metadata
@@ -21,7 +20,7 @@ class MeetingStatus(StrEnum):
     """Перечисление возможных статусов встречи."""
 
     ACTIVE = "Активная"
-    CALCULATING = "В расчете"
+    CALCULATING = "В расчёте"
     FINISHED = "Завершена"
     EDITING = "Корректировка"
 
@@ -35,7 +34,7 @@ meetings_table = Table(
     Column("is_public", Boolean, nullable=False, server_default=text("0")),
     Column(
         "status",
-        Enum(MeetingStatus, name="meeting_status_enum"),
+        Enum(MeetingStatus, values_callable=lambda statuses: [status.value for status in statuses]),
         nullable=False,
         server_default=MeetingStatus.ACTIVE.value
     ),

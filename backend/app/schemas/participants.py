@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, Field, model_validator
 
+from app.schemas.utils.validators import Nickname, CardNumber, PhoneNumber
+
 
 class ParticipantCreate(BaseModel):
     """Схема для создания участника встречи.
@@ -9,7 +11,7 @@ class ParticipantCreate(BaseModel):
     :ivar nickname: никнейм участника встречи.
     """
 
-    nickname: str = Field(min_length=1, max_length=50)
+    nickname: Nickname
 
 
 class ParticipantUpdate(BaseModel):
@@ -21,10 +23,10 @@ class ParticipantUpdate(BaseModel):
     :ivar phone_number: номер телефона.
     """
 
-    nickname: str | None = Field(default=None, min_length=1, max_length=50)
-    bank_id: int | None = None
-    card_number: str | None = Field(default=None, min_length=1, max_length=20)
-    phone_number: str | None = Field(default=None, min_length=1, max_length=15)
+    nickname: Nickname | None = None
+    bank_id: int | None = Field(default=None, ge=1)
+    card_number: CardNumber = None
+    phone_number: PhoneNumber = None
 
     @model_validator(mode="after")
     def validate_bank_data(self):

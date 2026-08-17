@@ -1,8 +1,10 @@
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 import pytest
 
+from app.db.tables.meetings import MeetingStatus
+from tests.conftest import change_meeting_status
 from tests.utils import future_date
 
 
@@ -111,3 +113,94 @@ def test_get_meeting_with_non_existent_uuid(app_client):
     response = app_client.get(f"/meetings/{missing_uuid}")
 
     assert response.status_code == 404
+
+
+def test_create_meeting_with_past_date_fails(app_client):
+    past_date = datetime.now(UTC) - timedelta(days=5)
+    payload = {
+        "title": "Тестовая Встреча",
+        "start_date": past_date.isoformat(),
+        "creator_nickname": "Тестовый участник",
+    }
+
+    response = app_client.post("/meetings", json=payload)
+
+    assert response.status_code == 422
+
+
+def test_calculate_meeting_from_active_success(app_client, create_meeting):
+    meeting = create_meeting()
+
+    response = app_client.post(f"/meetings/{meeting['uuid']}/calculate")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == MeetingStatus.CALCULATING
+
+
+def test_calculate_meeting_from_editing_success(app_client, create_meeting, change_meeting_status):
+    meeting = create_meeting()
+    change_meeting_status(meeting["id"], MeetingStatus.EDITING)
+
+    response = app_client.post(f"/meetings/{meeting['uuid']}/calculate")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == MeetingStatus.CALCULATING
+
+
+@pytest.mark.parametrize(
+    "status",
+    [MeetingStatus.CALCULATING, MeetingStatus.FINISHED],
+)
+def test_calculate_meeting_from_invalid_status_fails(app_client, create_meeting, change_meeting_status, status):
+    meeting = create_meeting()
+    change_meeting_status(meeting["id"], status)
+
+    response = app_client.post(f"/meetings/{meeting['uuid']}/calculate")
+
+    assert response.status_code == 409
+
+
+def test_finish_meeting_from_calculate_success(app_client, create_meeting, change_meeting_status):
+    meeting = create_meeting()
+    change_meeting_status(meeting["id"], MeetingStatus.CALCULATING)
+
+    response = app_client.post(f"/meetings/{meeting["uuid"]}/finish")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == MeetingStatus.FINISHED
+
+
+@pytest.mark.parametrize(
+    "status",
+    [MeetingStatus.ACTIVE, MeetingStatus.EDITING, MeetingStatus.FINISHED],
+)
+def test_finish_meeting_from_invalid_status_fails(app_client, create_meeting, change_meeting_status, status):
+    meeting = create_meeting()
+    change_meeting_status(meeting["id"], status)
+
+    response = app_client.post(f"/meetings/{meeting['uuid']}/finish")
+
+    assert response.status_code == 409
+
+
+def test_edit_meeting_from_calculating_success(app_client, create_meeting, change_meeting_status):
+    meeting = create_meeting()
+    change_meeting_status(meeting["id"], MeetingStatus.CALCULATING)
+
+    response = app_client.post(f"/meetings/{meeting['uuid']}/edit")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == MeetingStatus.EDITING
+
+
+@pytest.mark.parametrize(
+    "status",
+    [MeetingStatus.ACTIVE, MeetingStatus.EDITING, MeetingStatus.FINISHED],
+)
+def test_edit_meeting_from_invalid_status_fails(app_client, create_meeting, change_meeting_status, status):
+    meeting = create_meeting()
+    change_meeting_status(meeting["id"], status)
+
+    response = app_client.post(f"/meetings/{meeting['uuid']}/edit")
+
+    assert response.status_code == 409
