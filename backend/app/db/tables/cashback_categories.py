@@ -8,6 +8,5 @@ cashback_categories_table = Table(
     "cashback_categories",
     metadata,
     id_column(),
-    Column("name", String(50), nullable=False),
-    Column("icon_url", Text, nullable=True)
+    Column("name", String(15), nullable=False)
 )

@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
+from app.db.tables.meetings import MeetingStatus
 from app.schemas.meetings import MeetingUpdate
 
 
@@ -57,6 +58,53 @@ def update(connection: Connection, meeting_id: int, data: MeetingUpdate):
         text(f"UPDATE meetings SET {set_updating} WHERE id = :meeting_id RETURNING *"),
         fields
     )
+    return dict(result.mappings().one())
+
+
+def update_status(connection: Connection, meeting_id: int, status: MeetingStatus):
+    """Обновляет статус встречи.
+
+    :param connection: соединение с базой данных.
+    :param meeting_id: идентификатор встречи.
+    :param status: новый статус встречи.
+    :return: обновлённые данные встречи.
+    """
+    result = connection.execute(
+        text("""
+             UPDATE meetings
+             SET status =:status
+             WHERE id = :meeting_id RETURNING *
+             """),
+        {
+            "meeting_id": meeting_id,
+            "status": status
+        }
+    )
+
+    return result.mappings().one()
+
+
+def finish(connection: Connection, meeting_id: int):
+    """Устанавливает статус 'Завершена' и текущую дату время завершения.
+
+    :param connection: соединение с базой данных.
+    :param meeting_id: идентификатор встречи.
+    :return: обновлённые данные встречи.
+    """
+    result = connection.execute(
+        text("""
+             UPDATE meetings
+             SET status   = :status,
+                 end_date = :end_date
+             WHERE id = :meeting_id RETURNING *
+             """),
+        {
+            "meeting_id": meeting_id,
+            "status": MeetingStatus.FINISHED,
+            "end_date": datetime.now().isoformat()
+        }
+    )
+
     return dict(result.mappings().one())
 
 
