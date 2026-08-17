@@ -15,7 +15,7 @@ export default function InviteMeeting({ open, onClose, meetingId, onJoined }) {
             const meetingRes = await fetch(`${API_URL}/meetings/${meetingId}`);
             const meetingData = await meetingRes.json();
 
-            const res = await fetch(`${API_URL}/${meetingId}/participants`, {
+            const res = await fetch(`${API_URL}/meetings/${meetingId}/participants`, {
                 method: `POST`,
                 headers: { 'Content-type': 'application/json' },
                 body: JSON.stringify({ nickname: name }),
