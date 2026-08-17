@@ -21,7 +21,7 @@ NonEmptyStr = Annotated[str, AfterValidator(_strip_and_check_not_empty)]
 
 
 def _validate_nickname(value: str) -> str | None:
-    if not re.compile(r"[A-Za-zА-Яа-яЁё0-9_-]+").fullmatch(value):
+    if not re.compile(r"[A-Za-zА-Яа-яЁё0-9\s._-]+").fullmatch(value):
         raise ValueError(
             "Никнейм может содержать только буквы, цифры, пробелы, "
             "дефисы, точки и нижние подчёркивания"
