@@ -308,3 +308,38 @@ def change_meeting_status(db_engine):
             connection.execute(stmt)
 
     return _change_meeting_status
+
+
+@pytest.fixture
+def create_cashback_category(db_engine):
+    categories_table = metadata.tables["cashback_categories"]
+
+    def _create_cashback_category(name="Тестовая категория"):
+        with db_engine.begin() as connection:
+            result = connection.execute(
+                categories_table.insert().values(name=name)
+            )
+            category_id = result.inserted_primary_key[0]
+        return {
+            "id": category_id,
+            "name": name
+        }
+
+    return _create_cashback_category
+
+
+@pytest.fixture
+def create_participant_cashback(db_engine):
+    pcc_table = metadata.tables["participant_cashback_categories"]
+
+    def _create_participant_cashback(participant_id, category_id, percent):
+        with db_engine.begin() as connection:
+            connection.execute(
+                pcc_table.insert().values(
+                    participant_id=participant_id,
+                    category_id=category_id,
+                    percent=percent,
+                )
+            )
+
+    return _create_participant_cashback
