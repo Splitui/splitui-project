@@ -158,3 +158,97 @@ def sync_receipt_items(connection,items,existing_items,receipt_id,
             )
 
     return result_items
+
+
+def update_after_delete_participant(
+    connection,
+    meeting_id: int,
+    participant_id: int,
+):
+
+    """
+    Перераспределяет суммы позиций после удаления участника.
+
+    Находит все позиции указанной встречи, связанные с удаляемым
+    участником, и удаляет его связи с ними. Если у позиции остаются
+    другие участники, полная стоимость позиции поровну распределяется
+    между ними.
+
+    Если удаляемый участник был единственным участником позиции,
+    позиция остаётся без связей. При делении сумма доли округляется
+    до двух знаков после запятой, поэтому возможно расхождение
+    итоговой распределённой суммы на несколько копеек.
+
+    :param connection: соединение с базой данных.
+    :param meeting_id: идентификатор встречи.
+    :param participant_id: идентификатор удаляемого участника.
+    :return: список обновлённых связей участников с позициями.
+    """
+    
+    items = (
+        items_participants_repository
+        .get_items_by_participant(
+            connection=connection,
+            meeting_id=meeting_id,
+            participant_id=participant_id,
+        )
+    )
+
+    prepared_items = []
+
+    for item in items:
+        participant_ids = (
+            items_participants_repository
+            .get_participant_ids_except(
+                connection=connection,
+                receipt_item_id=item["receipt_item_id"],
+                excluded_participant_id=participant_id,
+            )
+        )
+
+        prepared_items.append({
+            **item,
+            "participant_ids": participant_ids,
+        })
+
+    updated_links = []
+
+    for item in prepared_items:
+        receipt_item_id = item["receipt_item_id"]
+        participant_ids = item["participant_ids"]
+
+        items_participants_repository.delete_participant_link(
+            connection=connection,
+            receipt_item_id=receipt_item_id,
+            participant_id=participant_id,
+        )
+
+        if not participant_ids:
+            continue
+        
+        total_amount = float(item["unit_price"]) * float(item["quantity"])
+
+        participants_count = len(participant_ids)
+
+        share_amount = round(
+            total_amount / participants_count , 2
+        )
+        
+        values = []
+
+        for remaining_participant_id in participant_ids:
+
+            values.append({
+                "receipt_item_id": receipt_item_id,
+                "participant_id": remaining_participant_id,
+                "share_amount": float(share_amount),
+            })
+
+        items_participants_repository.update_share_amounts(
+            connection=connection,
+            values=values,
+        )
+
+        updated_links.extend(values)
+
+    return updated_links
