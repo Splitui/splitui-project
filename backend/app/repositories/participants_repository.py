@@ -1,5 +1,7 @@
 """Модуль с запросами к базе данных для работы с участниками встреч."""
 
+import secrets
+import hashlib
 from uuid import UUID
 
 from sqlalchemy import text
@@ -20,18 +22,24 @@ def create(
     :param is_creator: признак создателя встречи.
     :return: данные созданного участника.
     """
+    session_id = secrets.token_urlsafe(32)
+    session_id_hash = hash_token(session_id)
     result = connection.execute(
         text("""
-             INSERT INTO participants (meeting_id, nickname, is_creator)
-             VALUES (:meeting_id, :nickname, :is_creator) RETURNING id, meeting_id, nickname, is_creator
+             INSERT INTO participants (meeting_id, nickname, is_creator, session_id_hash)
+             VALUES (:meeting_id, :nickname, :is_creator, :session_id_hash) 
+             RETURNING id, meeting_id, nickname, is_creator
              """),
         {
             "meeting_id": meeting_id,
             "nickname": nickname,
             "is_creator": is_creator,
+            "session_id_hash": session_id_hash
         },
     )
-    return dict(result.mappings().one())
+    participant = dict(result.mappings().one())
+    participant["session_id"] = session_id
+    return participant
 
 
 def update(
@@ -50,7 +58,7 @@ def update(
         text("""
              UPDATE participants
              SET nickname = :nickname
-             WHERE id = :participant_id RETURNING *
+             WHERE id = :participant_id RETURNING id, meeting_id, nickname, is_creator
              """),
         {
             "participant_id": participant_id,
@@ -79,6 +87,7 @@ def get_all(
         text(
             """
             SELECT id,
+                   meeting_id,
                    nickname,
                    is_creator
             FROM participants
@@ -106,7 +115,7 @@ def get_by_id(connection: Connection, meeting_id: int, participant_id: int):
     """
     result = connection.execute(
         text("""
-             SELECT *
+             SELECT id, meeting_id, nickname, is_creator
              FROM participants
              WHERE id = :participant_id
                and meeting_id = :meeting_id
@@ -116,25 +125,35 @@ def get_by_id(connection: Connection, meeting_id: int, participant_id: int):
             "meeting_id": meeting_id
         }
     )
-    
+
     row = result.mappings().one_or_none()
     return dict(row) if row else None
 
-def get_meeting_creator(
-    connection: Connection,
-    meeting_uuid: UUID,
-):
+
+def get_by_session_id(connection: Connection, session_id: str):
+    """Возвращает участника по его токену доступа.
+
+    :param connection: соединение с базой данных.
+    :param session_id: сырой токен участника (из заголовка запроса).
+    :return: данные участника или None, если токен не найден.
+    """
+    session_id_hash = hash_token(session_id)
     result = connection.execute(
         text("""
-            SELECT p.*
-            FROM participants p
-            JOIN meetings m ON m.id = p.meeting_id
-            WHERE m.uuid = :meeting_uuid
-              AND p.is_creator = TRUE
+            SELECT id, meeting_id, nickname, is_creator 
+            FROM participants 
+            WHERE session_id_hash = :session_id_hash
         """),
-        {
-            "meeting_uuid": str(meeting_uuid),
-        },
+        {"session_id_hash": session_id_hash}
     )
+    row = result.mappings().one_or_none()
+    return dict(row) if row else None
 
-    return result.mappings().one_or_none()
+
+def hash_token(token: str) -> str:
+    """Возвращает SHA-256 хеш токена в hex-виде.
+
+    :param token: исходный токен.
+    :return: hex-представление хеша.
+    """
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
