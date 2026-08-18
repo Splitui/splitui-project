@@ -1,6 +1,10 @@
 from functools import wraps
+from uuid import UUID
+
+from fastapi import HTTPException
+from sqlalchemy.engine import Connection
 from inspect import signature
-from typing import Callable, Mapping
+from typing import Mapping
 
 from pydantic import BaseModel
 
@@ -13,13 +17,17 @@ from app.repositories import (
 
 ACTION_MESSAGES = {
     "meeting.created": '{participant} создал встречу «{title}»',
-    "meeting.updated": '{participant} изменил встречу «{title}»',
+    "meeting.updated": 'Встреча «{title}» изменена',
     "participant.created": '{participant} присоединился к встрече',
     "participant.updated": '{participant} изменил данные участника',
     "receipt.created": '{participant} добавил чек «{title}»',
     "receipt.updated": '{participant} изменил чек «{title}»',
     "receipt.deleted": '{participant} удалил чек «{title}»',
     "bank_data.updated": '{participant} изменил банковские реквизиты',
+    "debts.recalculated": "Долги встречи пересчитаны",
+    "meeting.calculating": 'Встреча «{title}» переведена к расчётам',
+    "meeting.finished": 'Встреча «{title}» завершена',
+    "meeting.editing": 'Встреча «{title}» возвращена к редактированию',
 }
 
 
@@ -153,6 +161,44 @@ def change_log(
 
     return decorator
 
+def get_changes_from_meeting(
+    connection: Connection,
+    meeting_uuid: UUID,
+    num_limit: int,
+    num_offset: int,
+):
+    """Возвращает список изменений указанной встречи.
+
+    Проверяет существование встречи и получает записи журнала
+    в порядке от новых к старым с учётом ограничения и смещения.
+
+    :param connection: соединение с базой данных.
+    :param meeting_uuid: UUID встречи.
+    :param num_limit: максимальное количество изменений в ответе.
+    :param num_offset: смещение от начала списка изменений.
+    :return: список изменений встречи.
+    """
+    meeting = meetings_repository.get_by_uuid(
+        connection,
+        meeting_uuid,
+    )
+
+    if meeting is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "message": (
+                    f"Не найдена встреча с uuid {meeting_uuid}"
+                ),
+            },
+        )
+
+    return change_log_repository.get_all_by_meeting_id(
+        connection=connection,
+        meeting_id=meeting["id"],
+        num_limit=num_limit,
+        num_offset=num_offset,
+    )
 
 def parse_receipt_action(arguments: dict, result: dict) -> str:
     if arguments["data"].id is None:
@@ -179,4 +225,76 @@ def parse_deleted_receipt_context(
         "meeting_id": result["meeting_id"],
         "entity_id": result["deleted_receipt_id"],
         "title": result["title"],
+    }
+
+def parse_created_meeting_context(
+    arguments: dict,
+    result: dict,
+) -> dict:
+    creator = result["meeting_creator"]
+
+    return {
+        "meeting_id": result["id"],
+        "entity_id": result["id"],
+        "participant_id": creator["id"],
+        "title": result["title"],
+    }
+
+def parse_updated_meeting_context(
+    arguments: dict,
+    result: dict,
+) -> dict:
+    return {
+        "meeting_id": result["id"],
+        "entity_id": result["id"],
+        "title": result["title"],
+    }
+
+def parse_created_participant_context(
+    arguments: dict,
+    result: dict,
+) -> dict:
+    return {
+        "meeting_id": result["meeting_id"],
+        "entity_id": result["id"],
+        "participant_id": result["id"],
+        "nickname": result["nickname"],
+    }
+
+def parse_updated_participant_context(
+    arguments: dict,
+    result: dict,
+) -> dict:
+    return {
+        "meeting_id": result["meeting_id"],
+        "entity_id": result["id"],
+        "participant_id": arguments["participant_id"],
+        "nickname": result["nickname"],
+    }
+
+def parse_bank_data_context(
+    arguments: dict,
+    result: dict,
+) -> dict:
+    return {
+        "participant_id": arguments["participant_id"],
+    }
+
+def parse_debts_context(
+    arguments: dict,
+    result: list,
+) -> dict:
+    return {
+        "debts_count": len(result),
+    }
+
+def parse_meeting_status_context(
+    arguments: dict,
+    result: dict,
+) -> dict:
+    return {
+        "meeting_id": result["id"],
+        "entity_id": result["id"],
+        "title": result["title"],
+        "status": result["status"],
     }

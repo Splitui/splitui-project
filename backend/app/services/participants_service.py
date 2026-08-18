@@ -10,6 +10,7 @@ from app.db.tables.meetings import MeetingStatus
 from app.repositories import participants_repository, bank_data_repository
 from app.schemas.participants import ParticipantCreate, ParticipantUpdate
 from app.services import meetings_service, bank_data_service
+from app.services.change_log_service import change_log, parse_created_participant_context, parse_updated_participant_context
 
 
 def get_participants_from_meeting(
@@ -43,7 +44,11 @@ def get_participant_from_meeting(connection: Connection, meeting_id: int, partic
 
 
 @transaction
-def add_participant(connection: Connection, meeting_uuid: UUID, data: ParticipantCreate):
+@change_log(
+    action="participant.created",
+    context_parser=parse_created_participant_context,
+)
+def add_participant(connection, meeting_uuid, data: ParticipantCreate):
     """Добавляет нового участника к встрече.
 
     :param connection: соединение с базой данных.
@@ -73,12 +78,11 @@ def add_participant(connection: Connection, meeting_uuid: UUID, data: Participan
 
 
 @transaction
-def update_participant(
-        connection: Connection,
-        meeting_uuid: UUID,
-        session_id: str,
-        data: ParticipantUpdate
-):
+@change_log(
+    action="participant.updated",
+    context_parser=parse_updated_participant_context,
+)
+def update_participant(connection, meeting_uuid, participant_id: int, data: ParticipantUpdate):
     """Обновляет данные участника встречи.
 
     :param connection: соединение с базой данных.

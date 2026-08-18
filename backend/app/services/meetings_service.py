@@ -8,6 +8,7 @@ from app.db.dependencies import transaction
 from app.db.tables.meetings import MeetingStatus
 from app.repositories import meetings_repository, participants_repository, receipts_repository
 from app.schemas.meetings import MeetingCreate, MeetingUpdate
+from app.services.change_log_service import change_log, parse_created_meeting_context, parse_meeting_status_context, parse_updated_meeting_context
 from app.services import participants_service
 
 
@@ -36,6 +37,10 @@ def get_meeting(connection: Connection, meeting_uuid: UUID, session_id: str):
 
 
 @transaction
+@change_log(
+    action="meeting.created",
+    context_parser=parse_created_meeting_context,
+)
 def create_meeting(connection: Connection, data: MeetingCreate):
     """Создаёт встречу и добавляет её создателя в список участников.
 
@@ -60,7 +65,11 @@ def create_meeting(connection: Connection, data: MeetingCreate):
 
 
 @transaction
-def update_meeting(connection, meeting_uuid, session_id: str, data: MeetingUpdate):
+@change_log(
+    action="meeting.updated",
+    context_parser=parse_updated_meeting_context,
+)
+def update_meeting(connection, meeting_uuid, data: MeetingUpdate):
     """Обновляет данные встречи.
 
     :param connection: соединение с базой данных.
@@ -87,7 +96,11 @@ def update_meeting(connection, meeting_uuid, session_id: str, data: MeetingUpdat
 
 
 @transaction
-def calculate_meeting(connection, meeting_uuid, session_id: str):
+@change_log(
+    action="meeting.calculating",
+    context_parser=parse_meeting_status_context,
+)
+def calculate_meeting(connection, meeting_uuid):
     """Переводит встречу в статус 'В расчёте'.
 
     :param connection: соединение с базой данных.
@@ -126,7 +139,11 @@ def calculate_meeting(connection, meeting_uuid, session_id: str):
 
 
 @transaction
-def finish_meeting(connection: Connection, meeting_uuid: UUID, session_id: str):
+@change_log(
+    action="meeting.finished",
+    context_parser=parse_meeting_status_context,
+)
+def finish_meeting(connection: Connection, meeting_uuid: UUID):
     """Завершает встречу.
 
     :param connection: соединение с базой данных.
@@ -154,7 +171,11 @@ def finish_meeting(connection: Connection, meeting_uuid: UUID, session_id: str):
 
 
 @transaction
-def edit_meeting(connection, meeting_uuid, session_id: str):
+@change_log(
+    action="meeting.editing",
+    context_parser=parse_meeting_status_context,
+)
+def edit_meeting(connection, meeting_uuid):
     """Переводит встречу в статус «Корректировка».
 
     :param connection: соединение с базой данных.
