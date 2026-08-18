@@ -44,6 +44,7 @@ export default function EditExpense({ open, onClose, onUpdated, expenseId }) {
 
         const meeting = JSON.parse(Cookies.get('meeting') || '{}');
         const meetingUuid = meeting.id;
+        const sessionId = meeting.sessionId;
         if (!meetingUuid) {
             setError('Не найден UUID встречи');
             return;
@@ -57,7 +58,10 @@ export default function EditExpense({ open, onClose, onUpdated, expenseId }) {
             try {
                 const partRes = await fetch(
                     `${API_BASE}/meetings/${meetingUuid}/participants?limit=100&offset=0`,
-                    { signal: controller.signal },
+                    {
+                        signal: controller.signal,
+                        headers: { 'session-id': sessionId },
+                    },
                 );
                 if (!partRes.ok) throw new Error(`Ошибка участников: ${partRes.status}`);
                 const partData = await partRes.json();
@@ -66,7 +70,10 @@ export default function EditExpense({ open, onClose, onUpdated, expenseId }) {
                 );
                 const recRes = await fetch(
                     `${API_BASE}/meetings/${meetingUuid}/receipts/${expenseId}?limit=100&offset=0`,
-                    { signal: controller.signal },
+                    {
+                        signal: controller.signal,
+                        headers: { 'session-id': sessionId },
+                    },
                 );
                 if (!recRes.ok) throw new Error(`Ошибка чека: ${recRes.status}`);
                 const rec = await recRes.json();
@@ -111,6 +118,7 @@ export default function EditExpense({ open, onClose, onUpdated, expenseId }) {
     const handleSave = async () => {
         const meeting = JSON.parse(Cookies.get('meeting') || '{}');
         const meetingUuid = meeting.id;
+        const sessionId = meeting.sessionId;
         if (!meetingUuid || !paidBy) return;
 
         const items = singleItem
@@ -159,14 +167,14 @@ export default function EditExpense({ open, onClose, onUpdated, expenseId }) {
         };
 
         try {
-            const res = await fetch(
-                `${API_BASE}/meetings/${meetingUuid}/participant/${paidBy}/receipts`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body),
+            const res = await fetch(`${API_BASE}/meetings/${meetingUuid}/receipts`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'session-id': sessionId,
                 },
-            );
+                body: JSON.stringify(body),
+            });
             if (!res.ok) {
                 showSnackbar('Не удалось обновить расход');
                 return;
@@ -180,13 +188,17 @@ export default function EditExpense({ open, onClose, onUpdated, expenseId }) {
     const handleDelete = async () => {
         const meeting = JSON.parse(Cookies.get('meeting') || '{}');
         const meetingUuid = meeting.id;
+        const sessionId = meeting.sessionId;
         if (!meetingUuid || !expenseId) return;
         if (!window.confirm('Удалить этот расход?')) return;
 
         try {
             const res = await fetch(
                 `${API_BASE}/meetings/${meetingUuid}/participant/${paidBy}/receipts/${expenseId}`,
-                { method: 'DELETE' },
+                {
+                    method: 'DELETE',
+                    headers: { 'session-id': sessionId },
+                },
             );
             if (!res.ok) {
                 showSnackbar('Не удалось удалить расход');

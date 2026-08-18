@@ -46,6 +46,7 @@ export default function AddExpense({ open, onClose, onCreated }) {
 
         const meeting = JSON.parse(Cookies.get('meeting') || '{}');
         const meetingUuid = meeting.id;
+        const sessionId = meeting.sessionId;
         if (!meetingUuid) {
             setUsersError('Не найден UUID встречи');
             return;
@@ -59,7 +60,10 @@ export default function AddExpense({ open, onClose, onCreated }) {
             try {
                 const response = await fetch(
                     `${API_BASE}/meetings/${meetingUuid}/participants?limit=100&offset=0`,
-                    { signal: controller.signal },
+                    {
+                        signal: controller.signal,
+                        headers: { 'session-id': sessionId },
+                    },
                 );
 
                 if (!response.ok) {
@@ -96,6 +100,7 @@ export default function AddExpense({ open, onClose, onCreated }) {
     const handleSave = async () => {
         const meeting = JSON.parse(Cookies.get('meeting') || '{}');
         const meetingUuid = meeting.id;
+        const sessionId = meeting.sessionId;
         if (!meetingUuid) {
             console.error('Не найден UUID встречи');
             return;
@@ -157,14 +162,14 @@ export default function AddExpense({ open, onClose, onCreated }) {
         };
 
         try {
-            const res = await fetch(
-                `${API_BASE}/meetings/${meetingUuid}/participant/${paidBy}/receipts`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body),
+            const res = await fetch(`${API_BASE}/meetings/${meetingUuid}/receipts`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'session-id': sessionId,
                 },
-            );
+                body: JSON.stringify(body),
+            });
 
             if (!res.ok) {
                 showSnackbar('Не удалось сохранить расход');
