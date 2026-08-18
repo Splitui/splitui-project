@@ -72,6 +72,18 @@ def upsert(
     return dict(result.mappings().one())
 
 
+def delete_by_participant_id(connection: Connection, participant_id: int):
+    """Удаляет банковские реквизиты участника, если они есть.
+
+    :param connection: соединение с базой данных.
+    :param participant_id: идентификатор участника.
+    """
+    connection.execute(
+        text("DELETE FROM bank_data WHERE participant_id = :participant_id"),
+        {"participant_id": participant_id}
+    )
+
+
 def get_bank_data_by_participant_id(connection: Connection, participant_id: int):
     """Возвращает банковские реквизиты участника по его идентификатору.
 
@@ -81,9 +93,10 @@ def get_bank_data_by_participant_id(connection: Connection, participant_id: int)
     """
     result = connection.execute(
         text("""
-             SELECT *
-             FROM bank_data
-             WHERE participant_id = :participant_id
+             SELECT bd.id, b.name AS bank_name, bd.card_number, bd.phone_number
+             FROM bank_data bd
+                      JOIN banks b ON b.id = bd.bank_id
+             WHERE bd.participant_id = :participant_id
              """),
         {
             "participant_id": participant_id

@@ -6,10 +6,11 @@ from sqlalchemy.engine import Connection
 
 from app.db.dependencies import transaction
 from app.db.tables.meetings import MeetingStatus
-from app.repositories import meetings_repository, participants_repository, receipts_repository
+from app.repositories import meetings_repository, participants_repository, receipts_repository, debts_repository
 from app.schemas.meetings import MeetingCreate, MeetingUpdate
-from app.services.change_log_service import change_log, parse_created_meeting_context, parse_meeting_status_context, parse_updated_meeting_context
 from app.services import participants_service
+from app.services.change_log_service import change_log, parse_created_meeting_context, parse_meeting_status_context, \
+    parse_updated_meeting_context
 
 
 def get_meetings(connection: Connection, num_limit: int, num_offset: int):
@@ -69,7 +70,7 @@ def create_meeting(connection: Connection, data: MeetingCreate):
     action="meeting.updated",
     context_parser=parse_updated_meeting_context,
 )
-def update_meeting(connection, meeting_uuid,session_id, data: MeetingUpdate):
+def update_meeting(connection, meeting_uuid, session_id, data: MeetingUpdate):
     """Обновляет данные встречи.
 
     :param connection: соединение с базой данных.
@@ -100,7 +101,7 @@ def update_meeting(connection, meeting_uuid,session_id, data: MeetingUpdate):
     action="meeting.calculating",
     context_parser=parse_meeting_status_context,
 )
-def calculate_meeting(connection, meeting_uuid,session_id):
+def calculate_meeting(connection, meeting_uuid, session_id):
     """Переводит встречу в статус 'В расчёте'.
 
     :param connection: соединение с базой данных.
@@ -167,6 +168,13 @@ def finish_meeting(connection: Connection, meeting_uuid: UUID, session_id):
             )
         )
 
+    unpaid_count = debts_repository.count_unpaid_for_meeting(connection, meeting["id"])
+    if unpaid_count > 0:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Нельзя завершить встречу, так как есть непогашенные долги: {unpaid_count}"
+        )
+
     return meetings_repository.finish(connection, meeting["id"])
 
 
@@ -175,7 +183,7 @@ def finish_meeting(connection: Connection, meeting_uuid: UUID, session_id):
     action="meeting.editing",
     context_parser=parse_meeting_status_context,
 )
-def edit_meeting(connection, meeting_uuid,session_id):
+def edit_meeting(connection, meeting_uuid, session_id):
     """Переводит встречу в статус «Корректировка».
 
     :param connection: соединение с базой данных.

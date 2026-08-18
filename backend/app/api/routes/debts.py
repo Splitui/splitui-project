@@ -43,3 +43,39 @@ def calculate_debts(
     :return: подсчитанный список долгов участников встречи.
     """
     return debts_service.calculate_debts(connection, meeting_uuid, session_id)
+
+
+@router.get("/{meeting_uuid}/debts/{debt_id}/payment", summary="Получить данные для оплаты долга")
+def get_debt_payment_info(
+        meeting_uuid: UUID,
+        debt_id: int,
+        session_id: str = Header(...),
+        connection: Connection = Depends(get_connection),
+):
+    """Обрабатывает запрос на получение данных для оплаты долга.
+
+    :param meeting_uuid: UUID встречи.
+    :param debt_id: идентификатор долга.
+    :param session_id: идентификатор сессии участника.
+    :param connection: соединение с базой данных.
+    :return: сумма и реквизиты получателя.
+    """
+    return debts_service.get_debt_payment_info(connection, meeting_uuid, session_id, debt_id)
+
+
+@router.patch("/{meeting_uuid}/debts/{debt_id}/pay", summary="Отметить долг как оплаченный")
+def pay_debt(
+        meeting_uuid: UUID,
+        debt_id: int,
+        session_id: str = Header(),
+        connection: Connection = Depends(get_connection),
+):
+    """Обрабатывает запрос на отметку долга как оплаченного.
+
+    :param meeting_uuid: UUID встречи.
+    :param debt_id: идентификатор долга.
+    :param session_id: идентификатор сессии участника.
+    :param connection: соединение с базой данных.
+    :return: обновлённые данные долга.
+    """
+    return debts_service.mark_debt_as_paid(connection, meeting_uuid, session_id, debt_id)

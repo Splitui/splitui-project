@@ -7,10 +7,12 @@ from sqlalchemy.exc import IntegrityError
 
 from app.db.dependencies import transaction
 from app.db.tables.meetings import MeetingStatus
-from app.repositories import participants_repository, bank_data_repository
+from app.repositories import participants_repository, bank_data_repository, receipts_repository, debts_repository, \
+    cashback_repository
 from app.schemas.participants import ParticipantCreate, ParticipantUpdate
-from app.services import meetings_service, bank_data_service
-from app.services.change_log_service import change_log, parse_created_participant_context, parse_updated_participant_context
+from app.services import meetings_service, bank_data_service, receipt_items_service
+from app.services.change_log_service import change_log, parse_created_participant_context, \
+    parse_updated_participant_context
 
 
 def get_participants_from_meeting(
@@ -115,6 +117,58 @@ def update_participant(connection, meeting_uuid, session_id, data: ParticipantUp
         participant["bank_data"] = bank_data
 
     return participant
+
+
+@transaction
+def delete_participant(connection: Connection, meeting_uuid: UUID, session_id: str, participant_id: int):
+    """Удаляет участника встречи.
+
+    :param connection: соединение с базой данных.
+    :param meeting_uuid: UUID встречи.
+    :param participant_id: идентификатор удаляемого участника.
+    :param session_id: идентификатор сессии участника.
+    """
+    meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
+    current_participant = get_participant_by_session_id(connection, meeting["id"], session_id)
+
+    participant = get_participant_or_error(connection, meeting["id"], participant_id)
+
+    if not (current_participant["is_creator"] or current_participant["id"] == participant["id"]):
+        raise HTTPException(
+            status_code=403,
+            detail="Удалить участника может только создатель встречи или сам участник"
+        )
+
+    if participant["is_creator"]:
+        is_only_participant = participants_repository.count_all(connection, meeting["id"]) == 1
+        if meeting["status"] != MeetingStatus.FINISHED and not is_only_participant:
+            raise HTTPException(
+                status_code=409,
+                detail="Создатель может выйти из встречи только если она завершена "
+                       "или он единственный участник встречи"
+            )
+    elif meeting["status"] == MeetingStatus.ACTIVE or meeting["status"] == MeetingStatus.EDITING:
+        if receipts_repository.count_receipts_as_payer(connection, participant["id"]) > 0:
+            raise HTTPException(
+                status_code=409,
+                detail="Нельзя удалить участника, так как он связан с чеком"
+            )
+    elif meeting["status"] == MeetingStatus.CALCULATING:
+        unpaid_count = debts_repository.count_unpaid_for_participant(
+            connection,
+            meeting["id"],
+            participant["id"]
+        )
+        if unpaid_count > 0:
+            raise HTTPException(
+                status_code=409,
+                detail="Нельзя удалить участника, так как с ним связаны непогашенные долги"
+            )
+
+    receipt_items_service.update_after_delete_participant(connection, meeting["id"], participant["id"])
+    bank_data_repository.delete_by_participant_id(connection, participant_id)
+    cashback_repository.delete_by_participant_id(connection, participant_id)
+    participants_repository.delete(connection, participant["id"])
 
 
 def get_participant_or_error(connection: Connection, meeting_id, participant_id):
