@@ -25,6 +25,9 @@ ACTION_MESSAGES = {
     "receipt.deleted": '{participant} удалил чек «{title}»',
     "bank_data.updated": '{participant} изменил банковские реквизиты',
     "debts.recalculated": "Долги встречи пересчитаны",
+    "meeting.calculating": 'Встреча «{title}» переведена к расчётам',
+    "meeting.finished": 'Встреча «{title}» завершена',
+    "meeting.editing": 'Встреча «{title}» возвращена к редактированию',
 }
 
 
@@ -283,4 +286,15 @@ def parse_debts_context(
 ) -> dict:
     return {
         "debts_count": len(result),
+    }
+
+def parse_meeting_status_context(
+    arguments: dict,
+    result: dict,
+) -> dict:
+    return {
+        "meeting_id": result["id"],
+        "entity_id": result["id"],
+        "title": result["title"],
+        "status": result["status"],
     }

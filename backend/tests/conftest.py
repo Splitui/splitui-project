@@ -273,6 +273,8 @@ def get_change_logs(db_engine):
         return changes
 
     return _get_change_logs
+
+@pytest.fixture
 def create_bank(db_engine):
     banks_table = metadata.tables["banks"]
 

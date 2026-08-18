@@ -8,7 +8,7 @@ from app.db.dependencies import transaction
 from app.db.tables.meetings import MeetingStatus
 from app.repositories import meetings_repository, participants_repository, receipts_repository
 from app.schemas.meetings import MeetingCreate, MeetingUpdate
-from app.services.change_log_service import change_log, parse_created_meeting_context, parse_updated_meeting_context
+from app.services.change_log_service import change_log, parse_created_meeting_context, parse_meeting_status_context, parse_updated_meeting_context
 
 
 def get_meetings(connection: Connection, num_limit: int, num_offset: int):
@@ -68,6 +68,10 @@ def update_meeting(connection, meeting_uuid, data: MeetingUpdate):
 
 
 @transaction
+@change_log(
+    action="meeting.calculating",
+    context_parser=parse_meeting_status_context,
+)
 def calculate_meeting(connection, meeting_uuid):
     """Переводит встречу в статус 'В расчёте'.
 
@@ -100,6 +104,10 @@ def calculate_meeting(connection, meeting_uuid):
 
 
 @transaction
+@change_log(
+    action="meeting.finished",
+    context_parser=parse_meeting_status_context,
+)
 def finish_meeting(connection: Connection, meeting_uuid: UUID):
     """Завершает встречу.
 
@@ -121,6 +129,10 @@ def finish_meeting(connection: Connection, meeting_uuid: UUID):
 
 
 @transaction
+@change_log(
+    action="meeting.editing",
+    context_parser=parse_meeting_status_context,
+)
 def edit_meeting(connection, meeting_uuid):
     """Переводит встречу в статус «Корректировка».
 
