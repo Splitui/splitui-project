@@ -86,3 +86,24 @@ def update_participant(
     :return: обновлённые данные участника.
     """
     return participants_service.update_participant(connection, meeting_uuid, session_id, data)
+
+
+@router.delete(
+    "/{meeting_uuid}/participants/{participant_id}",
+    status_code=204,
+    summary="Удалить участника встречи",
+)
+def delete_participant(
+        meeting_uuid: UUID,
+        participant_id: int,
+        session_id: str = Header(),
+        connection: Connection = Depends(get_connection)
+):
+    """Обрабатывает запрос на удаление участника встречи.
+
+    :param meeting_uuid: UUID встречи.
+    :param session_id: идентификатор сессии участника.
+    :param participant_id: идентификатор участника.
+    :param connection: соединение с базой данных.
+    """
+    participants_service.delete_participant(connection, meeting_uuid, session_id, participant_id)

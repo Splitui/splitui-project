@@ -1,8 +1,7 @@
 """Модуль с запросами к базе данных для работы с участниками встреч."""
 
-import secrets
 import hashlib
-from uuid import UUID
+import secrets
 
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
@@ -69,6 +68,20 @@ def update(
     return dict(result.mappings().one())
 
 
+def delete(connection: Connection, participant_id: int):
+    """Удаляет участника встречи.
+
+    :param connection: соединение с базой данных.
+    :param participant_id: идентификатор участника.
+    """
+    connection.execute(
+        text("""
+            DELETE FROM participants WHERE id = :participant_id
+        """),
+        {"participant_id": participant_id}
+    )
+
+
 def get_all(
         connection: Connection,
         meeting_id: int,
@@ -128,6 +141,20 @@ def get_by_id(connection: Connection, meeting_id: int, participant_id: int):
 
     row = result.mappings().one_or_none()
     return dict(row) if row else None
+
+
+def count_all(connection: Connection, meeting_id: int):
+    """Возвращает количество участников встречи.
+
+    :param connection: соединение с базой данных.
+    :param meeting_id: идентификатор встречи.
+    :return: количество участников.
+    """
+    result = connection.execute(
+        text("SELECT COUNT(*) FROM participants WHERE meeting_id = :meeting_id"),
+        {"meeting_id": meeting_id}
+    )
+    return result.scalar_one()
 
 
 def get_by_session_id(connection: Connection, session_id: str):

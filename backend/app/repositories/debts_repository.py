@@ -1,5 +1,7 @@
 """Модуль с запросами к базе данных для работы с долгами участников встречи."""
 
+from datetime import datetime, UTC
+
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
@@ -61,6 +63,84 @@ def calculate_for_meeting(connection: Connection, meeting_id: int, debts: list[d
              """),
         values
     )
+
+
+def mark_as_paid(connection: Connection, debt_id: int):
+    """Отмечает долг как погашенный.
+
+    :param connection: соединение с базой данных.
+    :param debt_id: идентификатор долга.
+    :return: обновлённые данные долга.
+    """
+    result = connection.execute(
+        text("""
+             UPDATE debts
+             SET is_paid = 1, 
+                 paid_at = :paid_at
+             WHERE id = :debt_id
+             RETURNING *
+             """),
+        {
+            "debt_id": debt_id,
+            "paid_at": datetime.now(UTC).isoformat()
+        }
+    )
+    return dict(result.mappings().one())
+
+
+def get_by_id(connection: Connection, meeting_id: int, debt_id: int):
+    """Возвращает долг по id в рамках конкретной встречи.
+
+    :param connection: соединение с базой данных.
+    :param meeting_id: идентификатор встречи.
+    :param debt_id: идентификатор долга.
+    :return: данные долга или None, если не найден.
+    """
+    result = connection.execute(
+        text("SELECT * FROM debts WHERE id = :debt_id AND meeting_id = :meeting_id"),
+        {
+            "debt_id": debt_id,
+            "meeting_id": meeting_id
+        }
+    )
+    row = result.mappings().one_or_none()
+    return dict(row) if row else None
+
+
+def count_unpaid_for_meeting(connection: Connection, meeting_id: int) -> int:
+    """Возвращает количество непогашенных долгов встречи.
+
+    :param connection: соединение с базой данных.
+    :param meeting_id: идентификатор встречи.
+    :return: количество непогашенных долгов.
+    """
+    result = connection.execute(
+        text("SELECT COUNT(*) FROM debts WHERE meeting_id = :meeting_id AND is_paid = 0"),
+        {"meeting_id": meeting_id}
+    )
+    return result.scalar_one()
+
+
+def count_unpaid_for_participant(connection: Connection, meeting_id: int, participant_id: int):
+    """Возвращает количество непогашенных долгов встречи, где участник - должник или кредитор.
+
+    :param connection: соединение с базой данных.
+    :param meeting_id: идентификатор встречи.
+    :param participant_id: идентификатор участника.
+    :return: количество непогашенных долгов.
+    """
+    result = connection.execute(
+        text("""
+             SELECT COUNT(*)
+             FROM debts
+             WHERE meeting_id = :meeting_id
+               AND is_paid = 0
+               AND (debtor_id = :participant_id OR creditor_id = :participant_id)
+             """),
+        {"meeting_id": meeting_id, "participant_id": participant_id}
+    )
+    return result.scalar_one()
+
 
 def get_balances_by_meeting(connection: Connection, meeting_id: int):
     """Возвращает балансы участников встречи.
