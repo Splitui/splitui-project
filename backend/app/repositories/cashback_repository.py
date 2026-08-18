@@ -101,3 +101,14 @@ def get_best_cashback_by_category(connection: Connection, meeting_id: int, categ
         }
     )
     return [dict(row) for row in result.mappings().all()]
+
+def delete_by_participant_id(connection: Connection, participant_id: int):
+    """Удаляет выбранные категории кешбэка участника, если они есть.
+
+    :param connection: соединение с базой данных.
+    :param participant_id: идентификатор участника.
+    """
+    connection.execute(
+        text("DELETE FROM participant_cashback_categories WHERE participant_id = :participant_id"),
+        {"participant_id": participant_id}
+    )

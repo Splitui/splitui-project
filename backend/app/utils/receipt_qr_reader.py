@@ -24,7 +24,7 @@ def get_receipt(qr_raw: str):
     if result.get("code") != 1:
         return None
 
-    return result["data"]
+    return result["data"]["json"]
 
 
 def kopecks_to_rubles(value: int | float) -> Decimal:
@@ -37,16 +37,14 @@ def parse_receipt(receipt: dict):
     parsed_items = []
 
     for item in receipt.get("items", []):
-        amount = kopecks_to_rubles(
-            float(item["quantity"]) * float(item["price"])
-        )
+        source_quantity = Decimal(str(item["quantity"]))
 
-        if isinstance(item["quantity"], int):
-            quantity = item["quantity"]
+        if source_quantity == source_quantity.to_integral_value():
+            quantity = int(source_quantity)
             unit_price = kopecks_to_rubles(item["price"])
         else:
             quantity = 1
-            unit_price = amount
+            unit_price = kopecks_to_rubles(item["sum"])
 
         parsed_items.append(
             ParsedReceiptItem(
