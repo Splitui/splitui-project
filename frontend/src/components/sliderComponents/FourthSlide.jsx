@@ -7,7 +7,11 @@ export default function FourthSlide() {
             <div data-swiper-parallax="-200" className="mb-7">
                 <h4 className="font-bold text-3xl text-[#463628]">FAQ</h4>
             </div>
-            <div data-swiper-parallax="-100" className="w-full flex flex-col gap-2 overflow-y-auto" style={{ maxHeight: 'calc(100% - 80px)'}}>
+            <div
+                data-swiper-parallax="-100"
+                className="w-full flex flex-col gap-2 overflow-y-auto"
+                style={{ maxHeight: 'calc(100% - 80px)' }}
+            >
                 <Accordion
                     className="bg-[#F8F4EC] rounded-xl"
                     disableGutters
@@ -37,7 +41,8 @@ export default function FourthSlide() {
                         borderRadius: '12px !important',
                         '&:before': { display: 'none' },
                         color: '#463628',
-                    }}>
+                    }}
+                >
                     <AccordionSummary
                         expandIcon={<ExpandMoreIcon sx={{ color: '#463628' }} />}
                     >
@@ -57,7 +62,8 @@ export default function FourthSlide() {
                         borderRadius: '12px !important',
                         '&:before': { display: 'none' },
                         color: '#463628',
-                    }}>
+                    }}
+                >
                     <AccordionSummary
                         expandIcon={<ExpandMoreIcon sx={{ color: '#463628' }} />}
                     >
@@ -77,7 +83,8 @@ export default function FourthSlide() {
                         borderRadius: '12px !important',
                         '&:before': { display: 'none' },
                         color: '#463628',
-                    }}>
+                    }}
+                >
                     <AccordionSummary
                         expandIcon={<ExpandMoreIcon sx={{ color: '#463628' }} />}
                     >
@@ -85,7 +92,8 @@ export default function FourthSlide() {
                     </AccordionSummary>
                     <AccordionDetails className="border-t border-[#EAE0CD]">
                         <p className="text-left opacity-70">
-                            Только участники вашей комнаты; автоматически он никому не передаётся.
+                            Только участники вашей комнаты; автоматически он никому не
+                            передаётся.
                         </p>
                     </AccordionDetails>
                 </Accordion>
@@ -97,7 +105,8 @@ export default function FourthSlide() {
                         borderRadius: '12px !important',
                         '&:before': { display: 'none' },
                         color: '#463628',
-                    }}>
+                    }}
+                >
                     <AccordionSummary
                         expandIcon={<ExpandMoreIcon sx={{ color: '#463628' }} />}
                     >
@@ -117,7 +126,8 @@ export default function FourthSlide() {
                         borderRadius: '12px !important',
                         '&:before': { display: 'none' },
                         color: '#463628',
-                    }}>
+                    }}
+                >
                     <AccordionSummary
                         expandIcon={<ExpandMoreIcon sx={{ color: '#463628' }} />}
                     >
