@@ -23,8 +23,7 @@ def create(
     result = connection.execute(
         text("""
              INSERT INTO bank_data (participant_id, bank_id, card_number, phone_number)
-             VALUES (:participant_id, :bank_id, :card_number,
-                     :phone_number) RETURNING id, bank_id, card_number, phone_number
+             VALUES (:participant_id, :bank_id, :card_number, :phone_number) RETURNING *
              """),
         {
             "participant_id": participant_id,
@@ -55,13 +54,13 @@ def upsert(
     result = connection.execute(
         text("""
              INSERT INTO bank_data (participant_id, bank_id, card_number, phone_number)
-             VALUES (:participant_id, :bank_id, :card_number, :phone_number)
-             ON CONFLICT (participant_id)
-             DO UPDATE SET
+             VALUES (:participant_id, :bank_id, :card_number, :phone_number) ON CONFLICT (participant_id)
+             DO
+             UPDATE SET
                  bank_id = excluded.bank_id,
                  card_number = excluded.card_number,
                  phone_number = excluded.phone_number
-             RETURNING id, participant_id, bank_id, card_number, phone_number
+                 RETURNING id, participant_id, bank_id, card_number, phone_number
              """),
         {
             "participant_id": participant_id,
@@ -119,10 +118,10 @@ def get_bank_by_id(connection: Connection, bank_id: int):
     """
     result = connection.execute(
         text("""
-            SELECT *
-            FROM banks
-            WHERE id = :bank_id
-        """),
+             SELECT *
+             FROM banks
+             WHERE id = :bank_id
+             """),
         {
             "bank_id": bank_id
         }

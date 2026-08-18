@@ -3,8 +3,10 @@ from uuid import UUID
 
 from fastapi import HTTPException
 from sqlalchemy.engine import Connection
+from sqlalchemy.exc import IntegrityError
 
 from app.db.dependencies import transaction
+from app.db.tables.meetings import MeetingStatus
 from app.repositories import participants_repository, bank_data_repository
 from app.schemas.participants import ParticipantCreate, ParticipantUpdate
 from app.services import meetings_service, bank_data_service
@@ -60,12 +62,24 @@ def add_participant(connection, meeting_uuid, data: ParticipantCreate):
     :return: данные созданного участника.
     """
     meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
-    return participants_repository.create(
-        connection,
-        meeting["id"],
-        data.nickname,
-        False
-    )
+    if meeting["status"] not in {MeetingStatus.ACTIVE, MeetingStatus.EDITING}:
+        raise HTTPException(
+            status_code=409,
+            detail="Добавлять участника можно только в статусе встречи 'Активная' или 'Корректировка'",
+        )
+
+    try:
+        return participants_repository.create(
+            connection,
+            meeting["id"],
+            data.nickname,
+            False
+        )
+    except IntegrityError as e:
+        raise HTTPException(
+            status_code=409,
+            detail="Участник с таким никнеймом уже добавлен"
+        )
 
 
 @transaction
@@ -84,6 +98,12 @@ def update_participant(connection, meeting_uuid, participant_id: int, data: Part
     """
     meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
     participant = get_participant_or_error(connection, meeting["id"], participant_id)
+
+    if meeting["status"] not in {MeetingStatus.ACTIVE, MeetingStatus.EDITING}:
+        raise HTTPException(
+            status_code=409,
+            detail="Редактировать участника можно только в статусе встречи 'Активная' или 'Корректировка'",
+        )
 
     if data.nickname is not None:
         participant = participants_repository.update(connection, participant["id"], data.nickname)
@@ -123,4 +143,4 @@ def get_participant_or_error(connection: Connection, meeting_id, participant_id)
 
 
 def get_creator(connection: Connection, meeting_uuid: UUID):
-    return participants_repository.get_meeting_creator(connection,meeting_uuid)
+    return participants_repository.get_meeting_creator(connection, meeting_uuid)
