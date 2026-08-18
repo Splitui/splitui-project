@@ -18,6 +18,7 @@ import Cookies from 'js-cookie';
 import { CASHBACK_OPTIONS, FIELD_SX, MENU_PROPS } from '../Options';
 import Receipt from './Receipt';
 import { useSnackbar } from '../SnackbarProvider';
+import QrScanner from './QrScanner';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 const API_BASE = API_URL;
@@ -40,6 +41,7 @@ export default function AddExpense({ open, onClose, onCreated }) {
     const [singleItem, setSingleItem] = useState(true);
     const [receiptOpen, setReceiptOpen] = useState(false);
     const [receiptItems, setReceiptItems] = useState([]);
+    const [scannerOpen, setScannerOpen] = useState(false);
 
     useEffect(() => {
         if (!open) return;
@@ -95,7 +97,38 @@ export default function AddExpense({ open, onClose, onCreated }) {
 
     const handleReceiptView = () => setReceiptOpen(true);
 
-    const handleReceiptUpload = () => {};
+    const handleReceiptUpload = () => setScannerOpen(true);
+    const handleQrScanned = async (qrRaw) => {
+        setScannerOpen(false);
+        const meeting = JSON.parse(Cookies.get('meeting') || '{}');
+        try {
+            const res = await fetch(`${API_BASE}/qr`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'session-id': meeting.sessionId,
+                },
+                body: JSON.stringify({ qr_raw: qrRaw }),
+            });
+            if (!res.ok) {
+                showSnackbar('Не удалось распознать чек');
+                return;
+            }
+            const data = await res.json();
+            setReceiptItems(
+                (data.items || []).map((it, idx) => ({
+                    id: it.id ?? Date.now() + idx,
+                    title: it.title,
+                    unitPrice: Number(it.unit_price) || 0,
+                    quantity: it.quantity,
+                    participantIds: [],
+                })),
+            );
+            setReceiptOpen(true);
+        } catch (e) {
+            showSnackbar('Сеть недоступна');
+        }
+    };
 
     const handleSave = async () => {
         const meeting = JSON.parse(Cookies.get('meeting') || '{}');
@@ -397,6 +430,11 @@ export default function AddExpense({ open, onClose, onCreated }) {
                 items={receiptItems}
                 setItems={setReceiptItems}
                 usersOptions={usersOptions}
+            />
+            <QrScanner
+                open={scannerOpen}
+                onClose={() => setScannerOpen(false)}
+                onScanned={handleQrScanned}
             />
         </Dialog>
     );

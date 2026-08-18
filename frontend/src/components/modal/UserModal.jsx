@@ -60,11 +60,15 @@ export default function UserModal({
         };
 
         try {
+            const meeting = JSON.parse(Cookies.get('meeting') || '{}');
             const res = await fetch(
-                `${API_URL}/meetings/${meetingUUID}/participants/${participantId}`,
+                `${API_URL}/meetings/${meetingUUID}/participants/me`,
                 {
                     method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'session-id': meeting.sessionId,
+                    },
                     body: JSON.stringify(allData),
                 },
             );
