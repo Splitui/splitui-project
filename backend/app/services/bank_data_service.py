@@ -9,9 +9,14 @@ from app.db.dependencies import transaction
 from app.repositories import bank_data_repository
 from app.schemas.bank_data import BankDataCreate
 from app.services import meetings_service, participants_service
+from app.services.change_log_service import change_log, parse_bank_data_context
 
 
 @transaction
+@change_log(
+    action="bank_data.updated",
+    context_parser=parse_bank_data_context,
+)
 def add_bank_data(connection: Connection, meeting_uuid: UUID, participant_id: int, data: BankDataCreate):
     """Добавляет банковские реквизиты участника.
 

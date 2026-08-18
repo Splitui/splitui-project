@@ -7,6 +7,7 @@ from sqlalchemy.engine import Connection
 from app.db.dependencies import transaction
 from app.repositories import meetings_repository, participants_repository
 from app.schemas.meetings import MeetingCreate, MeetingUpdate
+from app.services.change_log_service import change_log, parse_created_meeting_context, parse_updated_meeting_context
 
 
 def get_meetings(connection: Connection, num_limit: int, num_offset: int):
@@ -21,6 +22,10 @@ def get_meetings(connection: Connection, num_limit: int, num_offset: int):
 
 
 @transaction
+@change_log(
+    action="meeting.created",
+    context_parser=parse_created_meeting_context,
+)
 def create_meeting(connection: Connection, data: MeetingCreate):
     """Создаёт встречу и добавляет её создателя в список участников.
 
@@ -45,6 +50,10 @@ def create_meeting(connection: Connection, data: MeetingCreate):
 
 
 @transaction
+@change_log(
+    action="meeting.updated",
+    context_parser=parse_updated_meeting_context,
+)
 def update_meeting(connection, meeting_uuid, data: MeetingUpdate):
     """Обновляет данные встречи.
 

@@ -8,6 +8,7 @@ from sqlalchemy.engine import Connection
 from app.db.dependencies import transaction
 from app.repositories import debts_repository
 from app.services import meetings_service
+from app.services.change_log_service import change_log, parse_debts_context
 
 
 def get_debts(connection: Connection, meeting_uuid: UUID):
@@ -22,6 +23,10 @@ def get_debts(connection: Connection, meeting_uuid: UUID):
 
 
 @transaction
+@change_log(
+    action="debts.recalculated",
+    context_parser=parse_debts_context,
+)
 def calculate_debts(connection: Connection, meeting_uuid: UUID):
     """Подсчитывает долги участников встречи на основе чеков.
 

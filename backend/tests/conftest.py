@@ -1,5 +1,6 @@
 from datetime import datetime
 from uuid import uuid4
+import json
 
 import pytest
 from fastapi.testclient import TestClient
@@ -245,3 +246,29 @@ def create_meeting_with_participants(
         }
 
     return _create_meeting_with_participants
+
+@pytest.fixture
+def get_change_logs(db_engine):
+    change_log_table = metadata.tables["change_log"]
+
+    def _get_change_logs(meeting_id):
+        with db_engine.connect() as connection:
+            rows = connection.execute(
+                change_log_table
+                .select()
+                .where(
+                    change_log_table.c.meeting_id == meeting_id
+                )
+                .order_by(change_log_table.c.id.desc())
+            ).mappings().all()
+
+        changes = []
+
+        for row in rows:
+            change = dict(row)
+            change["value"] = json.loads(change["value"])
+            changes.append(change)
+
+        return changes
+
+    return _get_change_logs
