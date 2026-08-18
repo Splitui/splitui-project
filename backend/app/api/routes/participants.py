@@ -1,10 +1,10 @@
 """Модуль с эндпоинтами для работы с участниками встречи."""
-
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from sqlalchemy.engine import Connection
 
+from app.api.dependencies import get_meeting_for_participant
 from app.db.dependencies import get_connection
 from app.schemas.participants import ParticipantCreate, ParticipantUpdate
 from app.services import participants_service
@@ -17,22 +17,22 @@ router = APIRouter(
 
 @router.get("/meetings/{meeting_uuid}/participants", summary="Получить участников встречи")
 def get_participants(
-        meeting_uuid: UUID,
         limit: int,
         offset: int,
+        meeting: dict = Depends(get_meeting_for_participant),
         connection: Connection = Depends(get_connection)
 ):
     """Обрабатывает запрос на получение списка участников встречи.
 
-    :param meeting_uuid: UUID встречи.
     :param limit: максимальное количество участников в ответе.
     :param offset: смещение относительно начала списка участников.
+    :param meeting: данные встречи.
     :param connection: соединение с базой данных.
     :return: список данных участников встречи.
     """
     return participants_service.get_participants_from_meeting(
         connection,
-        meeting_uuid,
+        meeting["id"],
         limit,
         offset
     )
@@ -40,18 +40,18 @@ def get_participants(
 
 @router.get("/meetings/{meeting_uuid}/participants/{participant_id}", summary="Получить участника встречи")
 def get_participant(
-        meeting_uuid: UUID,
         participant_id: int,
+        meeting: dict = Depends(get_meeting_for_participant),
         connection: Connection = Depends(get_connection)
 ):
     """Обрабатывает запрос на получение данных конкретного участника встречи.
 
-    :param meeting_uuid: UUID встречи.
     :param participant_id: идентификатор участника.
+    :param meeting: данные встречи.
     :param connection: соединение с базой данных.
     :return: данные участника.
     """
-    return participants_service.get_participant_from_meeting(connection, meeting_uuid, participant_id)
+    return participants_service.get_participant_from_meeting(connection, meeting["id"], participant_id)
 
 
 @router.post("/meetings/{meeting_uuid}/participants", status_code=201, summary="Добавить участника к встрече")
@@ -70,19 +70,40 @@ def add_participant(
     return participants_service.add_participant(connection, meeting_uuid, data)
 
 
-@router.patch("/meetings/{meeting_uuid}/participants/{participant_id}", summary="Обновить участника встречи")
+@router.patch("/meetings/{meeting_uuid}/participants/me", summary="Обновить участника встречи")
 def update_participant(
         meeting_uuid: UUID,
-        participant_id: int,
         data: ParticipantUpdate,
+        session_id: str = Header(),
         connection: Connection = Depends(get_connection)
 ):
     """Обрабатывает запрос на частичное обновление данных участника встречи.
 
     :param meeting_uuid: UUID встречи.
-    :param participant_id: идентификатор участника.
     :param data: данные для обновления участника.
+    :param session_id: идентификатор сессии участника.
     :param connection: соединение с базой данных.
     :return: обновлённые данные участника.
     """
-    return participants_service.update_participant(connection, meeting_uuid, participant_id, data)
+    return participants_service.update_participant(connection, meeting_uuid, session_id, data)
+
+
+@router.delete(
+    "/{meeting_uuid}/participants/{participant_id}",
+    status_code=204,
+    summary="Удалить участника встречи",
+)
+def delete_participant(
+        meeting_uuid: UUID,
+        participant_id: int,
+        session_id: str = Header(),
+        connection: Connection = Depends(get_connection)
+):
+    """Обрабатывает запрос на удаление участника встречи.
+
+    :param meeting_uuid: UUID встречи.
+    :param session_id: идентификатор сессии участника.
+    :param participant_id: идентификатор участника.
+    :param connection: соединение с базой данных.
+    """
+    participants_service.delete_participant(connection, meeting_uuid, session_id, participant_id)

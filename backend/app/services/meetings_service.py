@@ -6,8 +6,11 @@ from sqlalchemy.engine import Connection
 
 from app.db.dependencies import transaction
 from app.db.tables.meetings import MeetingStatus
-from app.repositories import meetings_repository, participants_repository, receipts_repository
+from app.repositories import meetings_repository, participants_repository, receipts_repository, debts_repository
 from app.schemas.meetings import MeetingCreate, MeetingUpdate
+from app.services import participants_service
+from app.services.change_log_service import change_log, parse_created_meeting_context, parse_meeting_status_context, \
+    parse_updated_meeting_context
 
 
 def get_meetings(connection: Connection, num_limit: int, num_offset: int):
@@ -21,7 +24,24 @@ def get_meetings(connection: Connection, num_limit: int, num_offset: int):
     return meetings_repository.get_all(connection, num_limit, num_offset)
 
 
+def get_meeting(connection: Connection, meeting_uuid: UUID, session_id: str):
+    """Возвращает данные встречи.
+
+    :param connection: соединение с базой данных.
+    :param meeting_uuid: UUID встречи.
+    :param session_id: идентификатор сессии участника.
+    :return: данные встречи.
+    """
+    meeting = get_meeting_or_error(connection, meeting_uuid)
+    _ = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
+    return meeting
+
+
 @transaction
+@change_log(
+    action="meeting.created",
+    context_parser=parse_created_meeting_context,
+)
 def create_meeting(connection: Connection, data: MeetingCreate):
     """Создаёт встречу и добавляет её создателя в список участников.
 
@@ -46,27 +66,56 @@ def create_meeting(connection: Connection, data: MeetingCreate):
 
 
 @transaction
-def update_meeting(connection, meeting_uuid, data: MeetingUpdate):
+@change_log(
+    action="meeting.updated",
+    context_parser=parse_updated_meeting_context,
+)
+def update_meeting(connection, meeting_uuid, session_id, data: MeetingUpdate):
     """Обновляет данные встречи.
 
     :param connection: соединение с базой данных.
     :param meeting_uuid: UUID встречи.
+    :param session_id: идентификатор сессии участника.
     :param data: данные для обновления встречи.
     :return: обновлённые данные встречи.
     """
     meeting = get_meeting_or_error(connection, meeting_uuid)
+    current_participant = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
+    if not current_participant["is_creator"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Редактировать встречу может только создатель встречи"
+        )
+
+    if meeting["status"] not in {MeetingStatus.ACTIVE, MeetingStatus.EDITING}:
+        raise HTTPException(
+            status_code=409,
+            detail="Редактировать встречу можно только в статусе 'Активная' или 'Корректировка'",
+        )
+
     return meetings_repository.update(connection, meeting["id"], data)
 
 
 @transaction
-def calculate_meeting(connection, meeting_uuid):
+@change_log(
+    action="meeting.calculating",
+    context_parser=parse_meeting_status_context,
+)
+def calculate_meeting(connection, meeting_uuid, session_id):
     """Переводит встречу в статус 'В расчёте'.
 
     :param connection: соединение с базой данных.
     :param meeting_uuid: UUID встречи.
+    :param session_id: идентификатор сессии участника.
     :return: обновлённые данные встречи.
     """
     meeting = get_meeting_or_error(connection, meeting_uuid)
+    current_participant = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
+    if not current_participant["is_creator"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Перевести встречу в статус 'В расчёте' может только создатель встречи"
+        )
 
     if meeting["status"] not in {MeetingStatus.ACTIVE, MeetingStatus.EDITING}:
         raise HTTPException(
@@ -91,14 +140,25 @@ def calculate_meeting(connection, meeting_uuid):
 
 
 @transaction
-def finish_meeting(connection: Connection, meeting_uuid: UUID):
+@change_log(
+    action="meeting.finished",
+    context_parser=parse_meeting_status_context,
+)
+def finish_meeting(connection: Connection, meeting_uuid: UUID, session_id):
     """Завершает встречу.
 
     :param connection: соединение с базой данных.
     :param meeting_uuid: UUID встречи.
+    :param session_id: идентификатор сессии участника.
     :return: обновлённые данные завершённой встречи.
     """
     meeting = get_meeting_or_error(connection, meeting_uuid)
+    current_participant = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
+    if not current_participant["is_creator"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Перевести встречу в статус 'Завершена' может только создатель встречи"
+        )
 
     if meeting["status"] != MeetingStatus.CALCULATING:
         raise HTTPException(
@@ -108,18 +168,36 @@ def finish_meeting(connection: Connection, meeting_uuid: UUID):
             )
         )
 
+    unpaid_count = debts_repository.count_unpaid_for_meeting(connection, meeting["id"])
+    if unpaid_count > 0:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Нельзя завершить встречу, так как есть непогашенные долги: {unpaid_count}"
+        )
+
     return meetings_repository.finish(connection, meeting["id"])
 
 
 @transaction
-def edit_meeting(connection, meeting_uuid):
+@change_log(
+    action="meeting.editing",
+    context_parser=parse_meeting_status_context,
+)
+def edit_meeting(connection, meeting_uuid, session_id):
     """Переводит встречу в статус «Корректировка».
 
     :param connection: соединение с базой данных.
     :param meeting_uuid: UUID встречи.
+    :param session_id: идентификатор сессии участника.
     :return: обновлённые данные встречи.
     """
     meeting = get_meeting_or_error(connection, meeting_uuid)
+    current_participant = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
+    if not current_participant["is_creator"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Перевести встречу в статус 'Корректировка' может только создатель встречи"
+        )
 
     if meeting["status"] != MeetingStatus.CALCULATING:
         raise HTTPException(
