@@ -309,6 +309,9 @@ export default function Meeting() {
             try {
                 const res = await fetch(
                     `${API_URL}/amount/${meetingId}/${participantId}`,
+                    {
+                        headers: { 'session-id': meeting.sessionId },
+                    },
                 );
                 if (res.ok) {
                     const data = await res.json();
@@ -327,6 +330,9 @@ export default function Meeting() {
             try {
                 const res = await fetch(
                     `${API_URL}/meetings/${meetingId}/participants?limit=50&offset=0`,
+                    {
+                        headers: { 'session-id': meeting.sessionId },
+                    },
                 );
                 if (res.ok) {
                     const participants = await res.json();
@@ -335,6 +341,9 @@ export default function Meeting() {
                             try {
                                 const bankRes = await fetch(
                                     `${API_URL}/meetings/${meetingId}/participants/${p.id}/bank_data`,
+                                    {
+                                        headers: { 'session-id': meeting.sessionId },
+                                    },
                                 );
                                 if (bankRes.ok) {
                                     const bankData = await bankRes.json();
@@ -385,7 +394,9 @@ export default function Meeting() {
         const checkMeetingStatus = async () => {
             if (!meetingId) return;
             try {
-                const res = await fetch(`${API_URL}/meetings/${meetingId}`);
+                const res = await fetch(`${API_URL}/meetings/${meetingId}`, {
+                    headers: { 'session-id': meeting.sessionId },
+                });
                 if (res.ok) {
                     const data = await res.json();
                     if (data.status === 'Завершена' || data.is_finished) {

@@ -37,7 +37,10 @@ export default function ExpensesTab({ refresh, onExpenseClick }) {
             try {
                 const response = await fetch(
                     `${API_BASE}/meetings/${meetingUuid}/receipts?limit=100&offset=0`,
-                    { signal: controller.signal },
+                    {
+                        signal: controller.signal,
+                        headers: { 'session-id': meeting.sessionId },
+                    },
                 );
 
                 if (!response.ok) {
