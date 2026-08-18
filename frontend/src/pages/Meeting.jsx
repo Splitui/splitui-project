@@ -21,6 +21,8 @@ import PaymentTab from '../components/meetingTabs/PaymentTab';
 import UserAvatar from '../components/UserAvatar';
 import AddExpense from '../components/modal/AddExpense';
 import BestCashback from '../components/modal/BestCashback';
+import EditExpense from '../components/modal/EditExpense';
+import { useSnackbar } from '../components/SnackbarProvider';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
@@ -262,11 +264,14 @@ export default function Meeting() {
     const [openMembers, setOpenMembers] = useState(false);
     const [participants, setParticipants] = useState([]);
     const [openAddExpense, setOpenAddExpense] = useState(false);
+    const [refresh, setRefresh] = useState(0);
+    const [editExpenseId, setEditExpenseId] = useState(null);
     const navigate = useNavigate();
     const meeting = JSON.parse(Cookies.get('meeting') || '{}');
     const meetingId = meeting.id;
     const participantId = meeting.participantId;
     const [isFinished, setIsFinished] = useState(false);
+    const showSnackbar = useSnackbar();
 
     const [currentMeetingName, setCurrentMeetingName] = useState(
         meeting.name || 'Встреча сплитуев',
@@ -310,11 +315,11 @@ export default function Meeting() {
                     setBalance(data);
                 }
             } catch (e) {
-                console.error('Ошибочка с балансом', e);
+                showSnackbar('Ошибка загрузки данных');
             }
         };
         fetchBalance();
-    }, [meetingId, participantId]);
+    }, [meetingId, participantId, refresh]);
 
     useEffect(() => {
         const fetchParticipants = async () => {
@@ -362,7 +367,7 @@ export default function Meeting() {
                                     return enriched;
                                 }
                             } catch (err) {
-                                console.log('Нет данных банка для', p.id, err);
+                                showSnackbar('Ошибка загрузки данных');
                             }
                             return p;
                         }),
@@ -444,7 +449,14 @@ export default function Meeting() {
                 </div>
 
                 <main className="flex-1 overflow-y-auto custom-scrollbar px-2">
-                    {value === 'expenses' ? <ExpensesTab /> : <PaymentTab />}
+                    {value === 'expenses' ? (
+                        <ExpensesTab
+                            refresh={refresh}
+                            onExpenseClick={setEditExpenseId}
+                        />
+                    ) : (
+                        <PaymentTab />
+                    )}
                 </main>
 
                 <div className="pt-4 shrink-0">
@@ -521,8 +533,14 @@ export default function Meeting() {
                 <AddExpense
                     open={openAddExpense}
                     onClose={() => setOpenAddExpense(false)}
+                    onCreated={() => setRefresh((n) => n + 1)}
                 />
-
+                <EditExpense
+                    open={editExpenseId !== null}
+                    expenseId={editExpenseId}
+                    onClose={() => setEditExpenseId(null)}
+                    onUpdated={() => setRefresh((n) => n + 1)}
+                />
                 <EndMeeting
                     open={openEndMeeting}
                     onClose={() => setOpenEndMeeting(false)}
