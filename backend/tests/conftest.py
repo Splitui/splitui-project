@@ -11,7 +11,7 @@ from app.db.dependencies import get_connection
 from app.db.tables.meetings import MeetingStatus
 from app.main import app
 from tests.utils import future_date
-
+from app.repositories.participants_repository import hash_token
 
 @pytest.fixture
 def db_engine(tmp_path):
@@ -49,7 +49,8 @@ def create_meeting(db_engine):
             title="Тестовая Встреча",
             start_date: datetime = future_date(),
             creator_nickname="Тестовый создатель"
-    ):
+    ):  
+        creator_session_id = str(uuid4())
         meeting_uuid = str(uuid4())
         with db_engine.begin() as connection:
             result = connection.execute(
@@ -65,7 +66,8 @@ def create_meeting(db_engine):
                 participants_table.insert().values(
                     meeting_id=meeting_id,
                     nickname=creator_nickname,
-                    is_creator=True
+                    is_creator=True,
+                    session_id_hash=hash_token(creator_session_id),
                 )
             )
 
@@ -73,7 +75,8 @@ def create_meeting(db_engine):
             "id": meeting_id,
             "uuid": meeting_uuid,
             "title": title,
-            "start_date": start_date
+            "start_date": start_date,
+            "creator_session_id": creator_session_id,
         }
 
     return _create_meeting
@@ -84,12 +87,16 @@ def create_participant(db_engine):
     participants_table = metadata.tables["participants"]
 
     def _create_participant(meeting_id, nickname="Тестовый участник", is_creator=False):
+
+        session_id = str(uuid4())
+
         with db_engine.begin() as connection:
             result = connection.execute(
                 participants_table.insert().values(
                     meeting_id=meeting_id,
                     nickname=nickname,
-                    is_creator=is_creator
+                    is_creator=is_creator,
+                    session_id_hash=hash_token(session_id)
                 )
             )
             participant_id = result.inserted_primary_key[0]
@@ -98,7 +105,8 @@ def create_participant(db_engine):
             "id": participant_id,
             "meeting_id": meeting_id,
             "nickname": nickname,
-            "is_creator": is_creator
+            "is_creator": is_creator,
+            "session_id": session_id,
         }
 
     return _create_participant

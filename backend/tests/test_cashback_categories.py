@@ -7,7 +7,12 @@ def test_get_cashback_categories_empty(app_client, create_meeting, create_partic
     meeting = create_meeting()
     participant = create_participant(meeting_id=meeting["id"])
 
-    response = app_client.get(f"/meetings/{meeting['uuid']}/participants/{participant['id']}/cashback-categories")
+    response = app_client.get(
+        f"/meetings/{meeting['uuid']}/cashback-categories",
+        headers={
+            "session-id": participant["session_id"],
+        },
+    )
 
     assert response.status_code == 200
     assert response.json() == []
@@ -23,7 +28,12 @@ def test_get_cashback_categories_returns_configured(
         participant_id=participant["id"], category_id=category["id"], percent=5
     )
 
-    response = app_client.get(f"/meetings/{meeting['uuid']}/participants/{participant['id']}/cashback-categories")
+    response = app_client.get(
+        f"/meetings/{meeting['uuid']}/cashback-categories",
+        headers={
+            "session-id": participant["session_id"],
+        },
+    )
 
     assert response.status_code == 200
     categories = response.json()
@@ -46,7 +56,11 @@ def test_update_cashback_categories_creates_new(
     }
 
     response = app_client.put(
-        f"/meetings/{meeting['uuid']}/participants/{participant['id']}/cashback-categories", json=payload
+        f"/meetings/{meeting['uuid']}/cashback-categories",
+        headers={
+            "session-id": participant["session_id"],
+        },
+        json=payload,
     )
 
     assert response.status_code == 200
@@ -72,7 +86,11 @@ def test_update_cashback_categories_replaces_existing(
     }
 
     response = app_client.put(
-        f"/meetings/{meeting['uuid']}/participants/{participant['id']}/cashback-categories", json=payload
+        f"/meetings/{meeting['uuid']}/cashback-categories",
+        headers={
+            "session-id": participant["session_id"],
+        },
+        json=payload,
     )
 
     assert response.status_code == 200
@@ -97,7 +115,11 @@ def test_update_cashback_categories_zero_percent_removed(
     }
 
     response = app_client.put(
-        f"/meetings/{meeting['uuid']}/participants/{participant['id']}/cashback-categories", json=payload
+        f"/meetings/{meeting['uuid']}/cashback-categories",
+        headers={
+            "session-id": participant["session_id"],
+        },
+        json=payload,
     )
 
     assert response.status_code == 200
@@ -117,7 +139,11 @@ def test_update_cashback_categories_unknown_category_fails(
     }
 
     response = app_client.put(
-        f"/meetings/{meeting['uuid']}/participants/{participant['id']}/cashback-categories", json=payload
+        f"/meetings/{meeting['uuid']}/cashback-categories",
+        headers={
+            "session-id": participant["session_id"],
+        },
+        json=payload,
     )
 
     assert response.status_code == 422
@@ -137,7 +163,11 @@ def test_update_cashback_categories_duplicate_category_fails(
     }
 
     response = app_client.put(
-        f"/meetings/{meeting['uuid']}/participants/{participant['id']}/cashback-categories", json=payload
+        f"/meetings/{meeting['uuid']}/cashback-categories",
+        headers={
+            "session-id": participant["session_id"],
+        },
+        json=payload,
     )
 
     assert response.status_code == 422
@@ -158,7 +188,11 @@ def test_update_cashback_categories_percent_out_of_range_fails(
     }
 
     response = app_client.put(
-        f"/meetings/{meeting['uuid']}/participants/{participant['id']}/cashback-categories", json=payload
+        f"/meetings/{meeting['uuid']}/cashback-categories",
+        headers={
+            "session-id": participant["session_id"],
+        },
+        json=payload,
     )
 
     assert response.status_code == 422
@@ -177,7 +211,12 @@ def test_get_best_cashback_sorted_by_percent_desc(
     create_participant_cashback(participant_2["id"], category["id"], 4)
     create_participant_cashback(participant_3["id"], category["id"], 5)
 
-    response = app_client.get(f"/meetings/{meeting['uuid']}/cashback-categories/{category['id']}")
+    response = app_client.get(
+        f"/meetings/{meeting['uuid']}/cashback-categories/{category['id']}",
+        headers={
+            "session-id": participant_1["session_id"],
+        },
+    )
 
     assert response.status_code == 200
     results = response.json()
@@ -205,7 +244,11 @@ def test_update_cashback_categories_with_valid_status_meeting(
     }
 
     response = app_client.put(
-        f"/meetings/{meeting['uuid']}/participants/{participant['id']}/cashback-categories", json=payload
+        f"/meetings/{meeting['uuid']}/cashback-categories",
+        headers={
+            "session-id": participant["session_id"],
+        },
+        json=payload,
     )
 
     assert response.status_code == 200
@@ -232,7 +275,11 @@ def test_cannot_update_cashback_categories_with_invalid_status_meeting(
     }
 
     response = app_client.put(
-        f"/meetings/{meeting['uuid']}/participants/{participant['id']}/cashback-categories", json=payload
+        f"/meetings/{meeting['uuid']}/cashback-categories",
+        headers={
+            "session-id": participant["session_id"],
+        },
+        json=payload,
     )
 
     assert response.status_code == 409
