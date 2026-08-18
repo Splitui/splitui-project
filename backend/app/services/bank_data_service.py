@@ -17,7 +17,7 @@ from app.services.change_log_service import change_log, parse_bank_data_context
     action="bank_data.updated",
     context_parser=parse_bank_data_context,
 )
-def add_bank_data(connection: Connection, meeting_uuid: UUID, participant_id: int, data: BankDataCreate):
+def add_bank_data(connection: Connection, meeting_uuid: UUID, session_id, data: BankDataCreate):
     """Добавляет банковские реквизиты участника.
 
     :param connection: соединение с базой данных.

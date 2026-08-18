@@ -26,7 +26,7 @@ def get_debts(connection: Connection, meeting_id: int):
     action="debts.recalculated",
     context_parser=parse_debts_context,
 )
-def calculate_debts(connection: Connection, meeting_uuid: UUID):
+def calculate_debts(connection: Connection, meeting_uuid: UUID, session_id):
     """Подсчитывает долги участников встречи на основе чеков.
 
     :param connection: соединение с базой данных.

@@ -69,7 +69,7 @@ def create_meeting(connection: Connection, data: MeetingCreate):
     action="meeting.updated",
     context_parser=parse_updated_meeting_context,
 )
-def update_meeting(connection, meeting_uuid, data: MeetingUpdate):
+def update_meeting(connection, meeting_uuid,session_id, data: MeetingUpdate):
     """Обновляет данные встречи.
 
     :param connection: соединение с базой данных.
@@ -100,7 +100,7 @@ def update_meeting(connection, meeting_uuid, data: MeetingUpdate):
     action="meeting.calculating",
     context_parser=parse_meeting_status_context,
 )
-def calculate_meeting(connection, meeting_uuid):
+def calculate_meeting(connection, meeting_uuid,session_id):
     """Переводит встречу в статус 'В расчёте'.
 
     :param connection: соединение с базой данных.
@@ -143,7 +143,7 @@ def calculate_meeting(connection, meeting_uuid):
     action="meeting.finished",
     context_parser=parse_meeting_status_context,
 )
-def finish_meeting(connection: Connection, meeting_uuid: UUID):
+def finish_meeting(connection: Connection, meeting_uuid: UUID, session_id):
     """Завершает встречу.
 
     :param connection: соединение с базой данных.
@@ -175,7 +175,7 @@ def finish_meeting(connection: Connection, meeting_uuid: UUID):
     action="meeting.editing",
     context_parser=parse_meeting_status_context,
 )
-def edit_meeting(connection, meeting_uuid):
+def edit_meeting(connection, meeting_uuid,session_id):
     """Переводит встречу в статус «Корректировка».
 
     :param connection: соединение с базой данных.

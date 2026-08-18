@@ -82,7 +82,7 @@ def add_participant(connection, meeting_uuid, data: ParticipantCreate):
     action="participant.updated",
     context_parser=parse_updated_participant_context,
 )
-def update_participant(connection, meeting_uuid, participant_id: int, data: ParticipantUpdate):
+def update_participant(connection, meeting_uuid, session_id, data: ParticipantUpdate):
     """Обновляет данные участника встречи.
 
     :param connection: соединение с базой данных.

@@ -268,7 +268,7 @@ def parse_updated_participant_context(
     return {
         "meeting_id": result["meeting_id"],
         "entity_id": result["id"],
-        "participant_id": arguments["participant_id"],
+        "participant_id": result["id"],
         "nickname": result["nickname"],
     }
 
@@ -277,7 +277,7 @@ def parse_bank_data_context(
     result: dict,
 ) -> dict:
     return {
-        "participant_id": arguments["participant_id"],
+        "participant_id": result["participant_id"],
     }
 
 def parse_debts_context(
