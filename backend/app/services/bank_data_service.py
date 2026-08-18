@@ -22,12 +22,19 @@ def add_bank_data(connection: Connection, meeting_uuid: UUID, participant_id: in
 
     :param connection: соединение с базой данных.
     :param meeting_uuid: UUID встречи.
-    :param participant_id: идентификатор участника.
+    :param session_id: идентификатор сессии участника.
     :param data: данные для создания банковских реквизитов.
     :return: данные банковских реквизитов.
     """
     meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
-    participant = participants_service.get_participant_or_error(connection, meeting["id"], participant_id)
+    participant = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
+    participant_bank_data = get_bank_data(connection, meeting["id"], participant["id"])
+    if participant_bank_data is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="Банковские реквизиты для текущего участника уже существуют"
+        )
+
     bank = get_bank_or_error(connection, data.bank_id)
     return bank_data_repository.create(
         connection,
@@ -38,16 +45,15 @@ def add_bank_data(connection: Connection, meeting_uuid: UUID, participant_id: in
     )
 
 
-def get_bank_data(connection: Connection, meeting_uuid: UUID, participant_id: int):
+def get_bank_data(connection: Connection, meeting_id: int, participant_id: int):
     """Возвращает банковские реквизиты участника встречи.
 
     :param connection: соединение с базой данных.
-    :param meeting_uuid: UUID встречи.
+    :param meeting_id: идентификатор встречи.
     :param participant_id: идентификатор участника.
     :return: данные банковских реквизитов участника.
     """
-    meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
-    participant = participants_service.get_participant_or_error(connection, meeting["id"], participant_id)
+    participant = participants_service.get_participant_or_error(connection, meeting_id, participant_id)
     bank_data = bank_data_repository.get_bank_data_by_participant_id(connection, participant["id"])
     if bank_data is None:
         raise HTTPException(

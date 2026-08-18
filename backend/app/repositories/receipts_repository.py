@@ -90,28 +90,27 @@ def get_by_id(
 
     return result.mappings().one_or_none()
 
-def get_all_by_meeting_uuid(connection: Connection, num_limit: int, num_offset: int , meeting_uuid):
+def get_all_by_meeting_uuid(connection: Connection, meeting_id, num_limit: int, num_offset: int):
     """Возвращает данные чеков указанной встречи.
 
     :param connection: соединение с базой данных.
-    :param meeting_uuid: UUID встречи.
+    :param meeting_id: идентификатор встречи.
+    :param num_limit: максимальное количество чеков в ответе.
+    :param num_offset: смещение относительно начала списка чеков.
     :return: список данных о чеках.
     """
-
     result = connection.execute(
         text(
             """
-            SELECT r.*
-            FROM receipts r
-                     JOIN meetings m
-                          ON m.id = r.meeting_id
-            WHERE m.uuid = :meeting_uuid
-            ORDER BY r.id
+            SELECT *
+            FROM receipts
+            WHERE meeting_id = :meeting_id
+            ORDER BY id
             LIMIT :num_limit OFFSET :num_offset
             """
         ),
         {
-            "meeting_uuid": str(meeting_uuid),
+            "meeting_id": meeting_id,
             "num_limit": num_limit,
             "num_offset": num_offset,
         }

@@ -9,6 +9,7 @@ from app.db.tables.meetings import MeetingStatus
 from app.repositories import meetings_repository, participants_repository, receipts_repository
 from app.schemas.meetings import MeetingCreate, MeetingUpdate
 from app.services.change_log_service import change_log, parse_created_meeting_context, parse_meeting_status_context, parse_updated_meeting_context
+from app.services import participants_service
 
 
 def get_meetings(connection: Connection, num_limit: int, num_offset: int):
@@ -20,6 +21,19 @@ def get_meetings(connection: Connection, num_limit: int, num_offset: int):
     :return: список данных о встречах.
     """
     return meetings_repository.get_all(connection, num_limit, num_offset)
+
+
+def get_meeting(connection: Connection, meeting_uuid: UUID, session_id: str):
+    """Возвращает данные встречи.
+
+    :param connection: соединение с базой данных.
+    :param meeting_uuid: UUID встречи.
+    :param session_id: идентификатор сессии участника.
+    :return: данные встречи.
+    """
+    meeting = get_meeting_or_error(connection, meeting_uuid)
+    _ = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
+    return meeting
 
 
 @transaction
@@ -60,10 +74,24 @@ def update_meeting(connection, meeting_uuid, data: MeetingUpdate):
 
     :param connection: соединение с базой данных.
     :param meeting_uuid: UUID встречи.
+    :param session_id: идентификатор сессии участника.
     :param data: данные для обновления встречи.
     :return: обновлённые данные встречи.
     """
     meeting = get_meeting_or_error(connection, meeting_uuid)
+    current_participant = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
+    if not current_participant["is_creator"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Редактировать встречу может только создатель встречи"
+        )
+
+    if meeting["status"] not in {MeetingStatus.ACTIVE, MeetingStatus.EDITING}:
+        raise HTTPException(
+            status_code=409,
+            detail="Редактировать встречу можно только в статусе 'Активная' или 'Корректировка'",
+        )
+
     return meetings_repository.update(connection, meeting["id"], data)
 
 
@@ -77,9 +105,16 @@ def calculate_meeting(connection, meeting_uuid):
 
     :param connection: соединение с базой данных.
     :param meeting_uuid: UUID встречи.
+    :param session_id: идентификатор сессии участника.
     :return: обновлённые данные встречи.
     """
     meeting = get_meeting_or_error(connection, meeting_uuid)
+    current_participant = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
+    if not current_participant["is_creator"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Перевести встречу в статус 'В расчёте' может только создатель встречи"
+        )
 
     if meeting["status"] not in {MeetingStatus.ACTIVE, MeetingStatus.EDITING}:
         raise HTTPException(
@@ -113,9 +148,16 @@ def finish_meeting(connection: Connection, meeting_uuid: UUID):
 
     :param connection: соединение с базой данных.
     :param meeting_uuid: UUID встречи.
+    :param session_id: идентификатор сессии участника.
     :return: обновлённые данные завершённой встречи.
     """
     meeting = get_meeting_or_error(connection, meeting_uuid)
+    current_participant = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
+    if not current_participant["is_creator"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Перевести встречу в статус 'Завершена' может только создатель встречи"
+        )
 
     if meeting["status"] != MeetingStatus.CALCULATING:
         raise HTTPException(
@@ -138,9 +180,16 @@ def edit_meeting(connection, meeting_uuid):
 
     :param connection: соединение с базой данных.
     :param meeting_uuid: UUID встречи.
+    :param session_id: идентификатор сессии участника.
     :return: обновлённые данные встречи.
     """
     meeting = get_meeting_or_error(connection, meeting_uuid)
+    current_participant = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
+    if not current_participant["is_creator"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Перевести встречу в статус 'Корректировка' может только создатель встречи"
+        )
 
     if meeting["status"] != MeetingStatus.CALCULATING:
         raise HTTPException(
