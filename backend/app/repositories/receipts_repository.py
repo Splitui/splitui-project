@@ -1,7 +1,6 @@
 """Модуль с запросами к базе данных для работы с чеками."""
 
 from datetime import datetime
-from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import text
@@ -35,7 +34,7 @@ def create(
 
     if total_amount is None:
         total_amount = 0
-    
+
     result = connection.execute(
         text("""
              INSERT INTO receipts (meeting_id, payer_id, title, purchase_date,
@@ -57,6 +56,7 @@ def create(
     )
     return result.mappings().one()
 
+
 def get_all(connection: Connection):
     result = connection.execute(
         text(
@@ -72,8 +72,8 @@ def get_all(connection: Connection):
 
 
 def get_by_id(
-    connection: Connection,
-    receipt_id: int,
+        connection: Connection,
+        receipt_id: int,
 ):
     result = connection.execute(
         text(
@@ -90,34 +90,35 @@ def get_by_id(
 
     return result.mappings().one_or_none()
 
-def get_all_by_meeting_uuid(connection: Connection, num_limit: int, num_offset: int , meeting_uuid):
+
+def get_all_by_meeting_uuid(connection: Connection, meeting_id, num_limit: int, num_offset: int):
     """Возвращает данные чеков указанной встречи.
 
     :param connection: соединение с базой данных.
-    :param meeting_uuid: UUID встречи.
+    :param meeting_id: идентификатор встречи.
+    :param num_limit: максимальное количество чеков в ответе.
+    :param num_offset: смещение относительно начала списка чеков.
     :return: список данных о чеках.
     """
-
     result = connection.execute(
         text(
             """
-            SELECT r.*
-            FROM receipts r
-                     JOIN meetings m
-                          ON m.id = r.meeting_id
-            WHERE m.uuid = :meeting_uuid
-            ORDER BY r.id
+            SELECT *
+            FROM receipts
+            WHERE meeting_id = :meeting_id
+            ORDER BY id
             LIMIT :num_limit OFFSET :num_offset
             """
         ),
         {
-            "meeting_uuid": str(meeting_uuid),
+            "meeting_id": meeting_id,
             "num_limit": num_limit,
             "num_offset": num_offset,
         }
     )
 
     return result.mappings().all()
+
 
 def update_total_amount(connection: Connection, receipt_id: int, item_amount: float):
     """Обновляет итоговую сумму чека.
@@ -144,22 +145,22 @@ def update_total_amount(connection: Connection, receipt_id: int, item_amount: fl
 
     return result.scalar_one()
 
-def update(
-    connection: Connection,
-    receipt_id: int,
-    payer_id: int,
-    title: str,
-    purchase_date: datetime,
-    category: str | None,
-    comment: str | None,
-    image_url: str | None,
-    is_confirmed: bool,
-    total_amount: float | None
-):
 
+def update(
+        connection: Connection,
+        receipt_id: int,
+        payer_id: int,
+        title: str,
+        purchase_date: datetime,
+        category: str | None,
+        comment: str | None,
+        image_url: str | None,
+        is_confirmed: bool,
+        total_amount: float | None
+):
     if total_amount is None:
         total_amount = 0
-    
+
     result = connection.execute(
         text("""
             UPDATE receipts
@@ -191,8 +192,8 @@ def update(
 
 
 def delete(
-    connection: Connection,
-    receipt_id: int,
+        connection: Connection,
+        receipt_id: int,
 ):
     connection.execute(
         text("""
@@ -231,9 +232,10 @@ def delete(
 
     return result.scalar_one_or_none()
 
+
 def get_meeting_total_amount(
-    connection: Connection,
-    meeting_uuid: UUID,
+        connection: Connection,
+        meeting_uuid: UUID,
 ):
     result = connection.execute(
         text("""
@@ -248,10 +250,11 @@ def get_meeting_total_amount(
 
     return result.scalar_one_or_none()
 
+
 def get_participant_spend(
-    connection: Connection,
-    participant_id: int,
-    meeting_id,
+        connection: Connection,
+        participant_id: int,
+        meeting_id,
 ):
     result = connection.execute(
         text("""
@@ -288,3 +291,11 @@ def get_payers_without_bank_data(connection: Connection, meeting_id: int) -> lis
         {"meeting_id": meeting_id}
     )
     return [dict(row) for row in result.mappings().all()]
+
+
+def count_receipts_as_payer(connection: Connection, participant_id: int):
+    result = connection.execute(
+        text("SELECT COUNT(*) FROM receipts WHERE payer_id = :participant_id"),
+        {"participant_id": participant_id}
+    )
+    return result.scalar_one()
