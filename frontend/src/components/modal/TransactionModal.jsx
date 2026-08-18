@@ -24,31 +24,47 @@ export default function TransactionModal({ open, onClose, transaction, onConfirm
                 {transaction.amount} рублей?
             </Typography>
 
-            <div className="flex gap-1.5 mb-1.5">
-                <Button
-                    fullWidth
-                    onClick={onClose}
-                    className="!bg-[#DAB672] !text-[#463628] !font-bold !rounded-xl !py-3 !text-sm sm:!text-base !shadow-none hover:!bg-[#c7a35f]"
-                >
-                    {isPayment ? 'ОПЛАТИТЬ' : 'УВЕДОМИТЬ'}
-                </Button>
-                <Button
-                    fullWidth
-                    onClick={onClose}
-                    variant="outlined"
-                    className="!border-[1px] !border-[#463628] !text-[#463628] !font-bold !rounded-xl !py-3 !text-sm sm:!text-base hover:!bg-[#463628]/5"
-                >
-                    ОТМЕНА
-                </Button>
+            <div className="flex flex-col gap-3">
+                {isPayment ? (
+                    <div className="flex gap-2">
+                        <Button
+                            fullWidth
+                            onClick={onClose}
+                            className="!bg-[#DAB672] !text-[#463628] !font-bold !rounded-xl !py-3 !text-sm sm:!text-base !shadow-none hover:!bg-[#c7a35f]"
+                        >
+                            Оплатить
+                        </Button>
+                        <Button
+                            fullWidth
+                            onClick={onClose}
+                            variant="outlined"
+                            className="!border-[1px] !border-[#463628] !text-[#463628] !font-bold !rounded-xl !py-3 !text-sm sm:!text-base hover:!bg-[#463628]/5"
+                        >
+                            ОТМЕНА
+                        </Button>
+                    </div>
+                ) : (
+                    <>
+                        <div className="flex gap-2">
+                            <Button
+                                fullWidth
+                                onClick={onConfirm}
+                                className="!bg-[#DAB672] !text-[#463628] !font-bold !rounded-xl !py-3 !text-sm sm:!text-base !shadow-none hover:!bg-[#c7a35f]"
+                            >
+                                ПОЛУЧИЛ
+                            </Button>
+                            <Button
+                                fullWidth
+                                onClick={onClose}
+                                variant="outlined"
+                                className="!border-[1px] !border-[#463628] !text-[#463628] !font-bold !rounded-xl !py-3 !text-sm sm:!text-base hover:!bg-[#463628]/5"
+                            >
+                                ОТМЕНА
+                            </Button>
+                        </div>
+                    </>
+                )}
             </div>
-
-            <Button
-                fullWidth
-                onClick={onConfirm}
-                className="!bg-[#463628] !text-[#F8F4EC] !font-bold !rounded-xl !py-3 !text-sm sm:!text-base !shadow-none hover:!bg-[#3a2c20]"
-            >
-                {isPayment ? 'ОТПРАВИЛ' : 'ПОЛУЧИЛ'}
-            </Button>
         </Dialog>
     );
 }

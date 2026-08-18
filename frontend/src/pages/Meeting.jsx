@@ -20,6 +20,7 @@ import ExpensesTab from '../components/meetingTabs/ExpensesTab';
 import PaymentTab from '../components/meetingTabs/PaymentTab';
 import UserAvatar from '../components/UserAvatar';
 import AddExpense from '../components/modal/AddExpense';
+import BestCashback from '../components/modal/BestCashback';
 import EditExpense from '../components/modal/EditExpense';
 import { useSnackbar } from '../components/SnackbarProvider';
 
@@ -269,6 +270,7 @@ export default function Meeting() {
     const meeting = JSON.parse(Cookies.get('meeting') || '{}');
     const meetingId = meeting.id;
     const participantId = meeting.participantId;
+    const [isFinished, setIsFinished] = useState(false);
     const showSnackbar = useSnackbar();
 
     const [currentMeetingName, setCurrentMeetingName] = useState(
@@ -282,6 +284,8 @@ export default function Meeting() {
         participant_debt: 0,
         participant_spend: 0,
     });
+
+    const [openBestCashback, setOpenBestCashback] = useState(false);
 
     const currentUser = participants.find((p) => p.id === participantId) || {
         nickname: meeting.userName || `Юзер`,
@@ -377,6 +381,41 @@ export default function Meeting() {
         fetchParticipants();
     }, [meetingId, participantId]);
 
+    useEffect(() => {
+        const checkMeetingStatus = async () => {
+            if (!meetingId) return;
+            try {
+                const res = await fetch(`${API_URL}/meetings/${meetingId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'Завершена' || data.is_finished) {
+                        setIsFinished(true);
+                    }
+                }
+            } catch (e) {
+                console.error('Ошибка проверки статуса', e);
+            }
+        };
+        checkMeetingStatus();
+    }, [meetingId]);
+
+    const handleFinishMeetingAPI = async () => {
+        try {
+            const res = await fetch(`${API_URL}/meetings/${meetingId}/finish`, {
+                method: 'POST',
+            });
+            if (res.ok) {
+                setIsFinished(true);
+                setOpenEndMeeting(false);
+            } else {
+                alert('Не удалось завершить встречу');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Ошибка сети');
+        }
+    };
+
     const handleBottomButtonClick = () => {
         if (value === 'expenses') {
             setOpenAddExpense(true);
@@ -423,6 +462,7 @@ export default function Meeting() {
                 <div className="pt-4 shrink-0">
                     {value === 'expenses' ? (
                         <Button
+                            onClick={() => setOpenBestCashback(true)}
                             variant="contained"
                             fullWidth
                             sx={{
@@ -452,24 +492,31 @@ export default function Meeting() {
                     <Button
                         variant="contained"
                         fullWidth
-                        onClick={handleBottomButtonClick}
+                        onClick={isFinished ? null : handleBottomButtonClick}
+                        disabled={isFinished}
                         sx={{
-                            backgroundColor: '#463628',
-                            color: '#EAE0CD',
+                            backgroundColor: isFinished
+                                ? '#BDBDBD !important'
+                                : '#463628',
+                            color: isFinished ? '#757575 !important' : '#EAE0CD',
                             fontWeight: 'bold',
                             borderRadius: '12px',
                             py: 2,
                             fontSize: '1rem',
                             textTransform: 'uppercase',
                             letterSpacing: '0.1em',
-                            boxShadow: '0px 4px 6px rgba(0,0,0,0.1)',
-                            '&:hover': {
-                                backgroundColor: '#3a2c20',
-                                boxShadow: '0px 6px 10px rgba(0,0,0,0.2)',
+                            boxShadow: 'none',
+                            '&.Mui-disabled': {
+                                backgroundColor: '#CCCCCC',
+                                color: '#888888',
                             },
                         }}
                     >
-                        {value === 'expenses' ? 'Добавить расход' : 'Завершить встречу'}
+                        {isFinished
+                            ? 'Встреча завершена'
+                            : value === 'expenses'
+                              ? 'Добавить расход'
+                              : 'Завершить встречу'}
                     </Button>
                 </div>
 
@@ -497,10 +544,13 @@ export default function Meeting() {
                 <EndMeeting
                     open={openEndMeeting}
                     onClose={() => setOpenEndMeeting(false)}
-                    onConfirm={() => {
-                        alert('Встреча завершена!');
-                        setOpenEndMeeting(false);
-                    }}
+                    onConfirm={handleFinishMeetingAPI}
+                />
+
+                <BestCashback
+                    open={openBestCashback}
+                    onClose={() => setOpenBestCashback(false)}
+                    participants={participants}
                 />
 
                 <EditMeeting
