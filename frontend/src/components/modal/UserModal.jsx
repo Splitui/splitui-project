@@ -15,6 +15,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import { BANKS, FIELD_SX } from '../Options';
 import { useState } from 'react';
 import CashbackModal from './CashbackModal';
+import { useSnackbar } from '../SnackbarProvider';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
@@ -35,6 +36,7 @@ export default function UserModal({
     const [phoneNumber, setPhoneNumber] = useState('');
     const [bank, setBank] = useState(1);
     const [cashbackOpen, setCashbackOpen] = useState(false);
+    const showSnackbar = useSnackbar();
 
     const [prevKey, setPrevKey] = useState(null);
     const currentKey = open ? user?.id || 'open' : null;
@@ -86,18 +88,16 @@ export default function UserModal({
                     );
                 }
 
-                alert('Сохранено!');
+                showSnackbar('Сохранено!', 'success');
                 onSave(allData);
                 onClose();
             } else {
                 const errorData = await res.json();
                 console.error('Ошибка валидации:', errorData);
-                alert(
-                    'Ошибка при сохранении. Проверьте правильность полей (карта/телефон).',
-                );
+                showSnackbar('Ошибка при сохранении. Проверьте карту/телефон.');
             }
         } catch (e) {
-            alert('Нет связи с сервером');
+            showSnackbar('Нет связи с сервером');
             console.error(e);
         }
     };
