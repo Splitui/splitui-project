@@ -58,7 +58,10 @@ export default function JoinMeeting({ open, onClose }) {
                         `${API_URL}/meetings/${meetingId}/participants/${participantId}`,
                         {
                             method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'session-id': cookie.sessionId,
+                            },
                             body: JSON.stringify({ nickname: name }),
                         },
                     );
@@ -96,6 +99,7 @@ export default function JoinMeeting({ open, onClose }) {
                     isCreator: isCreator,
                     name: meetingData.title,
                     date: meetingDate,
+                    sessionId: cookie.sessionId,
                 }),
             );
 

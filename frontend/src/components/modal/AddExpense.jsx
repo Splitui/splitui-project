@@ -178,7 +178,7 @@ export default function AddExpense({ open, onClose, onCreated }) {
             onCreated?.();
             onClose();
         } catch (e) {
-            showSnackbar('Сеть недоступна');
+            showSnackbar('Сеть недоступна', e);
         }
     };
 

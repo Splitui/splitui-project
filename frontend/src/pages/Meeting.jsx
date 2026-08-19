@@ -165,7 +165,14 @@ const MembersButton = ({ onClick, participants }) => (
     </button>
 );
 
-const MembersDialog = ({ open, onClose, participants, meetingId, onSave }) => {
+const MembersDialog = ({
+    open,
+    onClose,
+    participants,
+    meetingId,
+    onSave,
+    roomStatus,
+}) => {
     const [editOpen, setEditOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
 
@@ -224,8 +231,20 @@ const MembersDialog = ({ open, onClose, participants, meetingId, onSave }) => {
                             participants.map((p, idx) => (
                                 <div
                                     key={idx}
-                                    onClick={() => handleUserClick(p)}
-                                    className="flex items-center gap-3 p-3 rounded-xl bg-white shadow-sm border border-gray-100"
+                                    onClick={() => {
+                                        if (
+                                            roomStatus !== 'active' ||
+                                            p.id === myParticipantId
+                                        ) {
+                                            handleUserClick(p);
+                                        }
+                                    }}
+                                    className={`flex items-center gap-3 p-3 rounded-xl bg-white shadow-sm border border-gray-100 ${
+                                        roomStatus !== 'active' ||
+                                        p.id === myParticipantId
+                                            ? 'cursor-pointer active:scale-95'
+                                            : 'opacity-50 cursor-not-allowed'
+                                    }`}
                                 >
                                     <Avatar>
                                         {p.nickname ? p.nickname[0].toUpperCase() : '?'}
@@ -252,6 +271,7 @@ const MembersDialog = ({ open, onClose, participants, meetingId, onSave }) => {
                     if (onSave)
                         onSave({ ...data, id: selectedUser?.id || myParticipantId });
                 }}
+                roomStatus={roomStatus}
                 isEditable={selectedUser?.id === myParticipantId}
             />
         </>
@@ -272,6 +292,8 @@ export default function Meeting() {
     const participantId = meeting.participantId;
     const [isFinished, setIsFinished] = useState(false);
     const showSnackbar = useSnackbar();
+    const roomStatus = isFinished ? 'finished' : meeting.status || 'active';
+    const isLocked = roomStatus !== 'active';
 
     const [currentMeetingName, setCurrentMeetingName] = useState(
         meeting.name || 'Встреча сплитуев',
@@ -318,11 +340,11 @@ export default function Meeting() {
                     setBalance(data);
                 }
             } catch (e) {
-                showSnackbar('Ошибка загрузки данных');
+                showSnackbar('Ошибка загрузки данных', e);
             }
         };
         fetchBalance();
-    }, [meetingId, participantId, refresh]);
+    }, [meetingId, participantId, refresh, showSnackbar, meeting.sessionId]);
 
     useEffect(() => {
         const fetchParticipants = async () => {
@@ -352,6 +374,7 @@ export default function Meeting() {
                                         card_number: bankData.card_number,
                                         phone_number: bankData.phone_number,
                                         bank_id: bankData.bank_id,
+                                        bank_name: bankData.bank_name,
                                     };
                                     if (p.id === participantId) {
                                         const meetingCookie = JSON.parse(
@@ -370,13 +393,14 @@ export default function Meeting() {
                                                 isCreator: meetingCookie.isCreator,
                                                 name: meetingCookie.name,
                                                 date: meetingCookie.date,
+                                                sessionId: meetingCookie.sessionId,
                                             }),
                                         );
                                     }
                                     return enriched;
                                 }
                             } catch (err) {
-                                showSnackbar('Ошибка загрузки данных');
+                                showSnackbar('Ошибка загрузки данных', err);
                             }
                             return p;
                         }),
@@ -388,7 +412,7 @@ export default function Meeting() {
             }
         };
         fetchParticipants();
-    }, [meetingId, participantId]);
+    }, [meetingId, participantId, showSnackbar, meeting.sessionId]);
 
     useEffect(() => {
         const checkMeetingStatus = async () => {
@@ -402,13 +426,17 @@ export default function Meeting() {
                     if (data.status === 'Завершена' || data.is_finished) {
                         setIsFinished(true);
                     }
+
+                    if (data.title) setCurrentMeetingName(data.title);
+                    if (data.start_date)
+                        setCurrentMeetingDate(data.start_date.substring(0, 10));
                 }
             } catch (e) {
                 console.error('Ошибка проверки статуса', e);
             }
         };
         checkMeetingStatus();
-    }, [meetingId]);
+    }, [meetingId, meeting.sessionId]);
 
     const handleFinishMeetingAPI = async () => {
         try {
@@ -476,6 +504,7 @@ export default function Meeting() {
                             onClick={() => setOpenBestCashback(true)}
                             variant="contained"
                             fullWidth
+                            disabled={isLocked}
                             sx={{
                                 backgroundColor: '#DAB672',
                                 color: '#463628',
@@ -503,13 +532,11 @@ export default function Meeting() {
                     <Button
                         variant="contained"
                         fullWidth
-                        onClick={isFinished ? null : handleBottomButtonClick}
-                        disabled={isFinished}
+                        onClick={isLocked ? null : handleBottomButtonClick}
+                        disabled={isLocked && value === 'expenses'}
                         sx={{
-                            backgroundColor: isFinished
-                                ? '#BDBDBD !important'
-                                : '#463628',
-                            color: isFinished ? '#757575 !important' : '#EAE0CD',
+                            backgroundColor: isLocked ? '#BDBDBD !important' : '#463628',
+                            color: isLocked ? '#757575 !important' : '#EAE0CD',
                             fontWeight: 'bold',
                             borderRadius: '12px',
                             py: 2,
@@ -525,9 +552,11 @@ export default function Meeting() {
                     >
                         {isFinished
                             ? 'Встреча завершена'
-                            : value === 'expenses'
-                              ? 'Добавить расход'
-                              : 'Завершить встречу'}
+                            : roomStatus === 'calculating'
+                              ? 'Идет расчет...'
+                              : value === 'expenses'
+                                ? 'Добавить расход'
+                                : 'Завершить встречу'}
                     </Button>
                 </div>
 
@@ -535,6 +564,7 @@ export default function Meeting() {
                     className="#F8F4EC"
                     open={openMembers}
                     onClose={() => setOpenMembers(false)}
+                    roomStatus={roomStatus}
                     participants={participants}
                     meetingId={meetingId}
                     onSave={(data) =>

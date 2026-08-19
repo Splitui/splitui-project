@@ -1,12 +1,10 @@
 import { Dialog, TextField, Button, IconButton } from '@mui/material';
 import { useRef } from 'react';
 import Cookies from 'js-cookie';
-import { useSnackbar } from '../SnackbarProvider';
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
 export default function InviteMeeting({ open, onClose, meetingId, onJoined }) {
     const nameRef = useRef(null);
-    const showSnackbar = useSnackbar();
 
     const handleJoin = async () => {
         const name = nameRef.current.value.trim();
@@ -35,6 +33,7 @@ export default function InviteMeeting({ open, onClose, meetingId, onJoined }) {
                         isCreator: false,
                         name: meetingData.title,
                         date: meetingDate,
+                        sessionId: userData.session_id,
                     }),
                 );
                 onJoined(meetingId);

@@ -66,7 +66,7 @@ export default function AddMeeting({ open, onClose }) {
             onClose();
             navigate(`/meetings/${meetingId}`);
         } catch (e) {
-            showSnackbar('Сеть недоступна');
+            showSnackbar('Сеть недоступна', e);
         }
     };
 
