@@ -9,7 +9,7 @@ from sqlalchemy.engine import Connection
 from app.db.dependencies import transaction
 from app.db.tables.meetings import MeetingStatus
 from app.repositories import debts_repository, bank_data_repository
-from app.services import meetings_service, participants_service
+from app.services import meetings_service, participants_service, bank_data_service
 from app.services.change_log_service import change_log, parse_debts_context
 
 
@@ -117,19 +117,20 @@ def get_debt_payment_info(connection: Connection, meeting_uuid: UUID, session_id
 
     creditor = participants_service.get_participant_or_error(connection, meeting["id"], debt["creditor_id"])
     bank_data = bank_data_repository.get_bank_data_by_participant_id(connection, creditor["id"])
-
     if bank_data is None:
         raise HTTPException(
             status_code=409,
             detail="У получателя не указаны банковские реквизиты"
         )
 
+    bank = bank_data_service.get_bank_or_error(connection, bank_data["bank_id"])
     return {
         "amount": debt["amount"],
         "creditor_nickname": creditor["nickname"],
-        "bank_name": bank_data["bank_name"],
         "card_number": bank_data["card_number"],
         "phone_number": bank_data["phone_number"],
+        "bank_name": bank["bank_name"],
+        "bank_deeplink": _build_deeplink(bank["deeplink"], bank_data["phone_number"])
     }
 
 
@@ -166,3 +167,16 @@ def mark_debt_as_paid(connection: Connection, meeting_uuid: UUID, session_id: st
         )
 
     return debts_repository.mark_as_paid(connection, debt_id)
+
+
+def _build_deeplink(deeplink: str, phone_number: str):
+    """Строит диплинк для оплаты по номеру телефона.
+
+    :param deeplink: шаблон ссылки для оплаты.
+    :param phone_number: номер телефона участника.
+    :return: готовый диплинк для оплаты.
+    """
+    if not deeplink or not phone_number:
+        return None
+
+    return deeplink.format(phone=phone_number)
