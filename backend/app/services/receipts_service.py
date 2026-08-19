@@ -13,7 +13,8 @@ from app.repositories import (
     receipt_items_repository,
     receipts_repository,
 )
-from app.schemas.receipts import FullReceiptParticipantCreate, FullReceiptCreate
+from app.schemas.parsed_receipts import ParsedReceipt
+from app.schemas.receipts import FullReceiptItemCreate, FullReceiptParticipantCreate, FullReceiptCreate
 from app.services import meetings_service, participants_service
 from app.services.meetings_service import get_meeting_or_error
 from app.services.receipt_items_service import sync_receipt_items
@@ -329,3 +330,55 @@ def delete_receipt(connection: Connection, meeting_uuid: UUID, session_id: str, 
         "meeting_id": receipt["meeting_id"],
         "title": receipt["title"],
     }
+
+
+def create_receipt_from_qr(
+    connection: Connection,
+    meeting_uuid: UUID,
+    session_id: str,
+    parsed_receipt: ParsedReceipt,
+):
+    """Создаёт чек из QR на участника, который его отсканировал."""
+
+    meeting = get_meeting_or_error(
+        connection,
+        meeting_uuid,
+    )
+
+    payer = participants_service.get_participant_by_session_id(
+        connection,
+        meeting["id"],
+        session_id,
+    )
+
+    receipt_data = FullReceiptCreate(
+        id=None,
+        payer_id=payer["id"],
+        title=parsed_receipt.title,
+        purchase_date=parsed_receipt.purchase_date,
+        category="Покупки",
+        comment=None,
+        image_url=None,
+        is_confirmed=False,
+        total_amount=None,
+
+        participants=[],
+
+        items=[
+            FullReceiptItemCreate(
+                id=None,
+                title=item.title,
+                unit_price=item.unit_price,
+                quantity=item.quantity,
+                participants=[],
+            )
+            for item in parsed_receipt.items
+        ],
+    )
+
+    return create_or_update_receipt_in_meeting(
+        connection=connection,
+        meeting_uuid=meeting_uuid,
+        session_id=session_id,
+        data=receipt_data,
+    )

@@ -75,10 +75,14 @@ def add_receipt_in_meetings(
     return receipts_service.create_or_update_receipt_in_meeting(connection, meeting_uuid, session_id, data)
 
 
-@router.post("/qr",
-            response_model=ParsedReceipt,
+@router.post("/meetings/{meeting_uuid}/receipts/qr",
             summary="Создать чек во встрече",)
-def read_qr_and_parse(data: ReceiptQrRequest):
+def read_qr_and_parse(
+    meeting_uuid: UUID,
+    data: ReceiptQrRequest,
+    session_id: str = Header(),
+    connection: Connection = Depends(get_connection),
+):
     receipt_info = get_receipt(data.qr_raw)
 
     if receipt_info is None:
@@ -87,7 +91,14 @@ def read_qr_and_parse(data: ReceiptQrRequest):
             detail="Не удалось получить данные чека",
         )
 
-    return parse_receipt(receipt_info)
+    parsed_receipt = parse_receipt(receipt_info)
+
+    return receipts_service.create_receipt_from_qr(
+        connection=connection,
+        meeting_uuid=meeting_uuid,
+        session_id=session_id,
+        parsed_receipt=parsed_receipt,
+    )
 
 
 @router.delete(
