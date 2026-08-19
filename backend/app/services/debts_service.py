@@ -105,7 +105,7 @@ def get_debt_payment_info(connection: Connection, meeting_uuid: UUID, session_id
     """
     meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
     current_participant = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
-    debt = debts_repository.get_by_id(connection, debt_id, meeting["id"])
+    debt = debts_repository.get_by_id(connection, meeting["id"], debt_id)
     if debt is None:
         raise HTTPException(status_code=404, detail=f"Не найден долг с id {debt_id}")
 
@@ -146,7 +146,7 @@ def mark_debt_as_paid(connection: Connection, meeting_uuid: UUID, session_id: st
     meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
     current_participant = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
 
-    debt = debts_repository.get_by_id(connection, debt_id, meeting["id"])
+    debt = debts_repository.get_by_id(connection, meeting["id"], debt_id)
     if debt is None:
         raise HTTPException(status_code=404, detail=f"Не найден долг с id {debt_id}")
 
