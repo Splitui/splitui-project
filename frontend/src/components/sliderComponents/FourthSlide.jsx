@@ -3,9 +3,12 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 export default function FourthSlide() {
     return (
-        <div className="flex flex-col justify-start items-center text-center w-full h-full bg-[#EAE0CD] py-6 px-2 rounded-2xl">
-            <div data-swiper-parallax="-200" className="mb-7">
-                <h4 className="font-bold text-3xl text-[#463628]">FAQ</h4>
+        <div className="flex flex-col justify-start items-center text-center w-full h-full py-6 px-2">
+            <div data-swiper-parallax="-200" className="mb-7 w-full text-left">
+                <h4 className="text-2xl font-semibold tracking-tight text-[#2E2519] sm:text-3xl">
+                    FAQ
+                </h4>
+                <div className="mb-5 mt-1 text-sm text-[#8A7C66]">Коротко о главном</div>
             </div>
             <div
                 data-swiper-parallax="-100"

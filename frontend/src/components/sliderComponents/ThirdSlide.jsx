@@ -1,12 +1,11 @@
 import LoginIcon from '@mui/icons-material/Login';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import CallSplitIcon from '@mui/icons-material/CallSplit';
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import EditIcon from '@mui/icons-material/Edit';
 
-const FEATURES = [
+const features = [
     {
         icon: LoginIcon,
         title: 'Без регистрации',
@@ -23,11 +22,6 @@ const FEATURES = [
         text: 'Общий чек, на всех, на выбранных или на одного',
     },
     {
-        icon: AccountBalanceIcon,
-        title: 'Переход в банк',
-        text: 'Кнопка открывает приложение банка с суммой и назначением',
-    },
-    {
         icon: CreditCardIcon,
         title: 'Подсказки по кешбеку',
         text: '"По этой категории у вас кешбек 5% в банке Х"',
@@ -37,58 +31,37 @@ const FEATURES = [
         title: 'Отчет PDF',
         text: 'Список трат, баланс, схема переводов, экономия',
     },
-    {
-        icon: EditIcon,
-        title: 'Корректировка',
-        text: 'Забытый чек можно добавить и после закрыть',
-    },
 ];
 
 export default function ThirdSlide() {
     return (
-        <div className="flex flex-col justify-start items-stretch px-4 sm:px-6 text-center h-full bg-[#EAE0CD] py-6 sm:py-8 rounded-2xl">
-            <div data-swiper-parallax="-200" className="mb-4 sm:mb-6">
-                <h4
-                    className={
-                        'font-bold text-2xl sm:text-3xl leading-tight text-[#463628]'
-                    }
-                >
+        <div className="flex h-full flex-col">
+            <div data-swiper-parallax="-200">
+                <div className="text-2xl font-semibold tracking-tight text-[#2E2519] sm:text-3xl">
                     Возможности
-                </h4>
+                </div>
+                <div className="mb-5 mt-1 text-sm text-[#8A7C66]">
+                    Всё, что нужно в поездке
+                </div>
             </div>
 
-            <div
-                className="flex flex-col gap-2 sm:gap-3 w-full flex-1"
-                data-swiper-parallax="-100"
-            >
-                {FEATURES.map(({ icon, title, text }) => {
-                    const Icon = icon;
-                    return (
-                        <div
-                            key={title}
-                            className="flex items-center gap-2 sm:gap-3 bg-[#f5efe6] border border-[#e5dcc9] rounded-xl p-2 text-left flex-1"
-                        >
-                            <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 shrink-0">
-                                {Icon && (
-                                    <Icon
-                                        sx={{
-                                            fontSize: { xs: 20, sm: 26 },
-                                            color: '#463628',
-                                        }}
-                                    />
-                                )}
+            <div data-swiper-parallax="-100" className="flex flex-col gap-3">
+                {features.map(({ icon: Icon, title, text }) => (
+                    <div
+                        key={title}
+                        className="flex items-start gap-3 rounded-2xl border border-[#E4D8BE] bg-[#FFFDF7] p-3"
+                    >
+                        <Icon sx={{ fontSize: 24, color: '#2E2519', flexShrink: 0 }} />
+                        <div>
+                            <div className="text-base font-semibold text-[#2E2519]">
+                                {title}
                             </div>
-                            <div>
-                                <div className="font-bold text-sm sm:text-lg leading-tight mb-0.5">
-                                    {title}
-                                </div>
-                                <div className="text-xs sm:text-sm leading-snug text-gray-600">
-                                    {text}
-                                </div>
+                            <div className="mt-1 text-base leading-snug text-[#8A7C66]">
+                                {text}
                             </div>
                         </div>
-                    );
-                })}
+                    </div>
+                ))}
             </div>
         </div>
     );
