@@ -13,6 +13,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { useRef } from 'react';
 import Cookies from 'js-cookie';
 import { useNavigate } from 'react-router-dom';
+import { useSnackbar } from '../SnackbarProvider';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
@@ -20,6 +21,7 @@ export default function JoinMeeting({ open, onClose }) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
     const navigate = useNavigate();
+    const showSnackbar = useSnackbar();
 
     const nameRef = useRef(null);
     const meetingIdRef = useRef(null);
@@ -33,14 +35,14 @@ export default function JoinMeeting({ open, onClose }) {
         const meetingId = meetingIdRef.current.value.trim();
 
         if (!name || !meetingId) {
-            alert('Введите имя и ID пользователя');
+            showSnackbar('Введите имя и ID комнаты');
             return;
         }
 
         try {
             const response = await fetch(`${API_URL}/meetings/${meetingId}`);
             if (!response.ok) {
-                alert('Комната с таким id не найдена');
+                showSnackbar('Комната с таким id не найдена');
                 return;
             }
             const meetingData = await response.json();
@@ -56,7 +58,10 @@ export default function JoinMeeting({ open, onClose }) {
                         `${API_URL}/meetings/${meetingId}/participants/${participantId}`,
                         {
                             method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'session-id': cookie.sessionId,
+                            },
                             body: JSON.stringify({ nickname: name }),
                         },
                     );
@@ -76,7 +81,7 @@ export default function JoinMeeting({ open, onClose }) {
                     isCreator =
                         existingUser.is_creator === 1 || existingUser.isCreator === true;
                 } else {
-                    alert('Участник с таким именем не найден в этой комнате!');
+                    showSnackbar('Участник с таким именем не найден в комнате');
                     return;
                 }
             }
@@ -94,6 +99,7 @@ export default function JoinMeeting({ open, onClose }) {
                     isCreator: isCreator,
                     name: meetingData.title,
                     date: meetingDate,
+                    sessionId: cookie.sessionId,
                 }),
             );
 
@@ -101,7 +107,7 @@ export default function JoinMeeting({ open, onClose }) {
             navigate(`/meetings/${meetingId}`);
         } catch (e) {
             console.error('Ошибочка', e);
-            alert('Связи с сервером нема');
+            showSnackbar('Нет связи с сервером');
         }
     };
 

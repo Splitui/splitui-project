@@ -13,6 +13,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import Cookies from 'js-cookie';
 import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSnackbar } from '../SnackbarProvider';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
@@ -20,7 +21,7 @@ export default function AddMeeting({ open, onClose }) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
     const navigate = useNavigate();
-
+    const showSnackbar = useSnackbar();
     const nameRef = useRef(null);
     const dateRef = useRef(null);
     const userRef = useRef(null);
@@ -43,18 +44,20 @@ export default function AddMeeting({ open, onClose }) {
                 }),
             });
             if (!res.ok) {
-                console.error('Ошибка создания:', await res.text());
+                showSnackbar('Не удалось создать встречу');
                 return;
             }
             const data = await res.json();
             const meetingId = data.uuid;
             const creatorId = data.meeting_creator?.id;
+            const sessionId = data.meeting_creator?.session_id;
             Cookies.set(
                 'meeting',
                 JSON.stringify({
                     name: meetingName,
                     date: rawDate,
                     participantId: creatorId,
+                    sessionId: sessionId,
                     userName: userName,
                     isCreator: true,
                     id: meetingId,
@@ -63,7 +66,7 @@ export default function AddMeeting({ open, onClose }) {
             onClose();
             navigate(`/meetings/${meetingId}`);
         } catch (e) {
-            console.error('Сеть недоступна:', e);
+            showSnackbar('Сеть недоступна', e);
         }
     };
 

@@ -15,6 +15,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import { BANKS, FIELD_SX } from '../Options';
 import { useState } from 'react';
 import CashbackModal from './CashbackModal';
+import { useSnackbar } from '../SnackbarProvider';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
@@ -26,6 +27,7 @@ export default function UserModal({
     participantId,
     onSave,
     isEditable = true,
+    roomStatus = 'active',
 }) {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -35,9 +37,12 @@ export default function UserModal({
     const [phoneNumber, setPhoneNumber] = useState('');
     const [bank, setBank] = useState(1);
     const [cashbackOpen, setCashbackOpen] = useState(false);
+    const showSnackbar = useSnackbar();
 
     const [prevKey, setPrevKey] = useState(null);
     const currentKey = open ? user?.id || 'open' : null;
+
+    console.log('ДАННЫЕ ЮЗЕРА В МОДАЛКЕ:', user);
 
     if (currentKey !== prevKey) {
         setPrevKey(currentKey);
@@ -45,24 +50,30 @@ export default function UserModal({
             setNickname(user.nickname || '');
             setCardNumber(user.card_number || '');
             setPhoneNumber(user.phone_number || '');
-            setBank(user.bank_id || 1);
+            setBank(
+                user.bank_id || BANKS.find((b) => b.label === user.bank_name)?.value || 1,
+            );
         }
     }
 
     const handleSave = async () => {
         const allData = {
             nickname: nickname.trim(),
-            card_number: cardNumber.trim() || null,
-            phone_number: phoneNumber.trim() || null,
+            card_number: cardNumber.trim() || '',
+            phone_number: phoneNumber.trim() || '',
             bank_id: Number(bank),
         };
 
         try {
+            const cookie = JSON.parse(Cookies.get('meeting') || '{}');
             const res = await fetch(
-                `${API_URL}/meetings/${meetingUUID}/participants/${participantId}`,
+                `${API_URL}/meetings/${meetingUUID}/participants/me`,
                 {
                     method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'session-id': cookie.sessionId,
+                    },
                     body: JSON.stringify(allData),
                 },
             );
@@ -82,25 +93,26 @@ export default function UserModal({
                             isCreator: cookie.isCreator,
                             name: cookie.name,
                             date: cookie.date,
+                            sessionId: cookie.sessionId,
                         }),
                     );
                 }
 
-                alert('Сохранено!');
+                showSnackbar('Сохранено!', 'success');
                 onSave(allData);
                 onClose();
             } else {
                 const errorData = await res.json();
                 console.error('Ошибка валидации:', errorData);
-                alert(
-                    'Ошибка при сохранении. Проверьте правильность полей (карта/телефон).',
-                );
+                showSnackbar('Ошибка при сохранении. Проверьте карту/телефон.');
             }
         } catch (e) {
-            alert('Нет связи с сервером');
+            showSnackbar('Нет связи с сервером');
             console.error(e);
         }
     };
+
+    const canEdit = isEditable && roomStatus === 'active';
 
     return (
         <Dialog
@@ -124,7 +136,7 @@ export default function UserModal({
 
             <div className="text-center pt-4 pb-2">
                 <div className="font-extrabold text-[#463628] text-3xl">
-                    {isEditable ? 'Мои данные' : 'Данные участника'}
+                    {canEdit ? 'Мои данные' : 'Данные участника'}
                 </div>
             </div>
 
@@ -141,7 +153,7 @@ export default function UserModal({
                     value={nickname}
                     onChange={(e) => setNickname(e.target.value)}
                     sx={FIELD_SX}
-                    slotProps={{ input: { readOnly: !isEditable } }}
+                    slotProps={{ input: { readOnly: !canEdit } }}
                 />
                 <TextField
                     fullWidth
@@ -150,7 +162,7 @@ export default function UserModal({
                     value={cardNumber}
                     onChange={(e) => setCardNumber(e.target.value)}
                     sx={FIELD_SX}
-                    slotProps={{ input: { readOnly: !isEditable } }}
+                    slotProps={{ input: { readOnly: !canEdit } }}
                 />
                 <TextField
                     fullWidth
@@ -159,7 +171,7 @@ export default function UserModal({
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     sx={FIELD_SX}
-                    slotProps={{ input: { readOnly: !isEditable } }}
+                    slotProps={{ input: { readOnly: !canEdit } }}
                 />
 
                 <TextField
@@ -169,7 +181,7 @@ export default function UserModal({
                     value={bank}
                     onChange={(e) => setBank(e.target.value)}
                     sx={FIELD_SX}
-                    slotProps={{ input: { readOnly: !isEditable } }}
+                    slotProps={{ input: { readOnly: !canEdit } }}
                 >
                     {BANKS.map((option) => (
                         <MenuItem key={option.value} value={option.value}>
@@ -178,7 +190,7 @@ export default function UserModal({
                     ))}
                 </TextField>
 
-                {isEditable && (
+                {canEdit && (
                     <Button
                         fullWidth
                         variant="outlined"
@@ -190,7 +202,7 @@ export default function UserModal({
                 )}
             </DialogContent>
 
-            {isEditable && (
+            {canEdit && (
                 <div className="px-6 pb-2">
                     <p className="text-[10px] text-[#463628] opacity-70 text-center mb-3 leading-tight">
                         Нажимая «Сохранить», вы подтверждаете согласие на обработку

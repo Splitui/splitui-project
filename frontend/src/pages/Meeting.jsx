@@ -20,6 +20,9 @@ import ExpensesTab from '../components/meetingTabs/ExpensesTab';
 import PaymentTab from '../components/meetingTabs/PaymentTab';
 import UserAvatar from '../components/UserAvatar';
 import AddExpense from '../components/modal/AddExpense';
+import BestCashback from '../components/modal/BestCashback';
+import EditExpense from '../components/modal/EditExpense';
+import { useSnackbar } from '../components/SnackbarProvider';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
@@ -162,7 +165,14 @@ const MembersButton = ({ onClick, participants }) => (
     </button>
 );
 
-const MembersDialog = ({ open, onClose, participants, meetingId, onSave }) => {
+const MembersDialog = ({
+    open,
+    onClose,
+    participants,
+    meetingId,
+    onSave,
+    roomStatus,
+}) => {
     const [editOpen, setEditOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
 
@@ -221,8 +231,20 @@ const MembersDialog = ({ open, onClose, participants, meetingId, onSave }) => {
                             participants.map((p, idx) => (
                                 <div
                                     key={idx}
-                                    onClick={() => handleUserClick(p)}
-                                    className="flex items-center gap-3 p-3 rounded-xl bg-white shadow-sm border border-gray-100"
+                                    onClick={() => {
+                                        if (
+                                            roomStatus !== 'active' ||
+                                            p.id === myParticipantId
+                                        ) {
+                                            handleUserClick(p);
+                                        }
+                                    }}
+                                    className={`flex items-center gap-3 p-3 rounded-xl bg-white shadow-sm border border-gray-100 ${
+                                        roomStatus !== 'active' ||
+                                        p.id === myParticipantId
+                                            ? 'cursor-pointer active:scale-95'
+                                            : 'opacity-50 cursor-not-allowed'
+                                    }`}
                                 >
                                     <Avatar>
                                         {p.nickname ? p.nickname[0].toUpperCase() : '?'}
@@ -249,6 +271,7 @@ const MembersDialog = ({ open, onClose, participants, meetingId, onSave }) => {
                     if (onSave)
                         onSave({ ...data, id: selectedUser?.id || myParticipantId });
                 }}
+                roomStatus={roomStatus}
                 isEditable={selectedUser?.id === myParticipantId}
             />
         </>
@@ -261,10 +284,16 @@ export default function Meeting() {
     const [openMembers, setOpenMembers] = useState(false);
     const [participants, setParticipants] = useState([]);
     const [openAddExpense, setOpenAddExpense] = useState(false);
+    const [refresh, setRefresh] = useState(0);
+    const [editExpenseId, setEditExpenseId] = useState(null);
     const navigate = useNavigate();
     const meeting = JSON.parse(Cookies.get('meeting') || '{}');
     const meetingId = meeting.id;
     const participantId = meeting.participantId;
+    const [isFinished, setIsFinished] = useState(false);
+    const showSnackbar = useSnackbar();
+    const roomStatus = isFinished ? 'finished' : meeting.status || 'active';
+    const isLocked = roomStatus !== 'active';
 
     const [currentMeetingName, setCurrentMeetingName] = useState(
         meeting.name || 'Встреча сплитуев',
@@ -277,6 +306,8 @@ export default function Meeting() {
         participant_debt: 0,
         participant_spend: 0,
     });
+
+    const [openBestCashback, setOpenBestCashback] = useState(false);
 
     const currentUser = participants.find((p) => p.id === participantId) || {
         nickname: meeting.userName || `Юзер`,
@@ -300,17 +331,20 @@ export default function Meeting() {
             try {
                 const res = await fetch(
                     `${API_URL}/amount/${meetingId}/${participantId}`,
+                    {
+                        headers: { 'session-id': meeting.sessionId },
+                    },
                 );
                 if (res.ok) {
                     const data = await res.json();
                     setBalance(data);
                 }
             } catch (e) {
-                console.error('Ошибочка с балансом', e);
+                showSnackbar('Ошибка загрузки данных', e);
             }
         };
         fetchBalance();
-    }, [meetingId, participantId]);
+    }, [meetingId, participantId, refresh, showSnackbar, meeting.sessionId]);
 
     useEffect(() => {
         const fetchParticipants = async () => {
@@ -318,6 +352,9 @@ export default function Meeting() {
             try {
                 const res = await fetch(
                     `${API_URL}/meetings/${meetingId}/participants?limit=50&offset=0`,
+                    {
+                        headers: { 'session-id': meeting.sessionId },
+                    },
                 );
                 if (res.ok) {
                     const participants = await res.json();
@@ -326,6 +363,9 @@ export default function Meeting() {
                             try {
                                 const bankRes = await fetch(
                                     `${API_URL}/meetings/${meetingId}/participants/${p.id}/bank_data`,
+                                    {
+                                        headers: { 'session-id': meeting.sessionId },
+                                    },
                                 );
                                 if (bankRes.ok) {
                                     const bankData = await bankRes.json();
@@ -334,6 +374,7 @@ export default function Meeting() {
                                         card_number: bankData.card_number,
                                         phone_number: bankData.phone_number,
                                         bank_id: bankData.bank_id,
+                                        bank_name: bankData.bank_name,
                                     };
                                     if (p.id === participantId) {
                                         const meetingCookie = JSON.parse(
@@ -352,13 +393,14 @@ export default function Meeting() {
                                                 isCreator: meetingCookie.isCreator,
                                                 name: meetingCookie.name,
                                                 date: meetingCookie.date,
+                                                sessionId: meetingCookie.sessionId,
                                             }),
                                         );
                                     }
                                     return enriched;
                                 }
                             } catch (err) {
-                                console.log('Нет данных банка для', p.id, err);
+                                showSnackbar('Ошибка загрузки данных', err);
                             }
                             return p;
                         }),
@@ -370,7 +412,48 @@ export default function Meeting() {
             }
         };
         fetchParticipants();
-    }, [meetingId, participantId]);
+    }, [meetingId, participantId, showSnackbar, meeting.sessionId]);
+
+    useEffect(() => {
+        const checkMeetingStatus = async () => {
+            if (!meetingId) return;
+            try {
+                const res = await fetch(`${API_URL}/meetings/${meetingId}`, {
+                    headers: { 'session-id': meeting.sessionId },
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'Завершена' || data.is_finished) {
+                        setIsFinished(true);
+                    }
+
+                    if (data.title) setCurrentMeetingName(data.title);
+                    if (data.start_date)
+                        setCurrentMeetingDate(data.start_date.substring(0, 10));
+                }
+            } catch (e) {
+                console.error('Ошибка проверки статуса', e);
+            }
+        };
+        checkMeetingStatus();
+    }, [meetingId, meeting.sessionId]);
+
+    const handleFinishMeetingAPI = async () => {
+        try {
+            const res = await fetch(`${API_URL}/meetings/${meetingId}/finish`, {
+                method: 'POST',
+            });
+            if (res.ok) {
+                setIsFinished(true);
+                setOpenEndMeeting(false);
+            } else {
+                alert('Не удалось завершить встречу');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Ошибка сети');
+        }
+    };
 
     const handleBottomButtonClick = () => {
         if (value === 'expenses') {
@@ -405,14 +488,23 @@ export default function Meeting() {
                 </div>
 
                 <main className="flex-1 overflow-y-auto custom-scrollbar px-2">
-                    {value === 'expenses' ? <ExpensesTab /> : <PaymentTab />}
+                    {value === 'expenses' ? (
+                        <ExpensesTab
+                            refresh={refresh}
+                            onExpenseClick={setEditExpenseId}
+                        />
+                    ) : (
+                        <PaymentTab />
+                    )}
                 </main>
 
                 <div className="pt-4 shrink-0">
                     {value === 'expenses' ? (
                         <Button
+                            onClick={() => setOpenBestCashback(true)}
                             variant="contained"
                             fullWidth
+                            disabled={isLocked}
                             sx={{
                                 backgroundColor: '#DAB672',
                                 color: '#463628',
@@ -440,24 +532,31 @@ export default function Meeting() {
                     <Button
                         variant="contained"
                         fullWidth
-                        onClick={handleBottomButtonClick}
+                        onClick={isLocked ? null : handleBottomButtonClick}
+                        disabled={isLocked && value === 'expenses'}
                         sx={{
-                            backgroundColor: '#463628',
-                            color: '#EAE0CD',
+                            backgroundColor: isLocked ? '#BDBDBD !important' : '#463628',
+                            color: isLocked ? '#757575 !important' : '#EAE0CD',
                             fontWeight: 'bold',
                             borderRadius: '12px',
                             py: 2,
                             fontSize: '1rem',
                             textTransform: 'uppercase',
                             letterSpacing: '0.1em',
-                            boxShadow: '0px 4px 6px rgba(0,0,0,0.1)',
-                            '&:hover': {
-                                backgroundColor: '#3a2c20',
-                                boxShadow: '0px 6px 10px rgba(0,0,0,0.2)',
+                            boxShadow: 'none',
+                            '&.Mui-disabled': {
+                                backgroundColor: '#CCCCCC',
+                                color: '#888888',
                             },
                         }}
                     >
-                        {value === 'expenses' ? 'Добавить расход' : 'Завершить встречу'}
+                        {isFinished
+                            ? 'Встреча завершена'
+                            : roomStatus === 'calculating'
+                              ? 'Идет расчет...'
+                              : value === 'expenses'
+                                ? 'Добавить расход'
+                                : 'Завершить встречу'}
                     </Button>
                 </div>
 
@@ -465,6 +564,7 @@ export default function Meeting() {
                     className="#F8F4EC"
                     open={openMembers}
                     onClose={() => setOpenMembers(false)}
+                    roomStatus={roomStatus}
                     participants={participants}
                     meetingId={meetingId}
                     onSave={(data) =>
@@ -474,15 +574,24 @@ export default function Meeting() {
                 <AddExpense
                     open={openAddExpense}
                     onClose={() => setOpenAddExpense(false)}
+                    onCreated={() => setRefresh((n) => n + 1)}
                 />
-
+                <EditExpense
+                    open={editExpenseId !== null}
+                    expenseId={editExpenseId}
+                    onClose={() => setEditExpenseId(null)}
+                    onUpdated={() => setRefresh((n) => n + 1)}
+                />
                 <EndMeeting
                     open={openEndMeeting}
                     onClose={() => setOpenEndMeeting(false)}
-                    onConfirm={() => {
-                        alert('Встреча завершена!');
-                        setOpenEndMeeting(false);
-                    }}
+                    onConfirm={handleFinishMeetingAPI}
+                />
+
+                <BestCashback
+                    open={openBestCashback}
+                    onClose={() => setOpenBestCashback(false)}
+                    participants={participants}
                 />
 
                 <EditMeeting

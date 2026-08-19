@@ -13,161 +13,132 @@ import {
     FormControlLabel,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
 import { CASHBACK_OPTIONS, FIELD_SX, MENU_PROPS } from '../Options';
 import Receipt from './Receipt';
 import { useSnackbar } from '../SnackbarProvider';
-import QrScanner from './QrScanner';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 const API_BASE = API_URL;
 
-export default function AddExpense({ open, onClose, onCreated }) {
+export default function EditExpense({ open, onClose, onUpdated, expenseId }) {
+    const showSnackbar = useSnackbar();
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
-
-    const nameRef = useRef(null);
-    const amountRef = useRef(null);
-    const showSnackbar = useSnackbar();
-
+    const [title, setTitle] = useState('');
+    const [amount, setAmount] = useState('');
     const [paidBy, setPaidBy] = useState('');
     const [payer, setPayer] = useState([]);
     const [cashbackCategory, setCashbackCategory] = useState('');
+    const [singleItem, setSingleItem] = useState(true);
 
     const [usersOptions, setUsersOptions] = useState([]);
     const [usersLoading, setUsersLoading] = useState(false);
-    const [usersError, setUsersError] = useState(null);
-    const [singleItem, setSingleItem] = useState(true);
+    const [error, setError] = useState(null);
     const [receiptOpen, setReceiptOpen] = useState(false);
     const [receiptItems, setReceiptItems] = useState([]);
-    const [scannerOpen, setScannerOpen] = useState(false);
 
     useEffect(() => {
-        if (!open) return;
+        if (!open || !expenseId) return;
 
         const meeting = JSON.parse(Cookies.get('meeting') || '{}');
         const meetingUuid = meeting.id;
         const sessionId = meeting.sessionId;
         if (!meetingUuid) {
-            setUsersError('Не найден UUID встречи');
+            setError('Не найден UUID встречи');
             return;
         }
 
         const controller = new AbortController();
 
-        const fetchParticipants = async () => {
+        const load = async () => {
             setUsersLoading(true);
-            setUsersError(null);
+            setError(null);
             try {
-                const response = await fetch(
+                const partRes = await fetch(
                     `${API_BASE}/meetings/${meetingUuid}/participants?limit=100&offset=0`,
                     {
                         signal: controller.signal,
                         headers: { 'session-id': sessionId },
                     },
                 );
-
-                if (!response.ok) {
-                    throw new Error(`Ошибка загрузки участников: ${response.status}`);
-                }
-
-                const data = await response.json();
-
+                if (!partRes.ok) throw new Error(`Ошибка участников: ${partRes.status}`);
+                const partData = await partRes.json();
                 setUsersOptions(
-                    data.map((participant) => ({
-                        value: participant.id,
-                        label: participant.nickname,
-                    })),
+                    partData.map((p) => ({ value: p.id, label: p.nickname })),
                 );
-            } catch (err) {
-                if (err.name !== 'AbortError') {
-                    setUsersError(err.message);
-                    showSnackbar(err.message);
+                const recRes = await fetch(
+                    `${API_BASE}/meetings/${meetingUuid}/receipts/${expenseId}?limit=100&offset=0`,
+                    {
+                        signal: controller.signal,
+                        headers: { 'session-id': sessionId },
+                    },
+                );
+                if (!recRes.ok) throw new Error(`Ошибка чека: ${recRes.status}`);
+                const rec = await recRes.json();
+                setTitle(rec.title || '');
+                setPaidBy(rec.payer_id || '');
+                setCashbackCategory(rec.category ?? '');
+
+                const items = rec.items || [];
+                if (items.length <= 1) {
+                    setSingleItem(true);
+                    setAmount(items[0]?.unit_price ?? '');
+                    setPayer((items[0]?.participants || []).map((p) => p.id));
+                    setReceiptItems([]);
+                } else {
+                    setSingleItem(false);
+                    setReceiptItems(
+                        items.map((it) => ({
+                            id: it.id,
+                            title: it.title,
+                            unitPrice: it.unit_price,
+                            quantity: it.quantity,
+                            participantIds: (it.participants || []).map(
+                                (p) => p.participant_id,
+                            ),
+                        })),
+                    );
                 }
+            } catch (err) {
+                if (err.name !== 'AbortError') setError(err.message);
+                showSnackbar(err.message);
             } finally {
                 setUsersLoading(false);
             }
         };
 
-        fetchParticipants();
-
+        load();
         return () => controller.abort();
-    }, [open]);
+    }, [open, expenseId]);
 
     const handleReceiptView = () => setReceiptOpen(true);
-
-    const handleReceiptUpload = () => setScannerOpen(true);
-    const handleQrScanned = async (qrRaw) => {
-        setScannerOpen(false);
-        const meeting = JSON.parse(Cookies.get('meeting') || '{}');
-        try {
-            const res = await fetch(`${API_BASE}/qr`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'session-id': meeting.sessionId,
-                },
-                body: JSON.stringify({ qr_raw: qrRaw }),
-            });
-            if (!res.ok) {
-                showSnackbar('Не удалось распознать чек');
-                return;
-            }
-            const data = await res.json();
-            setReceiptItems(
-                (data.items || []).map((it, idx) => ({
-                    id: it.id ?? Date.now() + idx,
-                    title: it.title,
-                    unitPrice: Number(it.unit_price) || 0,
-                    quantity: it.quantity,
-                    participantIds: [],
-                })),
-            );
-            setReceiptOpen(true);
-        } catch (e) {
-            showSnackbar('Сеть недоступна');
-        }
-    };
 
     const handleSave = async () => {
         const meeting = JSON.parse(Cookies.get('meeting') || '{}');
         const meetingUuid = meeting.id;
         const sessionId = meeting.sessionId;
-        if (!meetingUuid) {
-            console.error('Не найден UUID встречи');
-            return;
-        }
-        if (!paidBy) {
-            return;
-        }
-        if (!singleItem && receiptItems.length === 0) {
-            setUsersError('Добавьте хотя бы одну позицию в чек');
-            return;
-        }
-        const expenseName = nameRef.current.value.trim();
-        const amount = amountRef.current ? parseFloat(amountRef.current.value) || 0 : 0;
+        if (!meetingUuid || !paidBy) return;
 
         const items = singleItem
             ? [
                   {
-                      title: expenseName,
-                      unit_price: amount,
+                      title,
+                      unit_price: parseFloat(amount) || 0,
                       quantity: 1,
-                      participants: payer.map((id) => ({
-                          participant_id: id,
-                          quantity: 1,
-                      })),
+                      participants: payer
+                          .filter((id) => id != null)
+                          .map((id) => ({ participant_id: id, quantity: 1 })),
                   },
               ]
             : receiptItems.map((it) => ({
                   title: it.title,
                   unit_price: it.unitPrice,
                   quantity: it.quantity,
-                  participants: it.participantIds.map((id) => ({
-                      participant_id: id,
-                      quantity: 1,
-                  })),
+                  participants: it.participantIds
+                      .filter((id) => id != null)
+                      .map((id) => ({ participant_id: id, quantity: 1 })),
               }));
 
         const totalAmount = items.reduce(
@@ -176,21 +147,22 @@ export default function AddExpense({ open, onClose, onCreated }) {
         );
 
         const allParticipantIds = singleItem
-            ? payer
-            : [...new Set(receiptItems.flatMap((it) => it.participantIds))];
+            ? payer.filter((id) => id != null)
+            : [...new Set(receiptItems.flatMap((it) => it.participantIds))].filter(
+                  (id) => id != null,
+              );
 
         const body = {
+            id: expenseId,
             payer_id: paidBy,
-            title: expenseName,
+            title,
             purchase_date: new Date().toISOString(),
             category: cashbackCategory || null,
             comment: '',
             image_url: null,
             is_confirmed: false,
             total_amount: totalAmount,
-            participants: allParticipantIds.map((id) => ({
-                participant_id: id,
-            })),
+            participants: allParticipantIds.map((id) => ({ participant_id: id })),
             items,
         };
 
@@ -203,15 +175,39 @@ export default function AddExpense({ open, onClose, onCreated }) {
                 },
                 body: JSON.stringify(body),
             });
-
             if (!res.ok) {
-                showSnackbar('Не удалось сохранить расход');
+                showSnackbar('Не удалось обновить расход');
                 return;
             }
-            onCreated?.();
+            onUpdated?.();
             onClose();
         } catch (e) {
-            showSnackbar('Сеть недоступна', e);
+            showSnackbar('Сеть недоступна');
+        }
+    };
+    const handleDelete = async () => {
+        const meeting = JSON.parse(Cookies.get('meeting') || '{}');
+        const meetingUuid = meeting.id;
+        const sessionId = meeting.sessionId;
+        if (!meetingUuid || !expenseId) return;
+        if (!window.confirm('Удалить этот расход?')) return;
+
+        try {
+            const res = await fetch(
+                `${API_BASE}/meetings/${meetingUuid}/participant/${paidBy}/receipts/${expenseId}`,
+                {
+                    method: 'DELETE',
+                    headers: { 'session-id': sessionId },
+                },
+            );
+            if (!res.ok) {
+                showSnackbar('Не удалось удалить расход');
+                return;
+            }
+            onUpdated?.();
+            onClose();
+        } catch (e) {
+            showSnackbar('Сеть недоступна');
         }
     };
 
@@ -232,9 +228,7 @@ export default function AddExpense({ open, onClose, onCreated }) {
                     },
                 },
                 backdrop: {
-                    sx: {
-                        visibility: receiptOpen ? 'hidden' : 'visible',
-                    },
+                    sx: { visibility: receiptOpen ? 'hidden' : 'visible' },
                 },
             }}
         >
@@ -254,7 +248,7 @@ export default function AddExpense({ open, onClose, onCreated }) {
                         letterSpacing: '0.02em',
                     }}
                 >
-                    Новый расход
+                    Редактирование расхода
                 </Typography>
             </Box>
 
@@ -264,7 +258,8 @@ export default function AddExpense({ open, onClose, onCreated }) {
                 <TextField
                     fullWidth
                     label="Название расхода"
-                    inputRef={nameRef}
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
                     sx={FIELD_SX}
                 />
                 {singleItem && (
@@ -272,14 +267,15 @@ export default function AddExpense({ open, onClose, onCreated }) {
                         fullWidth
                         label="Сумма"
                         type="number"
-                        inputRef={amountRef}
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
                         sx={FIELD_SX}
                     />
                 )}
 
-                {usersError && (
+                {error && (
                     <Typography sx={{ color: '#d32f2f', fontSize: '0.875rem' }}>
-                        {usersError}
+                        {error}
                     </Typography>
                 )}
 
@@ -340,6 +336,7 @@ export default function AddExpense({ open, onClose, onCreated }) {
                         </MenuItem>
                     ))}
                 </TextField>
+
                 {!singleItem && (
                     <Button
                         fullWidth
@@ -356,6 +353,7 @@ export default function AddExpense({ open, onClose, onCreated }) {
                         ПОСМОТРЕТЬ ЧЕК
                     </Button>
                 )}
+
                 <FormControlLabel
                     control={
                         <Switch
@@ -366,9 +364,7 @@ export default function AddExpense({ open, onClose, onCreated }) {
                                     color: '#DAB672',
                                 },
                                 '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track':
-                                    {
-                                        backgroundColor: '#DAB672',
-                                    },
+                                    { backgroundColor: '#DAB672' },
                             }}
                         />
                     }
@@ -378,33 +374,11 @@ export default function AddExpense({ open, onClose, onCreated }) {
                         ml: 0,
                         color: '#463628',
                         fontWeight: 600,
-                        '& .MuiFormControlLabel-label': {
-                            fontWeight: 600,
-                        },
+                        '& .MuiFormControlLabel-label': { fontWeight: 600 },
                     }}
                 />
             </DialogContent>
-            {!singleItem && (
-                <Box className="px-6 pb-2 flex flex-col gap-3">
-                    <Button
-                        fullWidth
-                        variant="contained"
-                        onClick={handleReceiptUpload}
-                        sx={{
-                            backgroundColor: '#DAB672',
-                            color: '#463628',
-                            fontWeight: 'bold',
-                            borderRadius: '8px',
-                            py: 1.5,
-                            fontSize: '1rem',
-                            boxShadow: 'none',
-                            '&:hover': { backgroundColor: '#c9a25f', boxShadow: 'none' },
-                        }}
-                    >
-                        ОТСКАНИРОВАТЬ ЧЕК
-                    </Button>
-                </Box>
-            )}
+
             <Box className="px-6 pb-4 flex flex-col gap-3">
                 <Button
                     fullWidth
@@ -421,20 +395,33 @@ export default function AddExpense({ open, onClose, onCreated }) {
                         '&:hover': { backgroundColor: '#3a2c20', boxShadow: 'none' },
                     }}
                 >
-                    СОХРАНИТЬ РАСХОД
+                    СОХРАНИТЬ ИЗМЕНЕНИЯ
+                </Button>
+                <Button
+                    fullWidth
+                    variant="outlined"
+                    onClick={handleDelete}
+                    sx={{
+                        backgroundColor: '#463628',
+                        color: '#F8F4EC',
+                        fontWeight: 'bold',
+                        borderRadius: '8px',
+                        py: 1.5,
+                        fontSize: '1rem',
+                        boxShadow: 'none',
+                        '&:hover': { backgroundColor: '#3a2c20', boxShadow: 'none' },
+                    }}
+                >
+                    УДАЛИТЬ РАСХОД
                 </Button>
             </Box>
+
             <Receipt
                 open={receiptOpen}
                 onClose={() => setReceiptOpen(false)}
                 items={receiptItems}
                 setItems={setReceiptItems}
                 usersOptions={usersOptions}
-            />
-            <QrScanner
-                open={scannerOpen}
-                onClose={() => setScannerOpen(false)}
-                onScanned={handleQrScanned}
             />
         </Dialog>
     );

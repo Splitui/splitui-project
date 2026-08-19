@@ -3,6 +3,7 @@ import Cookies from 'js-cookie';
 import { Button, Dialog, DialogContent, IconButton, TextField } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { FIELD_SX } from '../Options';
+import { useSnackbar } from '../SnackbarProvider';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
@@ -16,6 +17,7 @@ export default function EditMeeting({
 }) {
     const [name, setName] = useState(meetingName);
     const [date, setDate] = useState(meetingDate);
+    const showSnackbar = useSnackbar();
 
     const handleSave = async () => {
         try {
@@ -40,14 +42,14 @@ export default function EditMeeting({
                 );
 
                 onSave(name.trim(), date);
-                alert('Сохранено!');
+                showSnackbar('Сохранено!', 'success');
                 onClose();
             } else {
-                alert('Ошибочка');
+                showSnackbar('Не удалось сохранить встречу');
             }
         } catch (e) {
             console.error(e);
-            alert('Сервен не отвечает');
+            showSnackbar('Нет связи с сервером');
         }
     };
     return (
