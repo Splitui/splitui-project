@@ -6,6 +6,8 @@ const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 export default function InviteMeeting({ open, onClose, meetingId, onJoined }) {
     const nameRef = useRef(null);
 
+    const cookie = open ? JSON.parse(Cookies.get('meeting') || '{}') : {};
+
     const handleJoin = async () => {
         const name = nameRef.current.value.trim();
         if (!name) return;
@@ -16,7 +18,10 @@ export default function InviteMeeting({ open, onClose, meetingId, onJoined }) {
 
             const res = await fetch(`${API_URL}/meetings/${meetingId}/participants`, {
                 method: `POST`,
-                headers: { 'Content-type': 'application/json' },
+                headers: {
+                    'Content-type': 'application/json',
+                    'session-id': cookie.sessionId,
+                },
                 body: JSON.stringify({ nickname: name }),
             });
             if (res.ok) {

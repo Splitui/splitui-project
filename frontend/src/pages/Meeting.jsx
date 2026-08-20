@@ -1,20 +1,12 @@
 import { useEffect, useState } from 'react';
-import {
-    Tabs,
-    Tab,
-    Button,
-    IconButton,
-    Avatar,
-    AvatarGroup,
-    Dialog,
-    DialogContent,
-} from '@mui/material';
+import { Tabs, Tab, Button, IconButton, Avatar, Drawer } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
+import CloseIcon from '@mui/icons-material/Close';
 import { useNavigate } from 'react-router-dom';
-import leave from '../components/logo/leave.svg';
 import EndMeeting from '../components/modal/EndMeeting';
 import Cookies from 'js-cookie';
 import UserModal from '../components/modal/UserModal';
+import LastPageIcon from '@mui/icons-material/LastPage';
 import EditMeeting from '../components/modal/EditMeeting';
 import ExpensesTab from '../components/meetingTabs/ExpensesTab';
 import PaymentTab from '../components/meetingTabs/PaymentTab';
@@ -26,6 +18,15 @@ import { useSnackbar } from '../components/SnackbarProvider';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
+const getParticipantWord = (count) => {
+    const num = Math.abs(count) % 100;
+    const num10 = num % 10;
+    if (num >= 11 && num <= 19) return 'участников';
+    if (num10 === 1) return 'участник';
+    if (num10 >= 2 && num10 <= 4) return 'участника';
+    return 'участников';
+};
+
 const MeetingHeader = ({
     navigate,
     name,
@@ -36,58 +37,130 @@ const MeetingHeader = ({
     onSave,
     onEditClick,
     isCreator,
+    participantsCount,
+    onMembersClick,
 }) => (
-    <header className="flex justify-between items-start mb-6 shrink-0">
-        <IconButton onClick={() => navigate('/')}>
-            <img src={leave} alt="leave" className="w-12 h-12 object-contain" />
-        </IconButton>
-        <div className="flex-1 flex justify-center items-center gap-1 ml-4">
-            <div className="text-center">
-                <h1 className="font-bold text-xl text-[#4A3F35] leading-tight">{name}</h1>
-                <p className="text-sm text-[#4A3F35] opacity-70">
-                    {date ? date.split('-').reverse().join('.') : ''}
-                </p>
+    <header className="flex items-center gap-4 mb-6 shrink-0">
+        <button
+            onClick={() => navigate('/')}
+            className="w-[42px] h-[42px] rounded-[14px] bg-[#EBE1CB] flex items-center justify-center text-2xl text-[#2E2519] shrink-0 transition-transform"
+        >
+            <LastPageIcon />
+        </button>
+
+        <div className="flex-1 min-w-0 flex flex-col justify-center">
+            <div className="flex items-center gap-1.5">
+                <h1 className="text-[22px] sm:text-[25px] font-bold text-[#2E2519] truncate leading-none">
+                    {name}
+                </h1>
+                {isCreator && (
+                    <IconButton
+                        size="small"
+                        onClick={onEditClick}
+                        sx={{ color: '#8A7C66', p: 0 }}
+                    >
+                        <EditIcon sx={{ fontSize: '18px' }} />
+                    </IconButton>
+                )}
             </div>
 
-            {isCreator && (
-                <IconButton
-                    size="small"
-                    onClick={onEditClick}
-                    sx={{ color: '#4A3F35', opacity: 0.6, mt: -1 }}
+            <div className="flex items-center gap-2 mt-2">
+                <span className="bg-[#DFF1E4] text-[#32935A] px-2 py-[3px] rounded-md text-[11px] font-bold tracking-wide uppercase leading-none">
+                    Активна ▾
+                </span>
+
+                <button
+                    onClick={onMembersClick}
+                    className="text-[13px] text-[#8A7C66] hover:text-[#463628] transition-colors truncate font-medium leading-none mt-[1px]"
                 >
-                    <EditIcon fontSize="small" />
-                </IconButton>
-            )}
+                    {date ? date.split('-').reverse().join('.') : ''} ·{' '}
+                    {participantsCount} {getParticipantWord(participantsCount)}
+                </button>
+            </div>
         </div>
-        <UserAvatar
-            user={user}
-            meetingId={meetingId}
-            participantId={participantId}
-            onSave={onSave}
-        />
+
+        <div className="shrink-0 flex items-center justify-center">
+            <UserAvatar
+                user={user}
+                meetingId={meetingId}
+                participantId={participantId}
+                onSave={onSave}
+            />
+        </div>
     </header>
 );
 
+const BalanceCard = ({ data }) => {
+    const spend = data.participant_spend || 0;
+    const debt = data.participant_debt || 0;
+    const total = data.meeting_amount || 0;
+
+    const netAmount = spend - debt;
+    const amIOwed = netAmount >= 0;
+    const net = Math.abs(netAmount);
+
+    const heroLabel = amIOwed ? 'Вам должны' : 'Вы должны';
+    const heroColor = amIOwed ? 'text-[#32935A]' : 'text-[#C12D2D]';
+
+    return (
+        <div className="w-full text-left px-5 shrink-0 mt-4">
+            <div className="text-[11.5px] tracking-[0.08em] uppercase text-[#9C8B6F] font-bold">
+                {heroLabel}
+            </div>
+
+            <div
+                className={`text-[40px] font-bold tracking-tight mt-1 tabular-nums leading-none ${heroColor}`}
+            >
+                {net.toLocaleString('ru-RU', { minimumFractionDigits: 2 })}{' '}
+                <span className="text-[30px] ml-0.5">₽</span>
+            </div>
+
+            <div className="flex gap-4 mt-3 text-[13px] text-[#8A7C66] font-medium">
+                <span>
+                    Всего{' '}
+                    <span className="text-[#2E2519] tabular-nums">
+                        {total.toFixed(2)} ₽
+                    </span>
+                </span>
+            </div>
+        </div>
+    );
+};
+
 const MeetingTabs = ({ value, onChange }) => (
-    <div className="mb-6 shrink-0">
+    <div className="px-5 mt-4 shrink-0">
         <Tabs
             value={value}
             onChange={onChange}
             variant="fullWidth"
-            sx={{ '& .MuiTabs-indicator': { display: 'none' } }}
+            sx={{
+                minHeight: '48px',
+                backgroundColor: '#E8DFC7',
+                borderRadius: '14px',
+                p: '4px',
+                '& .MuiTabs-indicator': {
+                    display: 'none',
+                },
+                '& .MuiTabs-flexContainer': {
+                    gap: '4px',
+                },
+            }}
         >
             <Tab
                 value="expenses"
                 label="Расходы"
                 sx={{
-                    fontWeight: 'bold',
-                    borderRadius: '12px',
+                    minHeight: '40px',
                     textTransform: 'none',
-                    backgroundColor: value === 'expenses' ? '#463628' : '#DAB672',
-                    color: value === 'expenses' ? '#EAE0CD' : '#463628',
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    borderRadius: '11px',
+                    color: '#8A7C66',
+                    transition: '0.2s',
                     '&.Mui-selected': {
-                        backgroundColor: '#463628',
-                        color: '#EAE0CD',
+                        backgroundColor: '#FFFFFF',
+                        color: '#2E2519',
+                        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
                     },
                 }}
             />
@@ -95,74 +168,22 @@ const MeetingTabs = ({ value, onChange }) => (
                 value="payment"
                 label="Оплата"
                 sx={{
-                    fontWeight: 'bold',
-                    borderRadius: '12px',
+                    minHeight: '40px',
                     textTransform: 'none',
-                    backgroundColor: value === 'payment' ? '#463628' : '#DAB672',
-                    color: value === 'payment' ? '#EAE0CD' : '#463628',
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    borderRadius: '11px',
+                    color: '#8A7C66',
+                    transition: '0.2s',
                     '&.Mui-selected': {
-                        backgroundColor: '#463628',
-                        color: '#EAE0CD',
+                        backgroundColor: '#FFFFFF',
+                        color: '#2E2519',
+                        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
                     },
                 }}
             />
         </Tabs>
     </div>
-);
-
-const BalanceCard = ({ data }) => (
-    <div className="bg-[#F8F4EC] w-full max-w-[332px] md:max-w-none min-h-[130px] rounded-[25px] p-4 shadow-sm flex flex-col gap-2 shrink-0">
-        <div className="flex justify-between items-center">
-            <span className="font-bold text-[#463628] uppercase text-sm md:text-base tracking-tight">
-                Всего потрачено:
-            </span>
-            <span className="text-[#DAB672] font-black text-xl md:text-2xl">
-                {data.meeting_amount}
-            </span>
-        </div>
-        <div className="flex justify-between items-center">
-            <span className="font-bold text-[#463628] uppercase text-sm md:text-base tracking-tight">
-                Должен я:
-            </span>
-            <span className="text-[#DAB672] font-black text-xl md:text-2xl">
-                {data.participant_debt}
-            </span>
-        </div>
-        <div className="flex justify-between items-center border-t border-gray-50 pt-1">
-            <span className="font-bold text-[#463628] uppercase text-sm md:text-base tracking-tight">
-                Должны мне:
-            </span>
-            <span className="text-[#DAB672] font-black text-xl md:text-2xl">
-                {data.participant_spend}
-            </span>
-        </div>
-    </div>
-);
-
-const MembersButton = ({ onClick, participants }) => (
-    <button
-        onClick={onClick}
-        className="bg-[#F8F4EC] w-[70%] max-w-[280px] h-[56px] rounded-[15px] p-4 flex justify-between items-center shadow-sm active:scale-[0.98] transition-all shrink-0"
-    >
-        <span className="font-bold text-base uppercase text-[#463628]">Участники</span>
-        <AvatarGroup
-            max={3}
-            sx={{
-                '& .MuiAvatar-root': {
-                    width: 30,
-                    height: 30,
-                    fontSize: 12,
-                    border: '2px solid #F8F4EC',
-                },
-            }}
-        >
-            {participants.map((p, idx) => (
-                <Avatar key={idx}>
-                    {p.nickname ? p.nickname[0].toUpperCase() : '?'}
-                </Avatar>
-            ))}
-        </AvatarGroup>
-    </button>
 );
 
 const MembersDialog = ({
@@ -175,91 +196,139 @@ const MembersDialog = ({
 }) => {
     const [editOpen, setEditOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
+    const showSnackbar = useSnackbar();
 
     const meetingCookie = JSON.parse(Cookies.get('meeting') || '{}');
     const myParticipantId = meetingCookie.participantId;
+    const iAmCreator = meetingCookie.isCreator;
 
     const handleUserClick = (user) => {
         setSelectedUser(user);
         setEditOpen(true);
     };
+
     const handleLink = async () => {
         const inviteLink = `${window.location.origin}?join=${meetingId}`;
         await navigator.clipboard.writeText(inviteLink);
-        alert('Успешно скопировано');
+        showSnackbar('Ссылка скопирована!', 'success');
     };
 
     return (
         <>
-            <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-                <div className="flex justify-between p-4">
-                    <h2 className="text-xl font-bold text-[#463628]">
-                        Список участников
-                    </h2>
-                    <IconButton onClick={onClose} className="text-2xl font-bold">
-                        ☓
+            <Drawer
+                anchor="bottom"
+                open={open}
+                onClose={onClose}
+                slotProps={{
+                    paper: {
+                        sx: {
+                            borderTopLeftRadius: '32px',
+                            borderTopRightRadius: '32px',
+                            backgroundColor: '#F7F1E3',
+                            backgroundImage: 'none',
+                            width: '100%',
+                            maxWidth: '100%',
+                            margin: 0,
+                        },
+                    },
+                }}
+            >
+                <div className="w-12 h-1.5 bg-[#D9D3C7] rounded-full mx-auto mt-3 mb-1" />
+
+                <div className="flex justify-between items-center px-6 pt-4 pb-2">
+                    <h2 className="text-[24px] font-bold text-[#2E2519]">Участники</h2>
+                    <IconButton onClick={onClose} sx={{ color: '#8A7C66', p: 0.5 }}>
+                        <CloseIcon sx={{ fontSize: '28px', fontWeight: 300 }} />
                     </IconButton>
                 </div>
-                <DialogContent>
+
+                <div className="px-6 pb-8 overflow-y-auto">
                     <Button
                         fullWidth
-                        variant="outlined"
                         onClick={handleLink}
                         sx={{
-                            mb: 3,
-                            py: 1.5,
-                            borderRadius: '12px',
-                            border: '2px solid #463628',
-                            color: '#463628',
-                            fontWeight: 'bold',
-                            fontSize: '0.9rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
+                            py: 1.8,
+                            borderRadius: '16px',
+                            backgroundColor: '#FFFFFF',
+                            border: '1px solid #E8DFC7',
+                            color: '#2E2519',
+                            fontWeight: '600',
+                            fontSize: '15px',
+                            textTransform: 'none',
+                            justifyContent: 'center',
+                            boxShadow: 'none',
                             '&:hover': {
-                                border: '2px solid #463628',
-                                backgroundColor: '#F8F4EC',
-                            },
-                            '&.MuiButton-outlined': {
-                                borderColor: '#463628',
+                                backgroundColor: '#fdfdfd',
+                                borderColor: '#D4C9B0',
                             },
                         }}
                     >
-                        Добавить участника
+                        + Добавить участника
                     </Button>
-                    <div className="flex flex-col gap-3 pb-4">
-                        {participants.length > 0 ? (
-                            participants.map((p, idx) => (
+
+                    <div className="text-[11px] uppercase tracking-wider text-[#9C8B6F] font-bold mb-2 mt-6">
+                        Список участников
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                        {participants.map((p, idx) => {
+                            const isMe = p.id === myParticipantId;
+                            const isCreator = isMe ? iAmCreator : p.is_creator;
+                            return (
                                 <div
                                     key={idx}
-                                    onClick={() => {
-                                        if (
-                                            roomStatus !== 'active' ||
-                                            p.id === myParticipantId
-                                        ) {
-                                            handleUserClick(p);
-                                        }
-                                    }}
-                                    className={`flex items-center gap-3 p-3 rounded-xl bg-white shadow-sm border border-gray-100 ${
-                                        roomStatus !== 'active' ||
-                                        p.id === myParticipantId
-                                            ? 'cursor-pointer active:scale-95'
-                                            : 'opacity-50 cursor-not-allowed'
-                                    }`}
+                                    onClick={() =>
+                                        (roomStatus !== 'active' || isMe) &&
+                                        handleUserClick(p)
+                                    }
+                                    className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-[#E8DFC7] transition-all cursor-pointer"
                                 >
-                                    <Avatar>
+                                    <Avatar
+                                        sx={{
+                                            width: 48,
+                                            height: 48,
+                                            bgcolor: '#E6D9BA',
+                                            color: '#7A5316',
+                                            fontWeight: 'bold',
+                                            fontSize: '18px',
+                                        }}
+                                    >
                                         {p.nickname ? p.nickname[0].toUpperCase() : '?'}
                                     </Avatar>
-                                    <span className="font-bold text-[#463628]">
-                                        {p.nickname}
-                                    </span>
+
+                                    <div className="flex flex-col flex-1">
+                                        <span className="font-bold text-[#2E2519] text-[17px]">
+                                            {p.nickname} {isMe && '(вы)'}
+                                        </span>
+                                        <span className="text-[13px] text-[#8A7C66]">
+                                            {isCreator ? 'Создатель встречи' : 'Участник'}
+                                        </span>
+                                    </div>
                                 </div>
-                            ))
-                        ) : (
-                            <h3>Пусто</h3>
-                        )}
+                            );
+                        })}
                     </div>
-                </DialogContent>
-            </Dialog>
+                </div>
+
+                <div className="px-6 pb-6 pt-2">
+                    <Button
+                        fullWidth
+                        onClick={onClose}
+                        sx={{
+                            py: 2,
+                            borderRadius: '20px',
+                            backgroundColor: '#2E2519',
+                            color: '#F7F1E3',
+                            fontWeight: 'bold',
+                            fontSize: '16px',
+                            textTransform: 'none',
+                            '&:hover': { backgroundColor: '#463628' },
+                        }}
+                    >
+                        Готово
+                    </Button>
+                </div>
+            </Drawer>
 
             <UserModal
                 open={editOpen}
@@ -463,7 +532,7 @@ export default function Meeting() {
         }
     };
     return (
-        <div className="h-screen bg-[#E8DCC4] flex flex-col items-center overflow-hidden">
+        <div className="h-screen bg-[#F7F1E3] flex flex-col items-center overflow-hidden font-sans">
             <div className="w-full max-w-4xl flex flex-col h-full p-4 md:p-8">
                 <MeetingHeader
                     navigate={navigate}
@@ -472,20 +541,16 @@ export default function Meeting() {
                     user={currentUser}
                     meetingId={meetingId}
                     participantId={participantId}
+                    participantsCount={participants.length}
                     isCreator={meeting.isCreator}
                     onEditClick={() => setOpenEditMeeting(true)}
                     onSave={(data) => handleUpdateParticipant(data, participantId)}
+                    onMembersClick={() => setOpenMembers(true)}
                 />
 
-                <MeetingTabs value={value} onChange={handleChange} />
+                <BalanceCard data={balance} />
 
-                <div className="flex flex-col gap-6 mb-8 items-center">
-                    <BalanceCard data={balance} />
-                    <MembersButton
-                        onClick={() => setOpenMembers(true)}
-                        participants={participants}
-                    />
-                </div>
+                <MeetingTabs value={value} onChange={handleChange} />
 
                 <main className="flex-1 overflow-y-auto custom-scrollbar px-2">
                     {value === 'expenses' ? (
