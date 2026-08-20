@@ -1,7 +1,7 @@
 import { Dialog, TextField, Button, IconButton } from '@mui/material';
 import { useRef } from 'react';
 import Cookies from 'js-cookie';
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 
 export default function InviteMeeting({ open, onClose, meetingId, onJoined }) {
     const nameRef = useRef(null);

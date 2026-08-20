@@ -5,7 +5,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { FIELD_SX } from '../Options';
 import { useSnackbar } from '../SnackbarProvider';
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 
 export default function EditMeeting({
     open,

@@ -15,7 +15,7 @@ import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../SnackbarProvider';
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 
 export default function AddMeeting({ open, onClose }) {
     const theme = useTheme();
