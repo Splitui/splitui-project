@@ -130,7 +130,9 @@ def get_debt_payment_info(connection: Connection, meeting_uuid: UUID, session_id
         "card_number": bank_data["card_number"],
         "phone_number": bank_data["phone_number"],
         "bank_name": bank["bank_name"],
-        "bank_deeplink": _build_deeplink(bank["deeplink"], bank_data["phone_number"])
+        "bank_deeplink": _build_deeplink(bank["deeplink"], bank_data["phone_number"]),
+        "is_paid": debt["is_paid"],
+        "paid_at": debt["paid_at"]
     }
 
 

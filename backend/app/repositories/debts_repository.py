@@ -21,7 +21,9 @@ def get_all_by_meeting(connection: Connection, meeting_id: int):
                     d.creditor_id,
                     creditor.nickname AS creditor_nickname,
                     d.amount,
-                    d.created_at
+                    d.created_at,
+                    d.is_paid,
+                    d.paid_at
              FROM debts d
                       JOIN participants debtor ON debtor.id = d.debtor_id
                       JOIN participants creditor ON creditor.id = d.creditor_id

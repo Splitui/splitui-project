@@ -49,7 +49,7 @@ def calculate_debts(
 def get_debt_payment_info(
         meeting_uuid: UUID,
         debt_id: int,
-        session_id: str = Header(...),
+        session_id: str = Header(),
         connection: Connection = Depends(get_connection),
 ):
     """Обрабатывает запрос на получение данных для оплаты долга.
