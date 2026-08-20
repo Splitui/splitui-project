@@ -4,7 +4,7 @@ import { Drawer, Button, IconButton, TextField } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useSnackbar } from '../SnackbarProvider';
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 
 const CUSTOM_FIELD_SX = {
     '& .MuiOutlinedInput-root': {

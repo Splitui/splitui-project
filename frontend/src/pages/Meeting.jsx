@@ -16,7 +16,7 @@ import BestCashback from '../components/modal/BestCashback';
 import EditExpense from '../components/modal/EditExpense';
 import { useSnackbar } from '../components/SnackbarProvider';
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 
 const getParticipantWord = (count) => {
     const num = Math.abs(count) % 100;

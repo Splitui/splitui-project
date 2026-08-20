@@ -19,7 +19,7 @@ import { CASHBACK_OPTIONS, FIELD_SX, MENU_PROPS } from '../Options';
 import Receipt from './Receipt';
 import { useSnackbar } from '../SnackbarProvider';
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 const API_BASE = API_URL;
 
 export default function EditExpense({ open, onClose, onUpdated, expenseId }) {
