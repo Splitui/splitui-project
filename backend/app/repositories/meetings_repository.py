@@ -108,6 +108,26 @@ def finish(connection: Connection, meeting_id: int):
     return dict(result.mappings().one())
 
 
+def get_meetings_for_user(connection: Connection, user_id: int):
+    """Возвращает список встреч, в которых пользователь был участником.
+
+    :param connection: соединение с базой данных.
+    :param user_id: идентификатор зарегистрированного пользователя.
+    :return: список встреч.
+    """
+    result = connection.execute(
+        text("""
+             SELECT m.*
+             FROM meetings m
+                      JOIN participants p ON p.meeting_id = m.id
+             WHERE p.user_id = :user_id
+             ORDER BY m.start_date DESC
+             """),
+        {"user_id": user_id}
+    )
+    return [dict(row) for row in result.mappings().all()]
+
+
 def get_all(connection: Connection, num_limit: int, num_offset: int):
     """Возвращает данные всех встреч.
 

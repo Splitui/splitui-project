@@ -48,9 +48,10 @@ def test_create_receipt_with_one_item(
     ]
 
     response = app_client.post(
-        (
-            f"/meetings/{meeting['uuid']}/participant/{payer['id']}/receipts"
-        ),
+        f"/meetings/{meeting['uuid']}/receipts",
+        headers={
+            "session-id": payer["session_id"],
+        },
         json=payload,
     )
 
@@ -126,9 +127,10 @@ def test_create_receipt_with_multiple_items(
     ]
 
     response = app_client.post(
-        (
-            f"/meetings/{meeting['uuid']}/participant/{payer['id']}/receipts"
-        ),
+        f"/meetings/{meeting['uuid']}/receipts",
+        headers={
+            "session-id": payer["session_id"],
+        },
         json=payload,
     )
 
@@ -193,9 +195,10 @@ def test_create_receipt_without_items(
     }
 
     response = app_client.post(
-        (
-            f"/meetings/{meeting['uuid']}/participant/{payer['id']}/receipts"
-        ),
+        f"/meetings/{meeting['uuid']}/receipts",
+        headers={
+            "session-id": payer["session_id"],
+        },
         json=payload,
     )
 
@@ -242,7 +245,10 @@ def test_create_receipt_without_items_and_empty_participants(
     payer = context["payer"]
 
     participants_response = app_client.get(
-        f"/meetings/{meeting['uuid']}/participants?limit=20&offset=0"
+        f"/meetings/{meeting['uuid']}/participants?limit=20&offset=0",
+        headers={
+            "session-id": payer["session_id"],
+        },
     )
 
     assert participants_response.status_code == 200
@@ -268,9 +274,10 @@ def test_create_receipt_without_items_and_empty_participants(
     }
 
     response = app_client.post(
-        (
-            f"/meetings/{meeting['uuid']}/participant/{payer['id']}/receipts"
-        ),
+        f"/meetings/{meeting['uuid']}/receipts",
+        headers={
+            "session-id": payer["session_id"],
+        },
         json=payload,
     )
 
@@ -327,9 +334,10 @@ def test_create_item_with_empty_participants(
     ]
 
     response = app_client.post(
-        (
-            f"/meetings/{meeting['uuid']}/participant/{payer['id']}/receipts"
-        ),
+        f"/meetings/{meeting['uuid']}/receipts",
+        headers={
+            "session-id": payer["session_id"],
+        },
         json=payload,
     )
 
@@ -403,10 +411,10 @@ def test_create_receipt_with_invalid_data(
         ]
 
     response = app_client.post(
-        (
-            f"/meetings/{meeting['uuid']}"
-            f"/participant/{payer['id']}/receipts"
-        ),
+        f"/meetings/{meeting['uuid']}/receipts",
+        headers={
+            "session-id": meeting["creator_session_id"],
+        },
         json=payload,
     )
 
@@ -475,9 +483,10 @@ def test_get_full_receipt_with_items_and_participants(
     )
 
     response = app_client.get(
-        (
-            f"/meetings/{meeting['uuid']}/receipts/{receipt['id']}?limit=20&offset=0"
-        )
+        f"/meetings/{meeting['uuid']}/receipts/{receipt['id']}?limit=20&offset=0",
+        headers={
+            "session-id": payer["session_id"],
+        },
     )
 
     assert response.status_code == 200
@@ -620,10 +629,10 @@ def test_create_receipt_with_invalid_participants(
         ]
 
     response = app_client.post(
-        (
-            f"/meetings/{meeting['uuid']}"
-            f"/participant/{payer['id']}/receipts"
-        ),
+        f"/meetings/{meeting['uuid']}/receipts",
+        headers={
+            "session-id": payer["session_id"],
+        },
         json=payload,
     )
 
