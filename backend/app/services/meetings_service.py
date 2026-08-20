@@ -117,9 +117,21 @@ def calculate_meeting(connection, meeting_uuid, session_id):
             detail="Перейти к расчётам можно только из статусов 'Активная' или 'Корректировка'"
         )
 
-    missing_payers = receipts_repository.get_payers_without_bank_data(connection, meeting["id"])
-    if missing_payers:
-        nicknames = ", ".join(p["nickname"] for p in missing_payers)
+    payers_without_bank_data = receipts_repository.get_payers_without_bank_data(connection, meeting["id"])
+
+    creditor_ids = {
+        debt["creditor_id"]
+        for debt in debts_repository.get_all_by_meeting(connection, meeting["id"])
+    }
+
+    creditors_without_bank_data = [
+        participant
+        for participant in payers_without_bank_data
+        if participant["id"] in creditor_ids
+    ]
+
+    if creditors_without_bank_data:
+        nicknames = ", ".join(p["nickname"] for p in creditors_without_bank_data)
         raise HTTPException(
             status_code=409,
             detail="Нельзя перейти к расчётам, "
