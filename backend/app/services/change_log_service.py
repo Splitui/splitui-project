@@ -16,14 +16,14 @@ from app.repositories import (
 
 
 ACTION_MESSAGES = {
-    "meeting.created": '{participant} создал встречу «{title}»',
-    "meeting.updated": 'Встреча «{title}» изменена',
-    "participant.created": '{participant} присоединился к встрече',
-    "participant.updated": '{participant} изменил данные участника',
-    "receipt.created": '{participant} добавил чек «{title}»',
-    "receipt.updated": '{participant} изменил чек «{title}»',
-    "receipt.deleted": '{participant} удалил чек «{title}»',
-    "bank_data.updated": '{participant} изменил банковские реквизиты',
+    "meeting.created": 'Создана встреча «{title}»',
+    "meeting.updated": 'Изменена встреча «{title}»',
+    "participant.created": '{participant}: присоединение к встрече',
+    "participant.updated": '{participant}: данные участника изменены',
+    "receipt.created": '{participant}: добавлен чек «{title}»',
+    "receipt.updated": '{participant}: изменён чек «{title}»',
+    "receipt.deleted": '{participant}: удалён чек «{title}»',
+    "bank_data.updated": '{participant}: банковские реквизиты изменены',
     "debts.recalculated": "Долги встречи пересчитаны",
     "meeting.calculating": 'Встреча «{title}» переведена к расчётам',
     "meeting.finished": 'Встреча «{title}» завершена',
