@@ -1,9 +1,9 @@
 import { Box, Button } from '@mui/material';
 import { useState } from 'react';
 import Slider from '../components/sliderComponents/Slider';
-import AddMeeting from '../components/Modal/AddMeeting';
+import AddMeeting from '../components/modal/AddMeeting';
 import Cookies from 'js-cookie';
-import JoinMeeting from '../components/Modal/JoinMeeting';
+import JoinMeeting from '../components/modal/JoinMeeting';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import InviteMeeting from '../components/modal/InviteMeeting';
 
