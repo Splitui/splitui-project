@@ -9,5 +9,5 @@ banks_table = Table(
     metadata,
     id_column(),
     Column("name", String(100), nullable=False, unique=True),
-    Column("icon_url", Text, nullable=True)
+    Column("deeplink", Text, nullable=True)
 )

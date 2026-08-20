@@ -9,3 +9,5 @@ from app.db.tables.participants import participants_table
 from app.db.tables.receipt_item_participants import receipt_item_participants_table
 from app.db.tables.receipt_items import receipt_items_table
 from app.db.tables.receipts import receipts_table
+from app.db.tables.users import users_table
+from app.db.tables.user_sessions import user_sessions_table

@@ -8,9 +8,13 @@ from app.db.dependencies import transaction
 from app.db.tables.meetings import MeetingStatus
 from app.repositories import meetings_repository, participants_repository, receipts_repository, debts_repository
 from app.schemas.meetings import MeetingCreate, MeetingUpdate
-from app.services import participants_service
-from app.services.change_log_service import change_log, parse_created_meeting_context, parse_meeting_status_context, \
+from app.services import participants_service, users_service
+from app.services.change_log_service import (
+    change_log,
+    parse_created_meeting_context,
+    parse_meeting_status_context,
     parse_updated_meeting_context
+)
 
 
 def get_meetings(connection: Connection, num_limit: int, num_offset: int):
@@ -24,31 +28,20 @@ def get_meetings(connection: Connection, num_limit: int, num_offset: int):
     return meetings_repository.get_all(connection, num_limit, num_offset)
 
 
-def get_meeting(connection: Connection, meeting_uuid: UUID, session_id: str):
-    """Возвращает данные встречи.
-
-    :param connection: соединение с базой данных.
-    :param meeting_uuid: UUID встречи.
-    :param session_id: идентификатор сессии участника.
-    :return: данные встречи.
-    """
-    meeting = get_meeting_or_error(connection, meeting_uuid)
-    _ = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
-    return meeting
-
-
 @transaction
 @change_log(
     action="meeting.created",
     context_parser=parse_created_meeting_context,
 )
-def create_meeting(connection: Connection, data: MeetingCreate):
+def create_meeting(connection: Connection, data: MeetingCreate, token: str | None):
     """Создаёт встречу и добавляет её создателя в список участников.
 
     :param connection: соединение с базой данных.
     :param data: данные для создания встречи.
+    :param token: токен авторизованного пользователя.
     :return: данные созданной встречи.
     """
+    user_id = users_service.get_user_id_by_token(connection, token)
     meeting = meetings_repository.create(
         connection,
         data.title,
@@ -59,7 +52,8 @@ def create_meeting(connection: Connection, data: MeetingCreate):
         connection=connection,
         meeting_id=meeting["id"],
         nickname=data.creator_nickname,
-        is_creator=True
+        is_creator=True,
+        user_id=user_id
     )
     meeting["meeting_creator"] = meeting_creator
     return meeting
@@ -211,6 +205,16 @@ def edit_meeting(connection, meeting_uuid, session_id):
         meeting_id=meeting["id"],
         status=MeetingStatus.EDITING,
     )
+
+
+def get_meetings_for_user(connection: Connection, user_id: int):
+    """Возвращает список встреч, в которых пользователь был участником.
+
+    :param connection: соединение с базой данных.
+    :param user_id: идентификатор зарегистрированного пользователя.
+    :return: список встреч.
+    """
+    return meetings_repository.get_meetings_for_user(connection, user_id)
 
 
 def get_meeting_or_error(connection: Connection, meeting_uuid: UUID):

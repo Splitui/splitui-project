@@ -11,7 +11,8 @@ def create(
         connection: Connection,
         meeting_id: int,
         nickname: str,
-        is_creator: bool
+        is_creator: bool,
+        user_id: int | None
 ):
     """Создаёт нового участника встречи.
 
@@ -19,21 +20,23 @@ def create(
     :param meeting_id: идентификатор встречи.
     :param nickname: имя участника.
     :param is_creator: признак создателя встречи.
+    :param user_id: идентификатор зарегистрированного пользователя.
     :return: данные созданного участника.
     """
     session_id = secrets.token_urlsafe(32)
     session_id_hash = hash_token(session_id)
     result = connection.execute(
         text("""
-             INSERT INTO participants (meeting_id, nickname, is_creator, session_id_hash)
-             VALUES (:meeting_id, :nickname, :is_creator, :session_id_hash) 
-             RETURNING id, meeting_id, nickname, is_creator
+             INSERT INTO participants (meeting_id, nickname, is_creator, session_id_hash, user_id)
+             VALUES (:meeting_id, :nickname, :is_creator, :session_id_hash, :user_id) 
+             RETURNING id, meeting_id, nickname, is_creator, user_id
              """),
         {
             "meeting_id": meeting_id,
             "nickname": nickname,
             "is_creator": is_creator,
-            "session_id_hash": session_id_hash
+            "session_id_hash": session_id_hash,
+            "user_id": user_id
         },
     )
     participant = dict(result.mappings().one())
@@ -57,7 +60,7 @@ def update(
         text("""
              UPDATE participants
              SET nickname = :nickname
-             WHERE id = :participant_id RETURNING id, meeting_id, nickname, is_creator
+             WHERE id = :participant_id RETURNING id, meeting_id, nickname, is_creator, user_id
              """),
         {
             "participant_id": participant_id,
@@ -102,7 +105,8 @@ def get_all(
             SELECT id,
                    meeting_id,
                    nickname,
-                   is_creator
+                   is_creator,
+                   user_id
             FROM participants
             WHERE meeting_id = :meeting_id
             ORDER BY id LIMIT :num_limit
@@ -128,10 +132,10 @@ def get_by_id(connection: Connection, meeting_id: int, participant_id: int):
     """
     result = connection.execute(
         text("""
-             SELECT id, meeting_id, nickname, is_creator
+             SELECT id, meeting_id, nickname, is_creator, user_id
              FROM participants
              WHERE id = :participant_id
-               and meeting_id = :meeting_id
+               AND meeting_id = :meeting_id
              """),
         {
             "participant_id": participant_id,
@@ -157,6 +161,52 @@ def count_all(connection: Connection, meeting_id: int):
     return result.scalar_one()
 
 
+def link_to_user(connection: Connection, participant_id: int, user_id: int):
+    """Привязывает участника к аккаунту пользователя.
+
+    :param connection: соединение с базой данных.
+    :param participant_id: идентификатор участника.
+    :param user_id: идентификатор пользователя.
+    :return: обновлённые данные участника.
+    """
+    result = connection.execute(
+        text("""
+            UPDATE participants 
+            SET user_id = :user_id 
+            WHERE id = :participant_id 
+            RETURNING id, meeting_id, nickname, is_creator, user_id
+        """),
+        {
+            "user_id": user_id,
+            "participant_id": participant_id
+        }
+    )
+    return dict(result.mappings().one())
+
+
+def get_by_meeting_and_user_id(connection: Connection, meeting_id: int, user_id: int):
+    """Возвращает участника встречи, привязанного к указанному пользователю.
+
+    :param connection: соединение с базой данных.
+    :param meeting_id: идентификатор встречи.
+    :param user_id: идентификатор зарегистрированного пользователя.
+    :return: данные участника.
+    """
+    result = connection.execute(
+        text("""
+            SELECT id, meeting_id, nickname, is_creator, user_id
+            FROM participants 
+            WHERE meeting_id = :meeting_id AND user_id = :user_id
+        """),
+        {
+            "meeting_id": meeting_id,
+            "user_id": user_id
+        }
+    )
+    row = result.mappings().one_or_none()
+    return dict(row) if row else None
+
+
 def get_by_session_id(connection: Connection, session_id: str):
     """Возвращает участника по его токену доступа.
 
@@ -167,7 +217,7 @@ def get_by_session_id(connection: Connection, session_id: str):
     session_id_hash = hash_token(session_id)
     result = connection.execute(
         text("""
-            SELECT id, meeting_id, nickname, is_creator 
+            SELECT id, meeting_id, nickname, is_creator, user_id
             FROM participants 
             WHERE session_id_hash = :session_id_hash
         """),
@@ -175,6 +225,24 @@ def get_by_session_id(connection: Connection, session_id: str):
     )
     row = result.mappings().one_or_none()
     return dict(row) if row else None
+
+
+def generate_session_id(connection: Connection, participant_id: int):
+    """Генерирует новый токен сессии участника.
+
+    :param connection: соединение с базой данных.
+    :param participant_id: идентификатор участника.
+    :return: новый сырой токен сессии.
+    """
+    session_id = secrets.token_urlsafe(32)
+    connection.execute(
+        text("UPDATE participants SET session_id_hash = :session_id_hash WHERE id = :participant_id"),
+        {
+            "session_id_hash": hash_token(session_id),
+            "participant_id": participant_id
+        }
+    )
+    return session_id
 
 
 def hash_token(token: str) -> str:
