@@ -12,7 +12,7 @@ import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
 import { useSnackbar } from '../SnackbarProvider';
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 const API_BASE = API_URL;
 
 export default function ExpensesTab({ refresh, onExpenseClick }) {
