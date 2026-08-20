@@ -2,9 +2,11 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.engine import Connection
 
 from app.api.dependencies import get_meeting_for_participant
+from app.api.security import security
 from app.db.dependencies import get_connection
 from app.schemas.meetings import MeetingCreate, MeetingUpdate
 from app.services import meetings_service
@@ -13,6 +15,8 @@ router = APIRouter(
     prefix="/meetings",
     tags=["Встречи"],
 )
+
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 @router.get("", summary="Получить список всех встреч")
@@ -46,15 +50,18 @@ def get_meeting(
 @router.post("", status_code=201, summary="Создать встречу")
 def create_meeting(
         data: MeetingCreate,
+        credentials: HTTPAuthorizationCredentials | None = Depends(security),
         connection: Connection = Depends(get_connection),
 ):
     """Обрабатывает запрос на создание встречи.
 
     :param data: данные для создания встречи.
+    :param credentials: данные о токене пользователя.
     :param connection: соединение с базой данных.
     :return: данные созданной встречи.
     """
-    return meetings_service.create_meeting(connection, data)
+    token = credentials.credentials if credentials else None
+    return meetings_service.create_meeting(connection, data, token)
 
 
 @router.patch("/{meeting_uuid}", summary="Обновить встречу")

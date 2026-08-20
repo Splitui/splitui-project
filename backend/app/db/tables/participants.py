@@ -12,6 +12,7 @@ participants_table = Table(
     Column("is_creator", Boolean, nullable=False, server_default="0"),
     Column("nickname", String(50), nullable=False),
     Column("session_id_hash", String(64), nullable=False, unique=True),
+    Column("user_id", Integer, ForeignKey("users.id"), nullable=True),
     Column("created_at", DateTime, nullable=False, server_default=func.now()),
     UniqueConstraint("meeting_id", "nickname", name="unique_participants_meeting_nickname")
 )
