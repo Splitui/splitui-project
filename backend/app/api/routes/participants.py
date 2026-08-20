@@ -17,7 +17,7 @@ router = APIRouter(
 )
 
 
-@router.get("/meetings/meetings/{meeting_uuid}/participants", summary="Получить участников встречи")
+@router.get("/meetings/{meeting_uuid}/participants", summary="Получить участников встречи")
 def get_participants(
         limit: int,
         offset: int,
@@ -40,7 +40,7 @@ def get_participants(
     )
 
 
-@router.get("/meetings/meetings/{meeting_uuid}/participants/{participant_id}", summary="Получить участника встречи")
+@router.get("/meetings/{meeting_uuid}/participants/{participant_id}", summary="Получить участника встречи")
 def get_participant(
         participant_id: int,
         meeting: dict = Depends(get_meeting_for_participant),
@@ -56,7 +56,7 @@ def get_participant(
     return participants_service.get_participant_from_meeting(connection, meeting["id"], participant_id)
 
 
-@router.post("/meetings/meetings/{meeting_uuid}/participants", status_code=201, summary="Добавить участника к встрече")
+@router.post("/meetings/{meeting_uuid}/participants", status_code=201, summary="Добавить участника к встрече")
 def add_participant(
         meeting_uuid: UUID,
         data: ParticipantCreate,
@@ -75,7 +75,7 @@ def add_participant(
     return participants_service.add_participant(connection, meeting_uuid, data, token)
 
 
-@router.patch("/meetings/meetings/{meeting_uuid}/participants/me", summary="Обновить участника встречи")
+@router.patch("/meetings/{meeting_uuid}/participants/me", summary="Обновить участника встречи")
 def update_participant(
         meeting_uuid: UUID,
         data: ParticipantUpdate,
