@@ -54,7 +54,7 @@ def get_debts_by_balances(balances: list[dict]) -> list[dict]:
     """
     creditors = sorted(
         (
-            {"participant_id": b["participant_id"], "amount": Decimal(b["balance"])}
+            {"participant_id": b["participant_id"], "amount": Decimal(b["balance"]).quantize}
             for b in balances
             if Decimal(b["balance"]) > 0
         ),
@@ -75,7 +75,7 @@ def get_debts_by_balances(balances: list[dict]) -> list[dict]:
     i, j = 0, 0
     while i < len(creditors) and j < len(debtors):
         creditor, debtor = creditors[i], debtors[j]
-        amount = min(creditor["amount"], debtor["amount"])
+        amount = min(creditor["amount"], debtor["amount"]).quantize(Decimal("0.01"))
 
         debts.append({
             "debtor_id": debtor["participant_id"],
