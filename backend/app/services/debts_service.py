@@ -54,7 +54,7 @@ def get_debts_by_balances(balances: list[dict]) -> list[dict]:
     """
     creditors = sorted(
         (
-            {"participant_id": b["participant_id"], "amount": Decimal(b["balance"]).quantize}
+            {"participant_id": b["participant_id"], "amount": Decimal(b["balance"]).quantize(Decimal("0.01"))}
             for b in balances
             if Decimal(b["balance"]) > 0
         ),
@@ -63,7 +63,7 @@ def get_debts_by_balances(balances: list[dict]) -> list[dict]:
     )
     debtors = sorted(
         (
-            {"participant_id": b["participant_id"], "amount": -Decimal(b["balance"])}
+            {"participant_id": b["participant_id"], "amount": (-Decimal(b["balance"])).quantize(Decimal("0.01"))}
             for b in balances
             if Decimal(b["balance"]) < 0
         ),
@@ -129,7 +129,7 @@ def get_debt_payment_info(connection: Connection, meeting_uuid: UUID, session_id
         "creditor_nickname": creditor["nickname"],
         "card_number": bank_data["card_number"],
         "phone_number": bank_data["phone_number"],
-        "bank_name": bank["bank_name"],
+        "bank_name": bank["name"],
         "bank_deeplink": _build_deeplink(bank["deeplink"], bank_data["phone_number"]),
         "is_paid": debt["is_paid"],
         "paid_at": debt["paid_at"]
