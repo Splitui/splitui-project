@@ -28,7 +28,7 @@ def add_bank_data(connection: Connection, meeting_uuid: UUID, session_id, data: 
     """
     meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
     participant = participants_service.get_participant_by_session_id(connection, meeting["id"], session_id)
-    participant_bank_data = get_bank_data(connection, meeting["id"], participant["id"])
+    participant_bank_data = bank_data_repository.get_bank_data_by_participant_id(connection, participant["id"])
     if participant_bank_data is not None:
         raise HTTPException(
             status_code=409,
