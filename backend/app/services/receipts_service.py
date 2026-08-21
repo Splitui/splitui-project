@@ -119,12 +119,11 @@ def get_receipt_full(
         "participant_amounts": participant_amounts
     }
 
-@transaction
 @change_log(
     action=parse_receipt_action,
     context_parser=parse_receipt_context,
 )
-def create_or_update_receipt_in_meeting(
+def create_or_update_receipt(
         connection: Connection,
         meeting_uuid: UUID,
         session_id: str,
@@ -298,6 +297,21 @@ def create_or_update_receipt_in_meeting(
             "participant_amounts": participant_amounts,
         }
 
+@transaction
+def create_or_update_receipt_in_meeting(
+    connection: Connection,
+    meeting_uuid: UUID,
+    session_id: str,
+    data: FullReceiptCreate,
+):
+    """Создаёт или обновляет чек внутри."""
+
+    return create_or_update_receipt(
+        connection=connection,
+        meeting_uuid=meeting_uuid,
+        session_id=session_id,
+        data=data,
+    )
 
 @transaction
 @change_log(
@@ -331,7 +345,7 @@ def delete_receipt(connection: Connection, meeting_uuid: UUID, session_id: str, 
         "title": receipt["title"],
     }
 
-
+@transaction
 def create_receipt_from_qr(
     connection: Connection,
     meeting_uuid: UUID,
@@ -388,7 +402,7 @@ def create_receipt_from_qr(
         ],
     )
 
-    return create_or_update_receipt_in_meeting(
+    return create_or_update_receipt(
         connection=connection,
         meeting_uuid=meeting_uuid,
         session_id=session_id,

@@ -193,7 +193,6 @@ def get_participant_debt(
         JOIN receipts r
             ON r.id = ri.receipt_id
         WHERE rip.participant_id = :participant_id
-            AND r.payer_id != :participant_id
         """),
         {
             "participant_id": participant_id,
