@@ -93,7 +93,7 @@ def get_bank_data_by_participant_id(connection: Connection, participant_id: int)
     """
     result = connection.execute(
         text("""
-             SELECT bd.id, b.name AS bank_name, bd.card_number, bd.phone_number
+             SELECT bd.id as bank_data_id, bd.card_number, bd.phone_number, b.id as bank_id, b.name AS bank_name
              FROM bank_data bd
                       JOIN banks b ON b.id = bd.bank_id
              WHERE bd.participant_id = :participant_id
