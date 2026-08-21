@@ -4,62 +4,57 @@ import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import clsx from 'clsx';
 
-function InfoCard({ number, title, icon: Icon, text, className }) {
-    return (
-        <div
-            className={clsx(
-                'bg-[#F8F4EC] rounded-xl pt-2 pb-3 px-2 flex flex-col items-center justify-center leading-normal text-[#463628]',
-                className,
-            )}
-        >
-            <p className="text-2xl sm:text-3xl font-bold leading-none mb-1">{number}</p>
-            <p className="text-xl sm:text-2xl font-bold leading-tight mb-2">{title}</p>
-            <Icon sx={{ fontSize: 32 }} className="mb-1 sm:mb-2" />
-            <p className="text-sm sm:text-xl leading-tight text-[#463628]">{text}</p>
-        </div>
-    );
-}
+const steps = [
+    {
+        number: 1,
+        title: 'Создайте встречу',
+        text: 'Название и дата — 10 секунд, без регистрации.',
+    },
+    {
+        number: 2,
+        title: 'Позовите друзей',
+        text: 'Ссылка или QR-код — участники заходят в один тап.',
+    },
+    {
+        number: 3,
+        title: 'Добавляйте чеки',
+        text: 'Сфотографируйте чек — позиции распознаются сами.',
+    },
+    {
+        number: 4,
+        title: 'Получите расчёт',
+        text: 'Кто кому и сколько — минимальным числом переводов.',
+    },
+];
 
 export default function SecondSlide() {
     return (
-        <div className="flex flex-col justify-start items-stretch px-5 sm:px-8 text-center h-full bg-[#EAE0CD] py-8 rounded-2xl">
-            <div data-swiper-parallax="-200" className="mb-6 sm:mb-10">
-                <h4 className="font-bold text-2xl sm:text-3xl leading-tight text-[#463628]">
-                    Как это работает?
-                </h4>
+        <div className="flex h-full flex-col">
+            <div data-swiper-parallax="-200">
+                <div className="text-2xl font-semibold tracking-tight text-[#2E2519] sm:text-3xl">
+                    Как это работает
+                </div>
+                <div className="mb-6 mt-1 text-sm text-[#8A7C66]">
+                    Четыре шага до честного расчёта
+                </div>
             </div>
-            <div
-                data-swiper-parallax="-100"
-                className="grid grid-cols-2 grid-rows-2 gap-2 sm:gap-3 w-full flex-1 justify-items-center"
-            >
-                <InfoCard
-                    number="1"
-                    title="Создайте встречу"
-                    icon={AddIcon}
-                    text="Название и даты — комната готова за 10 секунд"
-                    className="h-full w-full"
-                />
-                <InfoCard
-                    number="2"
-                    title="Пригласите друзей"
-                    icon={PersonOutlineIcon}
-                    text="Ссылка, QR-код или ID + секретный код"
-                    className="h-full w-full"
-                />
-                <InfoCard
-                    number="3"
-                    title="Добавьте чеки"
-                    icon={ReceiptLongIcon}
-                    text="Фото чека или вручную - деление на всех или по позициям"
-                    className="h-full w-full"
-                />
-                <InfoCard
-                    number="4"
-                    title="Получите расчёт"
-                    icon={AccountBalanceWalletIcon}
-                    text="Кто кому должен, минимум переводов, переход в банк в один тап"
-                    className="h-full w-full"
-                />
+
+            <div data-swiper-parallax="-100" className="flex flex-col gap-5">
+                {steps.map(({ number, title, text }) => (
+                    <div key={number} className="flex items-start gap-4">
+                        <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-[#2E2519] text-sm font-bold text-[#F0DFB8]">
+                            {number}
+                        </div>
+                        <div>
+                            <div className="text-base font-semibold text-[#2E2519]">
+                                {title}
+                            </div>
+                            <div className="mt-1 text-base leading-snug text-[#8A7C66]">
+                                {text}
+                            </div>
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
     );
