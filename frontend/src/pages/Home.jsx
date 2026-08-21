@@ -32,47 +32,15 @@ export default function Home() {
         navigate(`/meetings/${uuid}`);
     };
     return (
-        <div className="h-screen py-8 flex flex-col items-center gap-6 bg-[#F8F4EC]">
-            <Box className="flex flex-col w-full flex-1 min-h-0">
-                <Slider />
-            </Box>
-            <Button
-                variant="contained"
-                sx={{
-                    backgroundColor: '#463628',
-                    color: '#F8F4EC',
-                    fontWeight: 'bold',
-                    borderRadius: '12px',
-                    px: 4,
-                    py: 1.5,
-                    '&:hover': {
-                        backgroundColor: '#3a2c20',
-                    },
-                }}
-                onClick={() => setOpenAdd(true)}
-            >
-                Создание встречи
-            </Button>
+        <div className="h-screen flex flex-col items-center bg-[#E4DAC4]">
+            <div className="flex flex-col w-full max-w-md flex-1 min-h-0 bg-[#F7F1E3] sm:my-4 sm:rounded-[34px] sm:shadow-2xl overflow-hidden">
+                <Slider
+                    onOpenAdd={() => setOpenAdd(true)}
+                    onOpenJoin={() => setOpenJoin(true)}
+                />
+            </div>
+
             <AddMeeting open={openAdd} onClose={() => setOpenAdd(false)} />
-            <Button
-                variant="contained"
-                sx={{
-                    backgroundColor: '#EAE0CD',
-                    color: '#463628',
-                    fontWeight: 'bold',
-                    borderRadius: '12px',
-                    px: 4,
-                    py: 1.5,
-                    boxShadow: 'none',
-                    '&:hover': {
-                        backgroundColor: '#ddd0b5',
-                        boxShadow: 'none',
-                    },
-                }}
-                onClick={() => setOpenJoin(true)}
-            >
-                Вход в встречу
-            </Button>
             <JoinMeeting open={openJoin} onClose={() => setOpenJoin(false)} />
             <InviteMeeting
                 open={openInviteModal}

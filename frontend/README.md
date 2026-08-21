@@ -10,3 +10,4 @@ npm install
 
 # 2. Запускаем dev-сервер
 npm run dev
+```

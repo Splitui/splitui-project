@@ -12,7 +12,14 @@ export default function UserAvatar({ user, meetingId, participantId, onSave }) {
         <>
             <Avatar
                 onClick={() => setIsOpen(true)}
-                className="font-bold bg-black cursor-pointer"
+                sx={{
+                    bgcolor: '#E6D9BA',
+                    color: '#7A5316',
+                    fontWeight: 'bold',
+                    width: 42,
+                    height: 42,
+                    fontSize: '18px',
+                }}
             >
                 {firstLetterUserName}
             </Avatar>
