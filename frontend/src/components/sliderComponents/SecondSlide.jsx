@@ -1,9 +1,3 @@
-import AddIcon from '@mui/icons-material/Add';
-import PersonOutlineIcon from '@mui/icons-material/PersonOutlined';
-import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import clsx from 'clsx';
-
 const steps = [
     {
         number: 1,

@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { Html5Qrcode } from 'html5-qrcode/esm/html5-qrcode';
 import { Dialog, IconButton, Box, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 
@@ -45,7 +44,7 @@ export default function QrScanner({ open, onClose, onScanned }) {
             cancelled = true;
             stop();
         };
-    }, [open]);
+    }, [open, onScanned]);
 
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
