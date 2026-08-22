@@ -50,7 +50,10 @@ export default function AddExpense({ open, onClose, onCreated }) {
         const meetingUuid = meeting.id;
         const sessionId = meeting.sessionId;
         if (!meetingUuid) {
-            setUsersError('Не найден UUID встречи');
+            const load = async () => {
+                await setUsersError('Не найден UUID встречи');
+            };
+            load();
             return;
         }
 
@@ -93,7 +96,7 @@ export default function AddExpense({ open, onClose, onCreated }) {
         fetchParticipants();
 
         return () => controller.abort();
-    }, [open]);
+    }, [open, showSnackbar]);
 
     const handleReceiptView = () => setReceiptOpen(true);
 
@@ -126,7 +129,7 @@ export default function AddExpense({ open, onClose, onCreated }) {
             );
             setReceiptOpen(true);
         } catch (e) {
-            showSnackbar('Сеть недоступна');
+            showSnackbar('Сеть недоступна', e);
         }
     };
 

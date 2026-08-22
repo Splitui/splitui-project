@@ -1,47 +1,52 @@
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableRow,
-    Paper,
-    Button,
-    Typography,
-} from '@mui/material';
-import TransactionModal from '../modal/TransactionModal';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { Button, Typography, Avatar } from '@mui/material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import Cookies from 'js-cookie';
+import UserModal from '../modal/UserModal';
+import TransactionModal from '../modal/TransactionModal';
+import { useSnackbar } from '../SnackbarProvider';
+
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
-export default function PaymentTab() {
+
+export default function PaymentTab({ onUpdate, participants }) {
     const [payments, setPayments] = useState([]);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
+    const [viewingUser, setViewingUser] = useState(null);
+    const showSnackbar = useSnackbar();
 
-    const meetingCookie = JSON.parse(Cookies.get('meeting') || '{}');
-    const meetingId = meetingCookie.id;
-    const sessionId = meetingCookie.sessionId;
-    const myParticipantId = meetingCookie.participantId;
+    const { meetingId, sessionId, myParticipantId } = useMemo(() => {
+        const cookie = JSON.parse(Cookies.get('meeting') || '{}');
+        return {
+            meetingId: cookie.id,
+            sessionId: cookie.sessionId,
+            myParticipantId: cookie.participantId,
+        };
+    }, []);
+    const processDebts = useCallback(
+        (data) => {
+            const myDebts = data
+                .filter(
+                    (debt) =>
+                        debt.debtor_id === myParticipantId ||
+                        debt.creditor_id === myParticipantId,
+                )
+                .map((debt) => {
+                    const amIDebtor = debt.debtor_id === myParticipantId;
+                    return {
+                        id: debt.id,
+                        name: amIDebtor ? debt.creditor_nickname : debt.debtor_nickname,
+                        action: amIDebtor ? 'оплата' : 'получение',
+                        amount: debt.amount,
+                        isCompleted: debt.is_paid,
+                        creditorId: debt.creditor_id,
+                    };
+                });
+            setPayments(myDebts);
+        },
+        [myParticipantId],
+    );
 
-    const processDebts = (data) => {
-        const myDebts = data
-            .filter(
-                (debt) =>
-                    debt.debtor_id === myParticipantId ||
-                    debt.creditor_id === myParticipantId,
-            )
-            .map((debt) => {
-                const amIDebtor = debt.debtor_id === myParticipantId;
-                return {
-                    id: debt.id,
-                    name: amIDebtor ? debt.creditor_nickname : debt.debtor_nickname,
-                    action: amIDebtor ? 'оплата' : 'получение',
-                    amount: debt.amount,
-                    isCompleted: debt.is_paid,
-                };
-            });
-        setPayments(myDebts);
-    };
-
-    const handleCalculate = async () => {
+    const handleCalculate = useCallback(async () => {
         try {
             const res = await fetch(`${API_URL}/meetings/${meetingId}/debts`, {
                 method: 'POST',
@@ -54,98 +59,203 @@ export default function PaymentTab() {
         } catch (e) {
             console.error('Ошибка расчёта', e);
         }
-    };
+    }, [meetingId, sessionId, processDebts]);
 
-    useEffect(() => {
-        const fetchDebts = async () => {
-            if (!meetingId) return;
-            try {
-                const res = await fetch(`${API_URL}/meeting/${meetingId}/debts`);
-                if (res.ok) {
-                    const data = await res.json();
+    const fetchDebts = useCallback(async () => {
+        if (!meetingId) return;
+        try {
+            const res = await fetch(`${API_URL}/meetings/${meetingId}/debts`, {
+                headers: { 'session-id': sessionId },
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.length === 0) {
+                    await handleCalculate();
+                } else {
                     processDebts(data);
                 }
-            } catch (e) {
-                console.error('Ошибка загрузки', e);
             }
-        };
-        fetchDebts();
-    }, [meetingId, myParticipantId, sessionId]);
+        } catch (e) {
+            console.error(e);
+        }
+    }, [meetingId, handleCalculate, sessionId, processDebts]);
 
-    const markDone = (id) => {
-        setPayments((prev) =>
-            prev.map((p) => (p.id === id ? { ...p, isCompleted: true } : p)),
-        );
-        setSelectedTransaction(null);
+    useEffect(() => {
+        const loadData = async () => {
+            await fetchDebts();
+        };
+
+        loadData();
+    }, [fetchDebts]);
+
+    const markDone = async (id) => {
+        try {
+            const res = await fetch(
+                `${API_URL}/meetings/${meetingId}/debts/${id}/confirm`,
+                {
+                    method: 'PATCH',
+                    headers: { 'session-id': sessionId },
+                },
+            );
+            if (res.ok || res.status === 400) {
+                showSnackbar('Статус обновлен!', 'success');
+                await fetchDebts();
+                if (onUpdate) onUpdate();
+            } else {
+                const errorData = await res.json();
+                showSnackbar(errorData.detail || 'Не удалось обновить статус');
+            }
+        } catch (e) {
+            showSnackbar('Ошибка сети', e);
+        } finally {
+            setSelectedTransaction(null);
+        }
     };
 
-    return (
-        <>
-            {payments.length === 0 ? (
-                <div className="bg-[#F8F4EC] rounded-[25px] p-10 text-center shadow-sm border border-dashed border-[#463628]/30">
-                    <Typography className="!font-bold !text-[#463628] !text-lg !mb-4">
-                        У вас пока нет долгов!
-                    </Typography>
-                    <Button
-                        onClick={handleCalculate}
-                        variant="contained"
-                        className="!bg-[#463628] !text-[#F8F4EC] !rounded-xl !px-6 !py-2 !normal-case"
-                    >
-                        Рассчитать баланс
-                    </Button>
-                </div>
-            ) : (
-                <>
-                    <div className="flex justify-between items-center mb-4 px-2">
-                        <Typography className="!text-[#463628] !font-bold !text-sm uppercase opacity-60">
-                            Ваши расчеты
-                        </Typography>
-                        <Button
-                            onClick={handleCalculate}
-                            size="small"
-                            className="!text-[#463628] !lowercase !font-bold"
-                        >
-                            обновить
-                        </Button>
-                    </div>
+    const handleInitiatePayment = async (row) => {
+        if (row.action === 'получение') {
+            setSelectedTransaction(row);
+            return;
+        }
+        try {
+            const res = await fetch(
+                `${API_URL}/meetings/${meetingId}/debts/${row.id}/pay`,
+                {
+                    headers: { 'session-id': sessionId },
+                },
+            );
+            if (res.ok) {
+                const payData = await res.json();
+                setSelectedTransaction({
+                    ...row,
+                    ...payData,
+                });
+            } else {
+                showSnackbar('Не удалось получить данные для оплаты');
+            }
+        } catch (e) {
+            showSnackbar('Ошибка сети при получении данных оплаты', e);
+        }
+    };
 
-                    <TableContainer
-                        component={Paper}
-                        className="!rounded-[25px] !bg-[#F8F4EC] !shadow-none !overflow-hidden"
+    const handleGetRequisites = async (row) => {
+        const url = `${API_URL}/meetings/${meetingId}/participants/${row.creditorId}/bank_data`;
+        try {
+            const res = await fetch(url, {
+                headers: { 'session-id': sessionId },
+            });
+            if (res.ok) {
+                const actualParticipant = participants?.find(
+                    (p) => p.id === row.creditorId,
+                );
+                const data = await res.json();
+                setViewingUser({
+                    id: row.creditorId,
+                    nickname: row.name,
+                    card_number: data.card_number,
+                    phone_number: data.phone_number,
+                    bank_name: data.bank_name,
+                    bank_id: data.bank_id,
+                    is_creator: actualParticipant?.is_creator || false,
+                });
+            } else {
+                showSnackbar('У этого участника не заполнены реквизиты');
+            }
+        } catch (e) {
+            showSnackbar('Ошибка загрузки реквизитов', e);
+        }
+    };
+
+    const allConfirmed = payments.length > 0 && payments.every((p) => p.isCompleted);
+    const pendingCount = payments.filter((p) => !p.isCompleted).length;
+
+    return (
+        <div className="flex flex-col gap-4 mt-6">
+            <div className="flex justify-between items-center px-2">
+                <Typography className="!text-[11px] !font-bold !text-[#8A7C66] uppercase tracking-wider">
+                    {allConfirmed
+                        ? 'ВСЕ ПЕРЕВОДЫ ЗАКРЫТЫ'
+                        : `${pendingCount} ПЕРЕВОДА ЗАКРОЮТ ВСТРЕЧУ`}
+                </Typography>
+            </div>
+
+            <div className="flex flex-col gap-3">
+                {payments.map((row) => (
+                    <div
+                        key={row.id}
+                        className={`p-4 rounded-[28px] border transition-all ${row.isCompleted ? 'bg-[#E7F0E5] border-[#D0E0CE]' : 'bg-white border-[#E8DFC7] shadow-sm'}`}
                     >
-                        <Table>
-                            <TableBody>
-                                {payments.map((row) => (
-                                    <TableRow key={row.id}>
-                                        <TableCell
-                                            className={`!font-bold !text-[#463628] !border-b-[#F0F0F0] ${row.isCompleted ? '!opacity-40' : ''}`}
-                                        >
-                                            {row.name}
-                                        </TableCell>
-                                        <TableCell
-                                            align="center"
-                                            onClick={() =>
-                                                !row.isCompleted &&
-                                                setSelectedTransaction(row)
-                                            }
-                                            className={`!font-bold !cursor-pointer !border-b-[#F0F0F0] 
-                                                ${row.isCompleted ? '!line-through !text-gray-400' : row.action === 'получение' ? '!text-[#32935A]' : '!text-[#C12D2D]'}`}
-                                        >
-                                            {row.action}
-                                        </TableCell>
-                                        <TableCell
-                                            align="right"
-                                            className={`!font-black !text-[#463628] !border-b-[#F0F0F0] ${row.isCompleted ? '!opacity-40' : ''}`}
-                                        >
-                                            {row.amount}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
-                </>
-            )}
+                        <div className="flex justify-between items-center mb-4">
+                            <div className="flex items-center gap-3">
+                                <Avatar
+                                    sx={{
+                                        width: 36,
+                                        height: 36,
+                                        bgcolor: '#E6D9BA',
+                                        color: '#7A5316',
+                                        fontWeight: 'bold',
+                                    }}
+                                >
+                                    {row.name[0].toUpperCase()}
+                                </Avatar>
+                                <Typography className="!font-bold !text-[#2E2519] !text-[15px]">
+                                    {row.action === 'оплата' ? (
+                                        <>Вы → {row.name}</>
+                                    ) : (
+                                        <>{row.name} → Вам</>
+                                    )}
+                                </Typography>
+                            </div>
+                            <Typography
+                                className={`!font-black !text-[17px] ${row.isCompleted ? '!text-[#32935A]' : '!text-[#2E2519]'}`}
+                            >
+                                {row.amount.toLocaleString()} ₽
+                            </Typography>
+                        </div>
+
+                        {row.isCompleted ? (
+                            <div className="flex items-center gap-2 text-[#32935A]">
+                                <CheckCircleIcon sx={{ fontSize: '18px' }} />
+                                <Typography className="!text-[12px] !font-bold">
+                                    {row.action === 'оплата'
+                                        ? 'Вы оплатили'
+                                        : 'Перевод подтверждён'}
+                                </Typography>
+                            </div>
+                        ) : (
+                            <div className="flex gap-2">
+                                <Button
+                                    fullWidth
+                                    onClick={() => handleInitiatePayment(row)}
+                                    className="!bg-[#2E2519] !text-white !font-bold !rounded-xl !py-3 !normal-case !shadow-none"
+                                >
+                                    {row.action === 'оплата'
+                                        ? 'Перевести'
+                                        : 'Подтвердить получение'}
+                                </Button>
+
+                                {row.action === 'оплата' && (
+                                    <Button
+                                        onClick={() => handleGetRequisites(row)}
+                                        className="!bg-[#E8DFC7] !text-[#2E2519] !font-bold !rounded-xl !px-5 !normal-case !shadow-none"
+                                    >
+                                        Реквизиты
+                                    </Button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                ))}
+
+                {allConfirmed && (
+                    <div className="bg-[#E7F0E5] p-5 rounded-[28px] border border-[#D0E0CE] flex items-center gap-4 mt-2">
+                        <CheckCircleIcon className="text-[#32935A]" />
+                        <Typography className="!font-bold !text-[#32935A]">
+                            Все переводы закрыты
+                        </Typography>
+                    </div>
+                )}
+            </div>
 
             <TransactionModal
                 open={!!selectedTransaction}
@@ -153,6 +263,17 @@ export default function PaymentTab() {
                 transaction={selectedTransaction}
                 onConfirm={() => markDone(selectedTransaction.id)}
             />
-        </>
+
+            <UserModal
+                open={!!viewingUser}
+                onClose={() => setViewingUser(null)}
+                user={viewingUser}
+                meetingUUID={meetingId}
+                participantId={viewingUser?.id}
+                onSave={() => {}}
+                isEditable={false}
+                roomStatus="finished"
+            />
+        </div>
     );
 }
