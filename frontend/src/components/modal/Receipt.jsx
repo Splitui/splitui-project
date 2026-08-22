@@ -128,7 +128,6 @@ export default function ReceiptModal({
     const { total, perPerson } = computeTotals(items, usersOptions);
 
     const [addItemOpen, setAddItemOpen] = useState(false);
-    const handleAddItem = () => setAddItemOpen(true);
     const handleItemAdded = (newItem) => {
         setItems((prev) => [...prev, newItem]);
     };

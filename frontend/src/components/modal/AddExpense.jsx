@@ -105,8 +105,7 @@ export default function AddExpense({ open, onClose, onCreated }) {
         fetchParticipants();
 
         return () => controller.abort();
-<<<<<<< HEAD
-    }, [open]);
+    }, [open, showSnackbar]);
     const togglePayer = (id) =>
         setPayer((prev) => {
             if (prev.includes(id)) {
@@ -115,9 +114,6 @@ export default function AddExpense({ open, onClose, onCreated }) {
             }
             return [...prev, id];
         });
-=======
-    }, [open, showSnackbar]);
->>>>>>> dbbf975678d688fd1c8daa876fb4b552f2b94ac5
 
     const detailedTotal = receiptItems.reduce(
         (s, it) => s + (Number(it.unitPrice) || 0) * (Number(it.quantity) || 1),

@@ -10,6 +10,7 @@ import LastPageIcon from '@mui/icons-material/LastPage';
 import EditMeeting from '../components/modal/EditMeeting';
 import ExpensesTab from '../components/meetingTabs/ExpensesTab';
 import PaymentTab from '../components/meetingTabs/PaymentTab';
+import HistoryTab from '../components/meetingTabs/HistoryTab';
 import UserAvatar from '../components/UserAvatar';
 import AddExpense from '../components/modal/AddExpense';
 import BestCashback from '../components/modal/BestCashback';
@@ -167,6 +168,24 @@ const MeetingTabs = ({ value, onChange }) => (
             <Tab
                 value="payment"
                 label="Оплата"
+                sx={{
+                    minHeight: '40px',
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    borderRadius: '11px',
+                    color: '#8A7C66',
+                    transition: '0.2s',
+                    '&.Mui-selected': {
+                        backgroundColor: '#FFFFFF',
+                        color: '#2E2519',
+                        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+                    },
+                }}
+            />
+            <Tab
+                value="history"
+                label="История"
                 sx={{
                     minHeight: '40px',
                     textTransform: 'none',
@@ -558,19 +577,20 @@ export default function Meeting() {
                 <MeetingTabs value={value} onChange={handleChange} />
 
                 <main className="flex-1 overflow-y-auto custom-scrollbar px-2">
-                    {value === 'expenses' ? (
+                    {value === 'expenses' && (
                         <ExpensesTab
                             refresh={refresh}
                             onExpenseClick={setEditExpenseId}
-                            participants={participants}
-                            participantId={participantId}
                         />
-                    ) : (
+                    )}
+                    {value === 'payment' && (
                         <PaymentTab
                             onUpdate={() => setRefresh((n) => n + 1)}
                             participants={participants}
+                            refresh={refresh}
                         />
                     )}
+                    {value === 'history' && <HistoryTab />}
                 </main>
 
                 <div className="pt-4 shrink-0">
@@ -603,37 +623,41 @@ export default function Meeting() {
                     )}
                 </div>
 
-                <div className="pt-4 shrink-0">
-                    <Button
-                        variant="contained"
-                        fullWidth
-                        onClick={isLocked ? null : handleBottomButtonClick}
-                        disabled={isLocked && value === 'expenses'}
-                        sx={{
-                            backgroundColor: isLocked ? '#BDBDBD !important' : '#463628',
-                            color: isLocked ? '#757575 !important' : '#EAE0CD',
-                            fontWeight: 'bold',
-                            borderRadius: '12px',
-                            py: 2,
-                            fontSize: '1rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.1em',
-                            boxShadow: 'none',
-                            '&.Mui-disabled': {
-                                backgroundColor: '#CCCCCC',
-                                color: '#888888',
-                            },
-                        }}
-                    >
-                        {isFinished
-                            ? 'Встреча завершена'
-                            : roomStatus === 'calculating'
-                              ? 'Идет расчет...'
-                              : value === 'expenses'
-                                ? 'Добавить расход'
-                                : 'Завершить встречу'}
-                    </Button>
-                </div>
+                {value !== 'history' && (
+                    <div className="pt-4 shrink-0">
+                        <Button
+                            variant="contained"
+                            fullWidth
+                            onClick={isLocked ? null : handleBottomButtonClick}
+                            disabled={isLocked && value === 'expenses'}
+                            sx={{
+                                backgroundColor: isLocked
+                                    ? '#BDBDBD !important'
+                                    : '#463628',
+                                color: isLocked ? '#757575 !important' : '#EAE0CD',
+                                fontWeight: 'bold',
+                                borderRadius: '12px',
+                                py: 2,
+                                fontSize: '1rem',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.1em',
+                                boxShadow: 'none',
+                                '&.Mui-disabled': {
+                                    backgroundColor: '#CCCCCC',
+                                    color: '#888888',
+                                },
+                            }}
+                        >
+                            {isFinished
+                                ? 'Встреча завершена'
+                                : roomStatus === 'calculating'
+                                  ? 'Идет расчет...'
+                                  : value === 'expenses'
+                                    ? 'Добавить расход'
+                                    : 'Завершить встречу'}
+                        </Button>
+                    </div>
+                )}
 
                 <MembersDialog
                     className="#F8F4EC"

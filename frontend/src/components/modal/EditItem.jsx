@@ -35,7 +35,10 @@ export default function EditItem({
 
     useEffect(() => {
         if (!open || !item) return;
-        setParticipantIds(item.participantIds ?? []);
+        const loadParticipants = async () => {
+            setParticipantIds(item.participantIds ?? []);
+        };
+        loadParticipants();
     }, [open, item]);
 
     if (!item) return null;

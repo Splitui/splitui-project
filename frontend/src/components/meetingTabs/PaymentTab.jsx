@@ -8,7 +8,7 @@ import { useSnackbar } from '../SnackbarProvider';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 
-export default function PaymentTab({ onUpdate, participants }) {
+export default function PaymentTab({ onUpdate, participants, refresh }) {
     const [payments, setPayments] = useState([]);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [viewingUser, setViewingUser] = useState(null);
@@ -68,17 +68,12 @@ export default function PaymentTab({ onUpdate, participants }) {
                 headers: { 'session-id': sessionId },
             });
             if (res.ok) {
-                const data = await res.json();
-                if (data.length === 0) {
-                    await handleCalculate();
-                } else {
-                    processDebts(data);
-                }
+                await handleCalculate();
             }
         } catch (e) {
             console.error(e);
         }
-    }, [meetingId, handleCalculate, sessionId, processDebts]);
+    }, [meetingId, handleCalculate, sessionId]);
 
     useEffect(() => {
         const loadData = async () => {
@@ -86,7 +81,7 @@ export default function PaymentTab({ onUpdate, participants }) {
         };
 
         loadData();
-    }, [fetchDebts]);
+    }, [fetchDebts, refresh]);
 
     const markDone = async (id) => {
         try {
