@@ -1,9 +1,5 @@
 import Cookies from 'js-cookie';
-<<<<<<< HEAD
 import { Button, Dialog, IconButton, Typography, Box, Slide } from '@mui/material';
-=======
-import { Drawer, Button, IconButton, TextField } from '@mui/material';
->>>>>>> dbbf975678d688fd1c8daa876fb4b552f2b94ac5
 import CloseIcon from '@mui/icons-material/Close';
 import { useSnackbar } from '../SnackbarProvider';
 import { useState, forwardRef } from 'react';
