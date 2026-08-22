@@ -15,7 +15,7 @@ import Cookies from 'js-cookie';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../SnackbarProvider';
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 
 export default function JoinMeeting({ open, onClose }) {
     const theme = useTheme();
@@ -40,7 +40,11 @@ export default function JoinMeeting({ open, onClose }) {
         }
 
         try {
-            const response = await fetch(`${API_URL}/meetings/${meetingId}`);
+            const headers = {
+                'Content-Type': 'application/json',
+                'session-id': cookie.sessionId || '',
+            };
+            const response = await fetch(`${API_URL}/meetings/${meetingId}`, { headers });
             if (!response.ok) {
                 showSnackbar('Комната с таким id не найдена');
                 return;
@@ -59,8 +63,7 @@ export default function JoinMeeting({ open, onClose }) {
                         {
                             method: 'PATCH',
                             headers: {
-                                'Content-Type': 'application/json',
-                                'session-id': cookie.sessionId,
+                                headers,
                             },
                             body: JSON.stringify({ nickname: name }),
                         },
@@ -69,6 +72,7 @@ export default function JoinMeeting({ open, onClose }) {
             } else {
                 const participantsResponse = await fetch(
                     `${API_URL}/meetings/${meetingId}/participants?limit=50&offset=0`,
+                    { headers },
                 );
                 const participantsList = participantsResponse.ok
                     ? await participantsResponse.json()

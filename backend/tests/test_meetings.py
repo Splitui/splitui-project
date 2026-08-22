@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, UTC
 import pytest
 
 from app.db.tables.meetings import MeetingStatus
+from app.repositories.participants_repository import hash_token
 from tests.conftest import change_meeting_status
 from tests.utils import future_date
 
@@ -99,7 +100,12 @@ def test_get_meeting_by_uuid_success(app_client, create_meeting):
     meeting = create_meeting(title="Тестовая Встреча")
     meeting_uuid = meeting['uuid']
 
-    response = app_client.get(f"/meetings/{meeting_uuid}")
+    response = app_client.get(
+        f"/meetings/{meeting_uuid}",
+        headers={
+            "session-id": meeting["creator_session_id"],
+        },
+    )
 
     assert response.status_code == 200
     body = response.json()
@@ -109,8 +115,14 @@ def test_get_meeting_by_uuid_success(app_client, create_meeting):
 
 def test_get_meeting_with_non_existent_uuid(app_client):
     missing_uuid = str(uuid.uuid4())
+    session_id = str(uuid.uuid4())
 
-    response = app_client.get(f"/meetings/{missing_uuid}")
+    response = app_client.get(
+        f"/meetings/{missing_uuid}",
+        headers={
+            "session-id": hash_token(session_id),
+        },
+    )
 
     assert response.status_code == 404
 
@@ -131,7 +143,12 @@ def test_create_meeting_with_past_date_fails(app_client):
 def test_calculate_meeting_from_active_success(app_client, create_meeting):
     meeting = create_meeting()
 
-    response = app_client.post(f"/meetings/{meeting['uuid']}/calculate")
+    response = app_client.post(
+        f"/meetings/{meeting['uuid']}/calculate",
+        headers={
+            "session-id": meeting["creator_session_id"],
+        },
+    )
 
     assert response.status_code == 200
     assert response.json()["status"] == MeetingStatus.CALCULATING
@@ -141,7 +158,12 @@ def test_calculate_meeting_from_editing_success(app_client, create_meeting, chan
     meeting = create_meeting()
     change_meeting_status(meeting["id"], MeetingStatus.EDITING)
 
-    response = app_client.post(f"/meetings/{meeting['uuid']}/calculate")
+    response = app_client.post(
+        f"/meetings/{meeting['uuid']}/calculate",
+        headers={
+            "session-id": meeting["creator_session_id"],
+        },
+    )
 
     assert response.status_code == 200
     assert response.json()["status"] == MeetingStatus.CALCULATING
@@ -155,7 +177,12 @@ def test_calculate_meeting_from_invalid_status_fails(app_client, create_meeting,
     meeting = create_meeting()
     change_meeting_status(meeting["id"], status)
 
-    response = app_client.post(f"/meetings/{meeting['uuid']}/calculate")
+    response = app_client.post(
+        f"/meetings/{meeting['uuid']}/calculate",
+        headers={
+            "session-id": meeting["creator_session_id"],
+        },
+    )
 
     assert response.status_code == 409
 
@@ -164,7 +191,12 @@ def test_finish_meeting_from_calculate_success(app_client, create_meeting, chang
     meeting = create_meeting()
     change_meeting_status(meeting["id"], MeetingStatus.CALCULATING)
 
-    response = app_client.post(f"/meetings/{meeting["uuid"]}/finish")
+    response = app_client.post(
+        f"/meetings/{meeting['uuid']}/finish",
+        headers={
+            "session-id": meeting["creator_session_id"],
+        },
+    )
 
     assert response.status_code == 200
     assert response.json()["status"] == MeetingStatus.FINISHED
@@ -178,7 +210,12 @@ def test_finish_meeting_from_invalid_status_fails(app_client, create_meeting, ch
     meeting = create_meeting()
     change_meeting_status(meeting["id"], status)
 
-    response = app_client.post(f"/meetings/{meeting['uuid']}/finish")
+    response = app_client.post(
+        f"/meetings/{meeting['uuid']}/finish",
+        headers={
+            "session-id": meeting["creator_session_id"],
+        },
+    )
 
     assert response.status_code == 409
 
@@ -187,7 +224,12 @@ def test_edit_meeting_from_calculating_success(app_client, create_meeting, chang
     meeting = create_meeting()
     change_meeting_status(meeting["id"], MeetingStatus.CALCULATING)
 
-    response = app_client.post(f"/meetings/{meeting['uuid']}/edit")
+    response = app_client.post(
+        f"/meetings/{meeting['uuid']}/edit",
+        headers={
+            "session-id": meeting["creator_session_id"],
+        },
+    )
 
     assert response.status_code == 200
     assert response.json()["status"] == MeetingStatus.EDITING
@@ -201,6 +243,11 @@ def test_edit_meeting_from_invalid_status_fails(app_client, create_meeting, chan
     meeting = create_meeting()
     change_meeting_status(meeting["id"], status)
 
-    response = app_client.post(f"/meetings/{meeting['uuid']}/edit")
+    response = app_client.post(
+        f"/meetings/{meeting['uuid']}/edit",
+        headers={
+            "session-id": meeting["creator_session_id"],
+        },
+    )
 
     assert response.status_code == 409

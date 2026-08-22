@@ -75,7 +75,19 @@ export default function ExpensesTab({
     const sessionId = meeting.sessionId;
 
     useEffect(() => {
+<<<<<<< HEAD
         if (!meetingUuid) return;
+=======
+        const meeting = JSON.parse(Cookies.get('meeting') || '{}');
+        const meetingUuid = meeting.id;
+        if (!meetingUuid) {
+            const loadError = async () => {
+                await setError('Не найден UUID встречи');
+            };
+            loadError();
+            return;
+        }
+>>>>>>> dbbf975678d688fd1c8daa876fb4b552f2b94ac5
 
         const controller = new AbortController();
 
@@ -110,6 +122,7 @@ export default function ExpensesTab({
         fetchExpenses();
 
         return () => controller.abort();
+<<<<<<< HEAD
     }, [refresh, meetingUuid, sessionId, showSnackbar]);
 
     const groups = useMemo(() => groupByDay(expenses), [expenses]);
@@ -160,6 +173,9 @@ export default function ExpensesTab({
             </p>
         );
     }
+=======
+    }, [refresh, showSnackbar]);
+>>>>>>> dbbf975678d688fd1c8daa876fb4b552f2b94ac5
 
     return (
         <div className="px-[6px] pb-4">

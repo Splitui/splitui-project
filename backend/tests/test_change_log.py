@@ -50,6 +50,9 @@ def test_meeting_updated_change_log(
 
     response = app_client.patch(
         f"/meetings/{meeting['uuid']}",
+        headers={
+        "session-id": meeting["creator_session_id"],
+        },
         json={"title": "Новое название"},
     )
 
@@ -113,9 +116,10 @@ def test_participant_updated_change_log(
     )
 
     response = app_client.patch(
-        (
-            f"/meetings/{meeting['uuid']}/participants/{participant['id']}"
-        ),
+        f"/meetings/{meeting['uuid']}/participants/me",
+        headers={
+            "session-id": participant["session_id"],
+        },
         json={"nickname": "Вася"},
     )
 
@@ -157,9 +161,10 @@ def test_receipt_created_change_log(
     payload["items"] = None
 
     response = app_client.post(
-        (
-            f"/meetings/{meeting['uuid']}/participant/{payer['id']}/receipts"
-        ),
+        f"/meetings/{meeting['uuid']}/receipts",
+        headers={
+            "session-id": payer["session_id"],
+        },
         json=payload,
     )
 
@@ -175,6 +180,7 @@ def test_receipt_created_change_log(
         "context": {
             "meeting_id": meeting["id"],
             "entity_id": receipt["id"],
+            "participant_id": payer["id"],
             "title": "Ужин",
         },
     }
@@ -207,9 +213,10 @@ def test_receipt_updated_change_log(
     payload["items"] = None
 
     response = app_client.post(
-        (
-            f"/meetings/{meeting['uuid']}/participant/{payer['id']}/receipts"
-        ),
+        f"/meetings/{meeting['uuid']}/receipts",
+        headers={
+            "session-id": payer["session_id"],
+        },
         json=payload,
     )
 
@@ -227,6 +234,7 @@ def test_receipt_updated_change_log(
         "context": {
             "meeting_id": meeting["id"],
             "entity_id": receipt["id"],
+            "participant_id": payer["id"],
             "title": "Обновлённый чек",
         },
     }
@@ -248,9 +256,10 @@ def test_receipt_deleted_change_log(
     )
 
     response = app_client.delete(
-        (
-            f"/meetings/{meeting['uuid']}/participant/{payer['id']}/receipts/{receipt['id']}"
-        ),
+        f"/meetings/{meeting['uuid']}/receipts/{receipt['id']}",
+        headers={
+            "session-id": payer["session_id"],
+        },
     )
 
     change = get_change_logs(meeting["id"])[0]
@@ -265,6 +274,7 @@ def test_receipt_deleted_change_log(
         "context": {
             "meeting_id": meeting["id"],
             "entity_id": receipt["id"],
+            "participant_id": payer["id"],
             "title": "Удаляемый чек",
         },
     }
@@ -278,6 +288,9 @@ def test_debts_recalculated_change_log(
 
     response = app_client.post(
         f"/meetings/{meeting['uuid']}/debts",
+        headers={
+            "session-id": meeting["creator_session_id"],
+        },
     )
 
     change = get_change_logs(meeting["id"])[0]
@@ -302,6 +315,9 @@ def test_meeting_calculating_change_log(
 
     response = app_client.post(
         f"/meetings/{meeting['uuid']}/calculate",
+        headers={
+            "session-id": meeting["creator_session_id"],
+        },
     )
 
     change = get_change_logs(meeting["id"])[0]
@@ -336,6 +352,9 @@ def test_meeting_finished_change_log(
 
     response = app_client.post(
         f"/meetings/{meeting['uuid']}/finish",
+        headers={
+            "session-id": meeting["creator_session_id"],
+        },
     )
 
     change = get_change_logs(meeting["id"])[0]
@@ -368,6 +387,9 @@ def test_meeting_editing_change_log(
 
     response = app_client.post(
         f"/meetings/{meeting['uuid']}/edit",
+        headers={
+            "session-id": meeting["creator_session_id"],
+        },
     )
 
     change = get_change_logs(meeting["id"])[0]
@@ -403,10 +425,10 @@ def test_bank_data_updated_change_log(
     bank = create_bank()
 
     response = app_client.post(
-        (
-            f"/meetings/{meeting['uuid']}/participants/"
-            f"{participant['id']}/bank_data"
-        ),
+        f"/meetings/{meeting['uuid']}/bank_data",
+        headers={
+            "session-id": participant["session_id"],
+        },
         json={
             "bank_id": bank["id"],
             "card_number": "2200 7000 1234 5678",

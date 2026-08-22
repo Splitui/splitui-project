@@ -10,7 +10,7 @@ from app.db.tables.meetings import MeetingStatus
 from app.repositories import participants_repository, bank_data_repository, receipts_repository, debts_repository, \
     cashback_repository
 from app.schemas.participants import ParticipantCreate, ParticipantUpdate
-from app.services import meetings_service, bank_data_service, receipt_items_service
+from app.services import meetings_service, bank_data_service, receipt_items_service, users_service
 from app.services.change_log_service import change_log, parse_created_participant_context, \
     parse_updated_participant_context
 
@@ -50,14 +50,16 @@ def get_participant_from_meeting(connection: Connection, meeting_id: int, partic
     action="participant.created",
     context_parser=parse_created_participant_context,
 )
-def add_participant(connection, meeting_uuid, data: ParticipantCreate):
+def add_participant(connection, meeting_uuid, data: ParticipantCreate, token: str | None):
     """Добавляет нового участника к встрече.
 
     :param connection: соединение с базой данных.
     :param meeting_uuid: UUID встречи, к которой добавляется участник.
     :param data: данные для создания участника.
+    :param token: токен авторизованного пользователя.
     :return: данные созданного участника.
     """
+    user_id = users_service.get_user_id_by_token(connection, token)
     meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
     if meeting["status"] not in {MeetingStatus.ACTIVE, MeetingStatus.EDITING}:
         raise HTTPException(
@@ -70,7 +72,8 @@ def add_participant(connection, meeting_uuid, data: ParticipantCreate):
             connection,
             meeting["id"],
             data.nickname,
-            False
+            False,
+            user_id
         )
     except IntegrityError as e:
         raise HTTPException(
@@ -169,6 +172,51 @@ def delete_participant(connection: Connection, meeting_uuid: UUID, session_id: s
     bank_data_repository.delete_by_participant_id(connection, participant_id)
     cashback_repository.delete_by_participant_id(connection, participant_id)
     participants_repository.delete(connection, participant["id"])
+
+
+@transaction
+def restore_session(connection: Connection, meeting_uuid: UUID, token: str):
+    """Восстанавливает сессию участника в конкретной встрече по токену пользователя.
+
+    :param connection: соединение с базой данных.
+    :param meeting_uuid: UUID встречи.
+    :param token: токен пользователя.
+    :return: данные участника.
+    """
+    user_id = users_service.get_user_id_by_token(connection, token)
+    meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
+    participant = participants_repository.get_by_meeting_and_user_id(connection, meeting["id"], user_id)
+    if participant is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Вы ещё не присоединялись к этой встрече под данным аккаунтом"
+        )
+
+    new_session_id = participants_repository.generate_session_id(connection, participant["id"])
+    participant["session_id"] = new_session_id
+    return participant
+
+
+@transaction
+def link_participant_to_user(connection: Connection, meeting_uuid: UUID, session_id: str, token: str):
+    """Привязывает текущего участника встречи к аккаунту пользователя.
+
+    :param connection: соединение с базой данных.
+    :param meeting_uuid: UUID встречи.
+    :param session_id: идентификатор сессии участника.
+    :param token: токен пользователя.
+    :return: обновлённые данные участника.
+    """
+    meeting = meetings_service.get_meeting_or_error(connection, meeting_uuid)
+    participant = get_participant_by_session_id(connection, meeting["id"], session_id)
+    user_id = users_service.get_user_id_by_token(connection, token)
+    if participant["user_id"] is not None and participant["user_id"] != user_id:
+        raise HTTPException(
+            status_code=409,
+            detail="Участник уже привязан к другому аккаунту"
+        )
+
+    return participants_repository.link_to_user(connection, participant["id"], user_id)
 
 
 def get_participant_or_error(connection: Connection, meeting_id, participant_id):

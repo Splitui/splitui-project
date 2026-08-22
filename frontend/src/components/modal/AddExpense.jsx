@@ -8,7 +8,7 @@ import Receipt from './Receipt';
 import { useSnackbar } from '../SnackbarProvider';
 import QrScanner from './QrScanner';
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 const API_BASE = API_URL;
 const Transition = forwardRef(function Transition(props, ref) {
     return <Slide direction="up" ref={ref} {...props} />;
@@ -59,7 +59,10 @@ export default function AddExpense({ open, onClose, onCreated }) {
         const meetingUuid = meeting.id;
         const sessionId = meeting.sessionId;
         if (!meetingUuid) {
-            setUsersError('Не найден UUID встречи');
+            const load = async () => {
+                await setUsersError('Не найден UUID встречи');
+            };
+            load();
             return;
         }
 
@@ -102,6 +105,7 @@ export default function AddExpense({ open, onClose, onCreated }) {
         fetchParticipants();
 
         return () => controller.abort();
+<<<<<<< HEAD
     }, [open]);
     const togglePayer = (id) =>
         setPayer((prev) => {
@@ -111,6 +115,9 @@ export default function AddExpense({ open, onClose, onCreated }) {
             }
             return [...prev, id];
         });
+=======
+    }, [open, showSnackbar]);
+>>>>>>> dbbf975678d688fd1c8daa876fb4b552f2b94ac5
 
     const detailedTotal = receiptItems.reduce(
         (s, it) => s + (Number(it.unitPrice) || 0) * (Number(it.quantity) || 1),
@@ -146,7 +153,7 @@ export default function AddExpense({ open, onClose, onCreated }) {
             );
             setReceiptOpen(true);
         } catch (e) {
-            showSnackbar('Сеть недоступна');
+            showSnackbar('Сеть недоступна', e);
         }
     };
 

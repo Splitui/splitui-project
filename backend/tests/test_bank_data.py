@@ -9,7 +9,10 @@ def test_add_bank_data_with_card(
     bank = create_bank()
 
     response = app_client.post(
-        f"/meetings/{meeting['uuid']}/participants/{participant['id']}/bank_data",
+        f"/meetings/{meeting['uuid']}/bank_data",
+        headers={
+            "session-id": participant["session_id"],
+        },
         json={
             "bank_id": bank["id"],
             "card_number": "2200 7000 1234 5678",
@@ -35,7 +38,10 @@ def test_add_bank_data_with_phone(
     bank = create_bank()
 
     response = app_client.post(
-        f"/meetings/{meeting['uuid']}/participants/{participant['id']}/bank_data",
+        f"/meetings/{meeting['uuid']}/bank_data",
+        headers={
+            "session-id": participant["session_id"],
+        },
         json={
             "bank_id": bank["id"],
             "phone_number": "+7 (999) 123 45 67",
@@ -61,7 +67,10 @@ def test_add_bank_data_with_phone_and_card(
     bank = create_bank()
 
     response = app_client.post(
-        f"/meetings/{meeting['uuid']}/participants/{participant['id']}/bank_data",
+        f"/meetings/{meeting['uuid']}/bank_data",
+        headers={
+            "session-id": participant["session_id"],
+        },
         json={
             "bank_id": bank["id"],
             "card_number": "2200 7000 1234 5678",
@@ -88,10 +97,13 @@ def test_cannot_add_bank_data_without_card_or_phone(
     bank = create_bank()
 
     response = app_client.post(
-        f"/meetings/{meeting['uuid']}/participants/{participant['id']}/bank_data",
+        f"/meetings/{meeting['uuid']}/bank_data",
+        headers={
+            "session-id": participant["session_id"],
+        },
         json={
-            "bank_id": bank["id"]
-        }
+            "bank_id": bank["id"],
+        },
     )
 
     assert response.status_code == 422
@@ -109,11 +121,14 @@ def test_cannot_add_bank_data_for_participant_from_another_meeting(
     bank = create_bank()
 
     response = app_client.post(
-        f"/meetings/{first_meeting['uuid']}/participants/{participant['id']}/bank_data",
+        f"/meetings/{first_meeting['uuid']}/bank_data",
+        headers={
+            "session-id": participant["session_id"],
+        },
         json={
             "bank_id": bank["id"],
             "card_number": "2200700012345678",
         },
     )
 
-    assert response.status_code == 404
+    assert response.status_code == 403

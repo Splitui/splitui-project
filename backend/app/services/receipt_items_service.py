@@ -31,8 +31,13 @@ def create_or_update_item(connection,receipt_id,item_data,participants):
     else:
         split_participants = participants
 
-    share_amount = float(item_data.unit_price * item_data.quantity)/ len(split_participants)
+    share_amount = round(
+        float(item_data.unit_price * item_data.quantity)/len(split_participants),
+        2,
+    )
 
+
+    
     if item_data.id is None:
         receipt_item = receipt_items_repository.create(
             connection=connection,

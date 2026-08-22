@@ -5,7 +5,7 @@ import { useRef, forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../SnackbarProvider';
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 
 const Transition = forwardRef(function Transition(props, ref) {
     return <Slide direction="up" ref={ref} {...props} />;

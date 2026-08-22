@@ -1,113 +1,193 @@
-import { useMemo, useState } from 'react';
-import { CASHBACK_OPTIONS } from '../Options';
-import { Dialog, IconButton, Avatar } from '@mui/material';
+import { useState, useEffect } from 'react';
+import { Drawer, IconButton, Avatar, Button, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import Cookies from 'js-cookie';
 
-export default function BestCashback({ open, onClose, participants }) {
-    const [selectedCategory, setSelectedCategory] = useState(CASHBACK_OPTIONS[0].id);
+const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 
-    const sortedParticipants = useMemo(() => {
-        return [...participants]
-            .map((p) => ({
-                ...p,
-                cashbacksValue: p.cashback?.[selectedCategory] || 0,
-            }))
-            .sort((a, b) => b.cashbacksValue - a.cashbacksValue);
-    }, [participants, selectedCategory]);
+export default function BestCashback({ open, onClose }) {
+    const [categories, setCategories] = useState([]);
+    const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+    const [rankings, setRankings] = useState([]);
+
+    const meetingCookie = JSON.parse(Cookies.get('meeting') || '{}');
+    const meetingId = meetingCookie.id;
+    const sessionId = meetingCookie.sessionId;
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await fetch(`${API_URL}/cashback-categories`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setCategories(data);
+                    if (data.length > 0) setSelectedCategoryId(data[0].id);
+                }
+            } catch (e) {
+                console.error('Ошибка загрузки категорий', e);
+            }
+        };
+        if (open) fetchCategories();
+    }, [open]);
+
+    useEffect(() => {
+        const fetchRankings = async () => {
+            if (!selectedCategoryId || !meetingId || !open) return;
+            try {
+                const res = await fetch(
+                    `${API_URL}/meetings/${meetingId}/cashback-categories/${selectedCategoryId}`,
+                    {
+                        headers: { 'session-id': sessionId },
+                    },
+                );
+                if (res.ok) {
+                    const data = await res.json();
+                    setRankings(data);
+                }
+            } catch (e) {
+                console.error('Ошибка загрузки рейтинга', e);
+            }
+        };
+        fetchRankings();
+    }, [selectedCategoryId, meetingId, open, sessionId]);
+
+    const winner = rankings[0];
+    const others = rankings.slice(1);
 
     return (
-        <Dialog
-            fullWidth
-            maxWidth="xs"
+        <Drawer
+            anchor="bottom"
             open={open}
             onClose={onClose}
             slotProps={{
                 paper: {
-                    className:
-                        '!bg-[#F8F4EC] !rounded-[30px] !p-4 sm:!p-6 !m-4 !max-h-[90vh]',
+                    sx: {
+                        borderTopLeftRadius: '32px',
+                        borderTopRightRadius: '32px',
+                        backgroundColor: '#F7F1E3',
+                        backgroundImage: 'none',
+                        width: '100%',
+                        maxWidth: '100%',
+                        margin: '0 auto',
+                    },
                 },
             }}
         >
-            <IconButton
-                onClick={onClose}
-                className="!absolute !top-3 !right-3 !text-[#463628]"
-            >
-                <CloseIcon />
-            </IconButton>
+            <div className="w-12 h-1 bg-[#D9D3C7] rounded-full mx-auto mt-3" />
 
-            <h2 className="text-[#463628] font-black text-3xl text-center uppercase mt-4 mb-6 tracking-tight">
-                Лучший кешбэк
-            </h2>
-
-            <div
-                className="flex flex-col gap-2 overflow-y-auto pr-1 mb-6 max-h-[200px] 
-                [&::-webkit-scrollbar]:w-[5px] 
-                [&::-webkit-scrollbar-track]:bg-transparent 
-                [&::-webkit-scrollbar-thumb]:bg-[#463628] 
-                [&::-webkit-scrollbar-thumb]:rounded-full"
-            >
-                {CASHBACK_OPTIONS.map((category) => (
-                    <button
-                        key={category.id}
-                        onClick={() => setSelectedCategory(category.id)}
-                        className={`w-full py-3 px-4 rounded-[15px] font-black text-lg transition-all border-2
-                            ${
-                                selectedCategory === category.id
-                                    ? 'bg-[#EAE0CD] border-[#463628] text-[#463628]'
-                                    : 'bg-[#EAE0CD]/50 border-transparent text-[#463628]/60 hover:bg-[#EAE0CD]'
-                            }`}
+            <div className="px-6 pt-4 pb-8 flex flex-col gap-6">
+                <div className="relative">
+                    <Typography className="!font-extrabold !text-[#463628] !text-2xl !leading-tight pr-8">
+                        Кому выгоднее оплатить
+                    </Typography>
+                    <Typography className="!text-[#9C907E] !text-[14px] mt-1">
+                        Выберите категорию — покажем участника с лучшим кешбэком
+                    </Typography>
+                    <IconButton
+                        onClick={onClose}
+                        className="!absolute !top-0 !right-[-8px] !text-[#463628]/50"
                     >
-                        {category.label}
-                    </button>
-                ))}
-            </div>
+                        <CloseIcon />
+                    </IconButton>
+                </div>
 
-            <div className="bg-transparent border-[1.5px] border-[#463628]/20 rounded-[25px] p-4 flex flex-col gap-3">
-                <h3 className="text-[#463628] font-black text-center text-xl mb-2">
-                    {' '}
-                    Выгоднее оплатить
-                </h3>
-
-                <div className="flex flex-col gap-2">
-                    {sortedParticipants.map((p, idx) => (
-                        <div
-                            key={p.id}
-                            className={`flex items-center justify-between p-3 rounded-2xl transition-all
-                                ${idx === 0 ? 'bg-[#EAE0CD]' : 'bg-transparent'}`}
+                <div className="flex flex-wrap gap-2">
+                    {categories.map((cat) => (
+                        <button
+                            key={cat.id}
+                            onClick={() => setSelectedCategoryId(cat.id)}
+                            className={`flex items-center px-4 py-2 rounded-2xl font-bold text-sm transition-all shadow-sm
+                                ${selectedCategoryId === cat.id ? 'bg-[#32281E] text-[#F8F4EC]' : 'bg-[#EAE0CD] text-[#463628]'}`}
                         >
-                            <div className="flex items-center gap-3">
-                                <Avatar
-                                    sx={{ width: 35, height: 35, bgcolor: '#C7BEB0' }}
-                                    src={p.avatar_url}
-                                >
-                                    {p.nickname?.[0]}
-                                </Avatar>
-                                <span
-                                    className={`font-bold text-lg ${idx === 0 ? 'text-[#463628]' : 'text-[#463628]/70'}`}
-                                >
-                                    {p.nickname}{' '}
-                                    {p.id === participants.find((x) => x.isMe)?.id
-                                        ? '(Я)'
-                                        : ''}
-                                </span>
-                            </div>
-
-                            <div className="text-right">
-                                <div
-                                    className={`font-black text-xl leading-none ${idx === 0 ? 'text-[#32935A]' : 'text-[#463628]/50'}`}
-                                >
-                                    {p.cashbackValue}%
-                                </div>
-                                {idx === 0 && (
-                                    <div className="text-[10px] font-bold text-[#463628] uppercase">
-                                        кешбэк
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                            {cat.name}
+                        </button>
                     ))}
                 </div>
+
+                {winner ? (
+                    <div className="bg-[#32281E] rounded-[28px] p-5 flex items-center justify-between shadow-lg">
+                        <div className="flex items-center gap-4">
+                            <Avatar
+                                sx={{
+                                    width: 60,
+                                    height: 60,
+                                    bgcolor: '#EAE0CD',
+                                    color: '#32281E',
+                                    fontSize: '24px',
+                                    fontWeight: 'bold',
+                                }}
+                            >
+                                {winner.nickname?.[0].toUpperCase()}
+                            </Avatar>
+                            <div>
+                                <Typography className="!text-[#9C907E] !text-xs !font-bold uppercase tracking-wider">
+                                    Выгоднее оплатить
+                                </Typography>
+                                <Typography className="!text-[#F8F4EC] !text-2xl !font-black">
+                                    {winner.nickname}
+                                </Typography>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <Typography className="!text-[#DAB672] !text-3xl !font-black leading-none">
+                                {winner.percent}%
+                            </Typography>
+                            <Typography className="!text-[#9C907E] !text-[10px] !font-bold uppercase mt-1">
+                                кешбэк
+                            </Typography>
+                        </div>
+                    </div>
+                ) : (
+                    <Typography className="text-center !text-[#9C907E] py-4">
+                        Значение кешбеков не выставлено
+                    </Typography>
+                )}
+
+                {others.length > 0 && (
+                    <div className="flex flex-col gap-4">
+                        <Typography className="!text-[#9C907E] !text-[11px] !font-bold uppercase tracking-widest ml-1">
+                            Остальные участники
+                        </Typography>
+                        <div className="flex flex-col gap-3">
+                            {others.map((p) => (
+                                <div
+                                    key={p.participant_id}
+                                    className="flex items-center justify-between px-2"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <Avatar
+                                            sx={{
+                                                width: 32,
+                                                height: 32,
+                                                bgcolor: '#EAE0CD',
+                                                color: '#463628',
+                                                fontSize: '14px',
+                                            }}
+                                        >
+                                            {p.nickname?.[0].toUpperCase()}
+                                        </Avatar>
+                                        <Typography className="!text-[#463628] !font-bold !text-base">
+                                            {p.nickname}
+                                        </Typography>
+                                    </div>
+                                    <Typography className="!text-[#463628]/60 !font-bold !text-base">
+                                        {p.percent}%
+                                    </Typography>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                <Button
+                    fullWidth
+                    onClick={onClose}
+                    variant="contained"
+                    className="!bg-[#32281E] !text-[#F8F4EC] !py-4 !rounded-2xl !font-bold !text-lg !normal-case !shadow-none mt-2"
+                >
+                    Понятно
+                </Button>
             </div>
-        </Dialog>
+        </Drawer>
     );
 }

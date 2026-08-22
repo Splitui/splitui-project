@@ -413,7 +413,7 @@ export default function Meeting() {
             }
         };
         fetchBalance();
-    }, [meetingId, participantId, refresh, showSnackbar, meeting.sessionId]);
+    }, [meetingId, participantId, refresh, showSnackbar, meeting.sessionId, refresh]);
 
     useEffect(() => {
         const fetchParticipants = async () => {
@@ -509,8 +509,13 @@ export default function Meeting() {
 
     const handleFinishMeetingAPI = async () => {
         try {
+            const cookie = JSON.parse(Cookies.get('meeting') || '{}');
             const res = await fetch(`${API_URL}/meetings/${meetingId}/finish`, {
                 method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'session-id': cookie.sessionId,
+                },
             });
             if (res.ok) {
                 setIsFinished(true);
@@ -561,7 +566,10 @@ export default function Meeting() {
                             participantId={participantId}
                         />
                     ) : (
-                        <PaymentTab />
+                        <PaymentTab
+                            onUpdate={() => setRefresh((n) => n + 1)}
+                            participants={participants}
+                        />
                     )}
                 </main>
 
@@ -573,7 +581,7 @@ export default function Meeting() {
                             fullWidth
                             disabled={isLocked}
                             sx={{
-                                backgroundColor: '#DAB672',
+                                backgroundColor: '#ffffff',
                                 color: '#463628',
                                 fontWeight: 'bold',
                                 borderRadius: '12px',
@@ -583,7 +591,7 @@ export default function Meeting() {
                                 letterSpacing: '0.1em',
                                 boxShadow: '0px 4px 6px rgba(0,0,0,0.1)',
                                 '&:hover': {
-                                    backgroundColor: '#c5a363',
+                                    backgroundColor: '#E8DFC7',
                                     boxShadow: '0px 6px 10px rgba(0,0,0,0.2)',
                                 },
                             }}

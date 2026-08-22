@@ -16,14 +16,14 @@ from app.repositories import (
 
 
 ACTION_MESSAGES = {
-    "meeting.created": '{participant} создал встречу «{title}»',
-    "meeting.updated": 'Встреча «{title}» изменена',
-    "participant.created": '{participant} присоединился к встрече',
-    "participant.updated": '{participant} изменил данные участника',
-    "receipt.created": '{participant} добавил чек «{title}»',
-    "receipt.updated": '{participant} изменил чек «{title}»',
-    "receipt.deleted": '{participant} удалил чек «{title}»',
-    "bank_data.updated": '{participant} изменил банковские реквизиты',
+    "meeting.created": 'Создана встреча «{title}»',
+    "meeting.updated": 'Изменена встреча «{title}»',
+    "participant.created": '{participant}: присоединение к встрече',
+    "participant.updated": '{participant}: данные участника изменены',
+    "receipt.created": '{participant}: добавлен чек «{title}»',
+    "receipt.updated": '{participant}: изменён чек «{title}»',
+    "receipt.deleted": '{participant}: удалён чек «{title}»',
+    "bank_data.updated": '{participant}: банковские реквизиты изменены',
     "debts.recalculated": "Долги встречи пересчитаны",
     "meeting.calculating": 'Встреча «{title}» переведена к расчётам',
     "meeting.finished": 'Встреча «{title}» завершена',
@@ -121,10 +121,7 @@ def change_log(
                 else:
                     meeting_id = result["id"]
 
-            participant_id = arguments.get("participant_id")
-
-            if participant_id is None:
-                participant_id = context.get("participant_id")
+            participant_id = context.get("participant_id")
 
             participant = "Неизвестный участник"
 
@@ -206,6 +203,21 @@ def parse_receipt_action(arguments: dict, result: dict) -> str:
 
     return "receipt.updated"
 
+def get_participant_id_from_session(arguments: dict) -> int | None:
+    session_id = arguments.get("session_id")
+
+    if session_id is None:
+        return None
+
+    participant = participants_repository.get_by_session_id(
+        arguments["connection"],
+        session_id,
+    )
+
+    if participant is None:
+        return None
+
+    return participant["id"]
 
 def parse_receipt_context(arguments: dict, result: dict) -> dict:
     receipt = result["receipt"]
@@ -213,6 +225,9 @@ def parse_receipt_context(arguments: dict, result: dict) -> dict:
     return {
         "meeting_id": receipt["meeting_id"],
         "entity_id": receipt["id"],
+        "participant_id": get_participant_id_from_session(
+            arguments,
+        ),
         "title": receipt["title"],
     }
 
@@ -224,6 +239,9 @@ def parse_deleted_receipt_context(
     return {
         "meeting_id": result["meeting_id"],
         "entity_id": result["deleted_receipt_id"],
+        "participant_id": get_participant_id_from_session(
+            arguments,
+        ),
         "title": result["title"],
     }
 

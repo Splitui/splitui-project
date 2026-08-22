@@ -1,5 +1,4 @@
 """Модуль со схемами для работы с участниками встречи."""
-from datetime import datetime
 
 from pydantic import BaseModel, Field, model_validator
 
