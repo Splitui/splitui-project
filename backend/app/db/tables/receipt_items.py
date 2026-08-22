@@ -20,7 +20,7 @@ receipt_items_table = Table(
     metadata,
     id_column(),
     Column("receipt_id", Integer, ForeignKey("receipts.id"), nullable=False),
-    Column("title", String(100), nullable=False),
+    Column("title", String(300), nullable=False),
     Column("quantity", Integer, server_default=text("1")),
     Column("unit_price", Numeric(10, 2), server_default=text("0.00")),
     Column("amount", Numeric(10, 2), Computed("unit_price * quantity")),
