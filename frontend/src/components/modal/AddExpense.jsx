@@ -1,32 +1,41 @@
-import {
-    Dialog,
-    DialogContent,
-    IconButton,
-    Button,
-    useTheme,
-    useMediaQuery,
-    TextField,
-    MenuItem,
-    Typography,
-    Box,
-    Switch,
-    FormControlLabel,
-} from '@mui/material';
+import { Dialog, IconButton, Button, Typography, Box, Slide } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { useEffect, useRef, useState } from 'react';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
+import { useEffect, useRef, useState, forwardRef } from 'react';
 import Cookies from 'js-cookie';
-import { CASHBACK_OPTIONS, FIELD_SX, MENU_PROPS } from '../Options';
+import { CASHBACK_OPTIONS } from '../Options';
 import Receipt from './Receipt';
 import { useSnackbar } from '../SnackbarProvider';
 import QrScanner from './QrScanner';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 const API_BASE = API_URL;
+const Transition = forwardRef(function Transition(props, ref) {
+    return <Slide direction="up" ref={ref} {...props} />;
+});
+
+const cardSx = {
+    background: '#FFFDF7',
+    border: '1px solid #E4D8BE',
+    borderRadius: '13px',
+    p: '12px 14px',
+};
+
+const nativeSelectStyle = {
+    flex: 1,
+    minWidth: 0,
+    border: 'none',
+    background: 'transparent',
+    fontSize: '14.5px',
+    fontWeight: 600,
+    color: '#2E2519',
+    outline: 'none',
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+    appearance: 'none',
+};
 
 export default function AddExpense({ open, onClose, onCreated }) {
-    const theme = useTheme();
-    const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
-
     const nameRef = useRef(null);
     const amountRef = useRef(null);
     const showSnackbar = useSnackbar();
@@ -50,7 +59,10 @@ export default function AddExpense({ open, onClose, onCreated }) {
         const meetingUuid = meeting.id;
         const sessionId = meeting.sessionId;
         if (!meetingUuid) {
-            setUsersError('Не найден UUID встречи');
+            const load = async () => {
+                await setUsersError('Не найден UUID встречи');
+            };
+            load();
             return;
         }
 
@@ -93,11 +105,21 @@ export default function AddExpense({ open, onClose, onCreated }) {
         fetchParticipants();
 
         return () => controller.abort();
-    }, [open]);
+    }, [open, showSnackbar]);
+    const togglePayer = (id) =>
+        setPayer((prev) => {
+            if (prev.includes(id)) {
+                if (prev.length === 1) return prev;
+                return prev.filter((x) => x !== id);
+            }
+            return [...prev, id];
+        });
 
-    const handleReceiptView = () => setReceiptOpen(true);
+    const detailedTotal = receiptItems.reduce(
+        (s, it) => s + (Number(it.unitPrice) || 0) * (Number(it.quantity) || 1),
+        0,
+    );
 
-    const handleReceiptUpload = () => setScannerOpen(true);
     const handleQrScanned = async (qrRaw) => {
         setScannerOpen(false);
         const meeting = JSON.parse(Cookies.get('meeting') || '{}');
@@ -115,6 +137,7 @@ export default function AddExpense({ open, onClose, onCreated }) {
                 return;
             }
             const data = await res.json();
+            setSingleItem(false);
             setReceiptItems(
                 (data.items || []).map((it, idx) => ({
                     id: it.id ?? Date.now() + idx,
@@ -126,7 +149,7 @@ export default function AddExpense({ open, onClose, onCreated }) {
             );
             setReceiptOpen(true);
         } catch (e) {
-            showSnackbar('Сеть недоступна');
+            showSnackbar('Сеть недоступна', e);
         }
     };
 
@@ -205,6 +228,7 @@ export default function AddExpense({ open, onClose, onCreated }) {
             });
 
             if (!res.ok) {
+                console.error('422:', await res.text());
                 showSnackbar('Не удалось сохранить расход');
                 return;
             }
@@ -217,213 +241,419 @@ export default function AddExpense({ open, onClose, onCreated }) {
 
     return (
         <Dialog
-            fullScreen={fullScreen}
-            fullWidth
-            maxWidth="sm"
             open={open}
             onClose={onClose}
+            fullWidth
+            maxWidth="sm"
+            TransitionComponent={Transition}
+            sx={{ '& .MuiDialog-container': { alignItems: 'flex-end' } }}
             slotProps={{
                 paper: {
                     sx: {
-                        backgroundColor: '#EAE0CD',
-                        p: { xs: 2, sm: 3 },
-                        borderRadius: fullScreen ? 0 : '20px',
+                        m: 0,
+                        width: '100%',
+                        maxWidth: '100%',
+                        borderRadius: '26px 26px 0 0',
+                        backgroundColor: '#F7F1E3',
+                        p: '10px 22px 24px',
+                        maxHeight: '94%',
                         visibility: receiptOpen ? 'hidden' : 'visible',
                     },
                 },
-                backdrop: {
-                    sx: {
-                        visibility: receiptOpen ? 'hidden' : 'visible',
-                    },
-                },
+                backdrop: { sx: { visibility: receiptOpen ? 'hidden' : 'visible' } },
             }}
         >
-            <IconButton
-                onClick={onClose}
-                sx={{ position: 'absolute', top: 12, right: 12, color: '#463628' }}
-            >
-                <CloseIcon />
-            </IconButton>
+            <Box
+                sx={{
+                    width: 38,
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor: '#D3C4A5',
+                    mx: 'auto',
+                    mb: 2,
+                }}
+            />
 
-            <Box sx={{ textAlign: 'center', pt: 2, pb: 1 }}>
-                <Typography
-                    sx={{
-                        fontWeight: 800,
-                        color: '#463628',
-                        fontSize: { xs: '1.5rem', sm: '1.875rem' },
-                        letterSpacing: '0.02em',
-                    }}
-                >
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 1.75,
+                }}
+            >
+                <Typography sx={{ fontSize: 20, fontWeight: 600, color: '#2E2519' }}>
                     Новый расход
                 </Typography>
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                    <Box
+                        onClick={() => setScannerOpen(true)}
+                        sx={{
+                            width: 34,
+                            height: 34,
+                            borderRadius: '11px',
+                            background: '#EBE1CB',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <CameraAltIcon sx={{ fontSize: 18, color: '#5C5142' }} />
+                    </Box>
+                    <IconButton onClick={onClose} sx={{ color: '#9C8B6F', mr: -0.5 }}>
+                        <CloseIcon />
+                    </IconButton>
+                </Box>
             </Box>
 
-            <DialogContent
-                sx={{ display: 'flex', flexDirection: 'column', gap: 3, py: 3 }}
+            <Box
+                sx={{
+                    display: 'flex',
+                    gap: '4px',
+                    p: '4px',
+                    background: '#E8DFC7',
+                    borderRadius: '12px',
+                    mb: 2,
+                }}
             >
-                <TextField
-                    fullWidth
-                    label="Название расхода"
-                    inputRef={nameRef}
-                    sx={FIELD_SX}
-                />
-                {singleItem && (
-                    <TextField
-                        fullWidth
-                        label="Сумма"
-                        type="number"
-                        inputRef={amountRef}
-                        sx={FIELD_SX}
-                    />
-                )}
-
-                {usersError && (
-                    <Typography sx={{ color: '#d32f2f', fontSize: '0.875rem' }}>
-                        {usersError}
-                    </Typography>
-                )}
-
-                <TextField
-                    select
-                    fullWidth
-                    label="Кто платил"
-                    value={paidBy}
-                    onChange={(e) => setPaidBy(e.target.value)}
-                    sx={FIELD_SX}
-                    disabled={usersLoading}
-                    slotProps={{ select: { MenuProps: MENU_PROPS } }}
-                >
-                    {usersOptions.map((option) => (
-                        <MenuItem key={option.value} value={option.value}>
-                            {option.label}
-                        </MenuItem>
-                    ))}
-                </TextField>
-                <TextField
-                    select
-                    fullWidth
-                    label="Кто должен оплатить"
-                    value={payer}
-                    onChange={(e) => setPayer(e.target.value)}
-                    sx={FIELD_SX}
-                    disabled={usersLoading}
-                    slotProps={{
-                        select: {
-                            multiple: true,
-                            MenuProps: MENU_PROPS,
-                            renderValue: (selected) =>
-                                usersOptions
-                                    .filter((o) => selected.includes(o.value))
-                                    .map((o) => o.label)
-                                    .join(', '),
-                        },
-                    }}
-                >
-                    {usersOptions.map((option) => (
-                        <MenuItem key={option.value} value={option.value}>
-                            {option.label}
-                        </MenuItem>
-                    ))}
-                </TextField>
-                <TextField
-                    select
-                    fullWidth
-                    label="Категория кэшбека"
-                    value={cashbackCategory}
-                    onChange={(e) => setCashbackCategory(e.target.value)}
-                    sx={FIELD_SX}
-                    slotProps={{ select: { MenuProps: MENU_PROPS } }}
-                >
-                    {CASHBACK_OPTIONS.map((option) => (
-                        <MenuItem key={option.id} value={option.id}>
-                            {option.label}
-                        </MenuItem>
-                    ))}
-                </TextField>
-                {!singleItem && (
-                    <Button
-                        fullWidth
-                        variant="outlined"
-                        onClick={handleReceiptView}
+                {[
+                    { key: true, label: 'Быстрый' },
+                    { key: false, label: 'Детальный' },
+                ].map((seg) => (
+                    <Box
+                        key={seg.label}
+                        onClick={() => setSingleItem(seg.key)}
                         sx={{
-                            border: '2px solid #463628',
-                            color: '#463628',
-                            fontWeight: 'bold',
-                            borderRadius: '8px',
-                            py: 1.5,
-                        }}
-                    >
-                        ПОСМОТРЕТЬ ЧЕК
-                    </Button>
-                )}
-                <FormControlLabel
-                    control={
-                        <Switch
-                            checked={singleItem}
-                            onChange={(e) => setSingleItem(e.target.checked)}
-                            sx={{
-                                '& .MuiSwitch-switchBase.Mui-checked': {
-                                    color: '#DAB672',
-                                },
-                                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track':
-                                    {
-                                        backgroundColor: '#DAB672',
-                                    },
-                            }}
-                        />
-                    }
-                    label="Одна позиция"
-                    sx={{
-                        justifyContent: 'center',
-                        ml: 0,
-                        color: '#463628',
-                        fontWeight: 600,
-                        '& .MuiFormControlLabel-label': {
+                            flex: 1,
+                            textAlign: 'center',
+                            py: 1,
+                            borderRadius: '9px',
+                            fontSize: 14,
                             fontWeight: 600,
-                        },
-                    }}
-                />
-            </DialogContent>
-            {!singleItem && (
-                <Box className="px-6 pb-2 flex flex-col gap-3">
-                    <Button
-                        fullWidth
-                        variant="contained"
-                        onClick={handleReceiptUpload}
-                        sx={{
-                            backgroundColor: '#DAB672',
-                            color: '#463628',
-                            fontWeight: 'bold',
-                            borderRadius: '8px',
-                            py: 1.5,
-                            fontSize: '1rem',
-                            boxShadow: 'none',
-                            '&:hover': { backgroundColor: '#c9a25f', boxShadow: 'none' },
+                            cursor: 'pointer',
+                            color: singleItem === seg.key ? '#2E2519' : '#8A7C66',
+                            background:
+                                singleItem === seg.key ? '#FFFDF7' : 'transparent',
+                            boxShadow:
+                                singleItem === seg.key
+                                    ? '0 1px 3px rgba(46,37,25,.12)'
+                                    : 'none',
                         }}
                     >
-                        ОТСКАНИРОВАТЬ ЧЕК
-                    </Button>
+                        {seg.label}
+                    </Box>
+                ))}
+            </Box>
+
+            {singleItem ? (
+                <Box sx={{ textAlign: 'center', pb: 2 }}>
+                    <input
+                        ref={amountRef}
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="0"
+                        style={{
+                            width: '100%',
+                            border: 'none',
+                            background: 'transparent',
+                            textAlign: 'center',
+                            fontSize: 44,
+                            fontWeight: 700,
+                            letterSpacing: '-0.02em',
+                            color: '#2E2519',
+                            outline: 'none',
+                            fontFamily: 'inherit',
+                        }}
+                    />
+                    <Box
+                        sx={{
+                            height: '2px',
+                            width: 150,
+                            mx: 'auto',
+                            mt: 0.75,
+                            background: '#C9A55F',
+                        }}
+                    />
+                    <Typography sx={{ fontSize: 12, color: '#8A7C66', mt: 1 }}>
+                        Введите итоговую сумму
+                    </Typography>
+                </Box>
+            ) : (
+                <Box sx={{ textAlign: 'center', pb: 2 }}>
+                    <Typography
+                        sx={{
+                            fontSize: 44,
+                            fontWeight: 700,
+                            letterSpacing: '-0.02em',
+                            color: '#2E2519',
+                        }}
+                    >
+                        {detailedTotal}
+                        <span style={{ color: '#B5A78C' }}>&nbsp;₽</span>
+                    </Typography>
+                    <Box
+                        sx={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 0.75,
+                            mt: 1.25,
+                            px: 1.4,
+                            py: 0.6,
+                            borderRadius: '8px',
+                            background: '#EFE6CF',
+                            fontSize: 12,
+                            color: '#7C6E58',
+                        }}
+                    >
+                        🔒 Сумма из {receiptItems.length} позиций
+                    </Box>
                 </Box>
             )}
-            <Box className="px-6 pb-4 flex flex-col gap-3">
-                <Button
-                    fullWidth
-                    variant="contained"
-                    onClick={handleSave}
-                    sx={{
-                        backgroundColor: '#463628',
-                        color: '#F8F4EC',
-                        fontWeight: 'bold',
-                        borderRadius: '8px',
-                        py: 1.5,
-                        fontSize: '1rem',
-                        boxShadow: 'none',
-                        '&:hover': { backgroundColor: '#3a2c20', boxShadow: 'none' },
+
+            <Box
+                sx={{
+                    ...cardSx,
+                    mb: 1.25,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                }}
+            >
+                <span style={{ fontSize: 18 }}>🧾</span>
+                <input
+                    ref={nameRef}
+                    placeholder="Название расхода"
+                    style={{
+                        flex: 1,
+                        minWidth: 0,
+                        border: 'none',
+                        background: 'transparent',
+                        fontSize: '15px',
+                        fontWeight: 600,
+                        color: '#2E2519',
+                        outline: 'none',
+                        fontFamily: 'inherit',
                     }}
-                >
-                    СОХРАНИТЬ РАСХОД
-                </Button>
+                />
             </Box>
+
+            <Box
+                sx={{
+                    ...cardSx,
+                    mb: 1.25,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.25,
+                }}
+            >
+                <Typography
+                    sx={{ fontSize: 12.5, color: '#8A7C66', width: 78, flexShrink: 0 }}
+                >
+                    Платил
+                </Typography>
+                <select
+                    value={paidBy}
+                    onChange={(e) => setPaidBy(Number(e.target.value))}
+                    disabled={usersLoading}
+                    style={nativeSelectStyle}
+                >
+                    <option value="" disabled>
+                        Выберите
+                    </option>
+                    {usersOptions.map((o) => (
+                        <option key={o.value} value={o.value}>
+                            {o.label}
+                        </option>
+                    ))}
+                </select>
+                <span style={{ color: '#B5A78C', flexShrink: 0 }}>▾</span>
+            </Box>
+
+            <Box
+                sx={{
+                    ...cardSx,
+                    mb: 1.25,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.25,
+                }}
+            >
+                <Typography
+                    sx={{ fontSize: 12.5, color: '#8A7C66', width: 78, flexShrink: 0 }}
+                >
+                    Категория
+                </Typography>
+                <select
+                    value={cashbackCategory}
+                    onChange={(e) => setCashbackCategory(e.target.value)}
+                    style={nativeSelectStyle}
+                >
+                    <option value="" disabled>
+                        Выберите
+                    </option>
+                    {CASHBACK_OPTIONS.map((o) => (
+                        <option key={o.id} value={o.id}>
+                            {o.label}
+                        </option>
+                    ))}
+                </select>
+                <span style={{ color: '#B5A78C', flexShrink: 0 }}>▾</span>
+            </Box>
+
+            {singleItem && (
+                <Box sx={{ ...cardSx, mb: 1.75 }}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            mb: 1.4,
+                        }}
+                    >
+                        <Typography sx={{ fontSize: 12.5, color: '#8A7C66' }}>
+                            На кого делим
+                        </Typography>
+                        <Typography
+                            sx={{
+                                fontSize: 12.5,
+                                fontWeight: 700,
+                                color: '#7A5316',
+                                background: '#F1E4C6',
+                                px: 1.1,
+                                py: 0.4,
+                                borderRadius: '8px',
+                            }}
+                        >
+                            {payer.length} чел.
+                        </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {usersOptions.map((o) => {
+                            const active = payer.includes(o.value);
+                            return (
+                                <Box
+                                    key={o.value}
+                                    onClick={() => togglePayer(o.value)}
+                                    sx={{
+                                        textAlign: 'center',
+                                        cursor: 'pointer',
+                                        width: 52,
+                                    }}
+                                >
+                                    <Box
+                                        sx={{
+                                            width: 40,
+                                            height: 40,
+                                            mx: 'auto',
+                                            borderRadius: '50%',
+                                            background: '#E6D9BA',
+                                            color: '#7A5316',
+                                            border: active
+                                                ? '2px solid #2E2519'
+                                                : '2px solid transparent',
+                                            opacity: active ? 1 : 0.5,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: 14,
+                                            fontWeight: 600,
+                                        }}
+                                    >
+                                        {o.label?.[0]?.toUpperCase()}
+                                    </Box>
+                                    <Typography
+                                        sx={{
+                                            fontSize: 10.5,
+                                            color: '#8A7C66',
+                                            mt: 0.6,
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap',
+                                        }}
+                                    >
+                                        {o.label}
+                                    </Typography>
+                                </Box>
+                            );
+                        })}
+                    </Box>
+                </Box>
+            )}
+
+            {!singleItem && (
+                <Box
+                    onClick={() => setReceiptOpen(true)}
+                    sx={{ ...cardSx, mb: 1.75, cursor: 'pointer' }}
+                >
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                        }}
+                    >
+                        <Typography
+                            sx={{ fontSize: 14, fontWeight: 600, color: '#2E2519' }}
+                        >
+                            Позиции чека
+                        </Typography>
+                        <Typography
+                            sx={{ fontSize: 12.5, color: '#8A5B12', fontWeight: 600 }}
+                        >
+                            Редактировать ›
+                        </Typography>
+                    </Box>
+                    {receiptItems.length === 0 ? (
+                        <Typography sx={{ fontSize: 12.5, color: '#A2947A', mt: 1 }}>
+                            Пока пусто — нажмите, чтобы добавить позиции
+                        </Typography>
+                    ) : (
+                        receiptItems.slice(0, 3).map((it) => (
+                            <Box
+                                key={it.id}
+                                sx={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    fontSize: 12.5,
+                                    color: '#7C6E58',
+                                    mt: 1,
+                                }}
+                            >
+                                <span>{it.title}</span>
+                                <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                                    {Number(it.unitPrice) * Number(it.quantity)} ₽
+                                </span>
+                            </Box>
+                        ))
+                    )}
+                </Box>
+            )}
+
+            {usersError && (
+                <Typography sx={{ color: '#d32f2f', fontSize: 13, mb: 1 }}>
+                    {usersError}
+                </Typography>
+            )}
+
+            <Button
+                fullWidth
+                onClick={handleSave}
+                sx={{
+                    py: 2,
+                    borderRadius: '14px',
+                    backgroundColor: '#2E2519',
+                    color: '#F7F1E3',
+                    fontSize: 16,
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    boxShadow: 'none',
+                    '&:hover': { backgroundColor: '#3a2c20', boxShadow: 'none' },
+                }}
+            >
+                Сохранить расход
+            </Button>
+
             <Receipt
                 open={receiptOpen}
                 onClose={() => setReceiptOpen(false)}

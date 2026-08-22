@@ -46,9 +46,11 @@ def parse_receipt(receipt: dict):
             quantity = 1
             unit_price = kopecks_to_rubles(item["sum"])
 
+        title = item["name"].replace("\xa0", " ").strip()
+
         parsed_items.append(
             ParsedReceiptItem(
-                title=item["name"].replace("\xa0", " ").strip(),
+                title=title[:300],
                 unit_price=unit_price,
                 quantity=quantity,
             )

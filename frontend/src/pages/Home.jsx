@@ -1,4 +1,3 @@
-import { Box, Button } from '@mui/material';
 import { useState } from 'react';
 import Slider from '../components/sliderComponents/Slider';
 import AddMeeting from '../components/modal/AddMeeting';

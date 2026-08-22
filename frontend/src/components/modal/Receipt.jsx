@@ -1,21 +1,15 @@
-import {
-    Dialog,
-    IconButton,
-    Button,
-    Box,
-    Typography,
-    Avatar,
-    AvatarGroup,
-    Divider,
-} from '@mui/material';
+import { Dialog, IconButton, Button, Box, Typography, Slide } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import EditIcon from '@mui/icons-material/Edit';
-import { useState } from 'react';
+import { useState, forwardRef } from 'react';
 import AddItem from './AddItem';
 import EditItem from './EditItem';
 
+const Transition = forwardRef(function Transition(props, ref) {
+    return <Slide direction="up" ref={ref} {...props} />;
+});
+
 function computeTotals(items, usersOptions) {
-    const total = items.reduce((sum, it) => sum + it.unitPrice, 0);
+    const total = items.reduce((sum, it) => sum + it.unitPrice * (it.quantity || 1), 0);
 
     const perPerson = {};
     usersOptions.forEach((u) => {
@@ -23,7 +17,7 @@ function computeTotals(items, usersOptions) {
     });
 
     items.forEach((it) => {
-        const itemTotal = it.unitPrice;
+        const itemTotal = it.unitPrice * (it.quantity || 1);
         const ids = it.participantIds;
         if (!ids || ids.length === 0) return;
         const share = itemTotal / ids.length;
@@ -42,54 +36,83 @@ function ItemRow({ item, usersOptions, onEditClick }) {
 
     return (
         <Box
+            onClick={() => onEditClick(item)}
             sx={{
-                py: 1.5,
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
-                borderBottom: '1px solid #463628',
+                gap: 1.25,
+                py: 1.5,
+                cursor: 'pointer',
+                borderBottom: '1px solid #E2D6BC',
             }}
         >
-            <Box sx={{ display: 'flex', alignItems: 'baseline', flex: 1, minWidth: 0 }}>
-                <Typography
-                    sx={{
-                        color: '#463628',
-                        fontWeight: 400,
-                        fontSize: '18px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        width: 110,
-                        flexShrink: 0,
-                    }}
-                >
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography sx={{ fontSize: 14.5, fontWeight: 600, color: '#2E2519' }}>
                     {item.title}
-                    {item.quantity > 1 ? ` x${item.quantity}` : ''}
+                    {item.quantity > 1 ? ` ×${item.quantity}` : ''}
                 </Typography>
-                <Typography sx={{ color: '#463628', fontWeight: 400, fontSize: '18px' }}>
-                    {item.unitPrice} руб.
-                </Typography>
+                {item.quantity > 1 && (
+                    <Typography sx={{ fontSize: 11.5, color: '#8A7C66', mt: 0.25 }}>
+                        по {item.unitPrice} ₽
+                    </Typography>
+                )}
             </Box>
-
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-                <AvatarGroup
-                    max={3}
-                    sx={{
-                        '& .MuiAvatar-root': {
-                            width: 35,
-                            height: 35,
-                            fontSize: 12,
-                        },
-                    }}
-                >
-                    {participants.map((p) => (
-                        <Avatar key={p.value}>{p.label?.[0]?.toUpperCase()}</Avatar>
-                    ))}
-                </AvatarGroup>
-                <IconButton size="small" onClick={() => onEditClick(item)}>
-                    <EditIcon sx={{ color: '#463628', fontSize: '35px' }} />
-                </IconButton>
+            <Box sx={{ display: 'flex' }}>
+                {participants.slice(0, 3).map((p, i) => (
+                    <Box
+                        key={p.value}
+                        sx={{
+                            width: 24,
+                            height: 24,
+                            borderRadius: '50%',
+                            background: '#E6D9BA',
+                            color: '#7A5316',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: 10,
+                            fontWeight: 600,
+                            ml: i === 0 ? 0 : '-7px',
+                            border: '1.5px solid #F7F1E3',
+                        }}
+                    >
+                        {p.label?.[0]?.toUpperCase()}
+                    </Box>
+                ))}
+                {participants.length > 3 && (
+                    <Box
+                        sx={{
+                            width: 24,
+                            height: 24,
+                            borderRadius: '50%',
+                            background: '#EBE1CB',
+                            color: '#8A7C66',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: 9.5,
+                            fontWeight: 600,
+                            ml: '-7px',
+                            border: '1.5px solid #F7F1E3',
+                        }}
+                    >
+                        +{participants.length - 3}
+                    </Box>
+                )}
             </Box>
+            <Typography
+                sx={{
+                    width: 74,
+                    textAlign: 'right',
+                    fontSize: 14.5,
+                    fontWeight: 600,
+                    color: '#2E2519',
+                    fontVariantNumeric: 'tabular-nums',
+                    flexShrink: 0,
+                }}
+            >
+                {item.unitPrice * (item.quantity || 1)} ₽
+            </Typography>
         </Box>
     );
 }
@@ -105,7 +128,6 @@ export default function ReceiptModal({
     const { total, perPerson } = computeTotals(items, usersOptions);
 
     const [addItemOpen, setAddItemOpen] = useState(false);
-    const handleAddItem = () => setAddItemOpen(true);
     const handleItemAdded = (newItem) => {
         setItems((prev) => [...prev, newItem]);
     };
@@ -133,106 +155,174 @@ export default function ReceiptModal({
 
     return (
         <Dialog
-            fullScreen
             open={open}
             onClose={onClose}
+            fullWidth
+            maxWidth="sm"
+            TransitionComponent={Transition}
+            sx={{ '& .MuiDialog-container': { alignItems: 'flex-end' } }}
             slotProps={{
                 paper: {
                     sx: {
-                        backgroundColor: '#EAE0CD',
-                        p: { xs: 2, sm: 3 },
-                        borderRadius: 3,
+                        m: 0,
+                        width: '100%',
+                        maxWidth: '100%',
+                        borderRadius: '26px 26px 0 0',
+                        backgroundColor: '#F7F1E3',
+                        p: '10px 22px 24px',
+                        maxHeight: '92%',
                     },
                 },
             }}
         >
-            <IconButton
-                onClick={onClose}
-                sx={{ position: 'absolute', top: 12, right: 12, color: '#463628' }}
+            <Box
+                sx={{
+                    width: 38,
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor: '#D3C4A5',
+                    mx: 'auto',
+                    mb: 2,
+                }}
+            />
+
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 1.5,
+                }}
             >
-                <CloseIcon />
-            </IconButton>
-
-            <Box sx={{ textAlign: 'center', pt: 2, pb: 1 }}>
-                <Typography
-                    sx={{
-                        fontWeight: 800,
-                        color: '#463628',
-                        fontSize: '32px',
-                        letterSpacing: '0.02em',
-                    }}
-                >
-                    ЧЕК
-                </Typography>
-            </Box>
-
-            <Box sx={{ mt: 1 }}>
-                {items.map((item) => (
-                    <ItemRow
-                        key={item.id}
-                        item={item}
-                        usersOptions={usersOptions}
-                        onEditClick={handleEditClick}
-                    />
-                ))}
-            </Box>
-
-            <Box sx={{ mt: 3 }}>
-                <Typography sx={{ color: '#463628', fontWeight: 800, fontSize: '28px' }}>
-                    ИТОГО:
-                </Typography>
-                <Typography sx={{ color: '#463628', fontWeight: 900, fontSize: '28px' }}>
-                    {total} РУБ.
-                </Typography>
-            </Box>
-
-            <Divider sx={{ my: 2, borderColor: '#463628' }} />
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mb: 3 }}>
-                {usersOptions.map((u) => (
-                    <Typography
-                        key={u.value}
-                        sx={{ color: '#463628', fontWeight: 800, fontSize: '26px' }}
-                    >
-                        {u.label} - {(perPerson[u.value] || 0).toFixed(2)} руб.
+                <Box>
+                    <Typography sx={{ fontSize: 20, fontWeight: 600, color: '#2E2519' }}>
+                        Чек
                     </Typography>
-                ))}
+                    <Typography sx={{ fontSize: 12, color: '#8A7C66', mt: 0.25 }}>
+                        {items.length} позиций
+                    </Typography>
+                </Box>
+                <IconButton onClick={onClose} sx={{ color: '#9C8B6F', mr: -0.5 }}>
+                    <CloseIcon />
+                </IconButton>
             </Box>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                <Button
-                    fullWidth
-                    variant="contained"
-                    onClick={handleAddItem}
-                    sx={{
-                        backgroundColor: '#DAB672',
-                        color: '#463628',
-                        fontWeight: 'bold',
-                        borderRadius: '10px',
-                        py: 1.5,
-                        boxShadow: 'none',
-                        '&:hover': { backgroundColor: '#c9a25f', boxShadow: 'none' },
-                    }}
-                >
-                    ДОБАВИТЬ ПОЗИЦИЮ
-                </Button>
-                <Button
-                    fullWidth
-                    variant="contained"
-                    onClick={handleSaveClick}
-                    sx={{
-                        backgroundColor: '#463628',
-                        color: '#FFF',
-                        fontWeight: 'bold',
-                        borderRadius: '10px',
-                        py: 1.5,
-                        boxShadow: 'none',
-                        '&:hover': { backgroundColor: '#463628', boxShadow: 'none' },
-                    }}
-                >
-                    СОХРАНИТЬ
-                </Button>
+            <Box
+                sx={{
+                    display: 'flex',
+                    gap: 1.25,
+                    pb: 1,
+                    borderBottom: '1px solid #E2D6BC',
+                    fontSize: 11,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    color: '#A2947A',
+                }}
+            >
+                <Typography sx={{ flex: 1, fontSize: 'inherit' }}>Позиция</Typography>
+                <Typography sx={{ fontSize: 'inherit' }}>Делят</Typography>
+                <Typography sx={{ width: 74, textAlign: 'right', fontSize: 'inherit' }}>
+                    Сумма
+                </Typography>
             </Box>
+
+            {items.map((item) => (
+                <ItemRow
+                    key={item.id}
+                    item={item}
+                    usersOptions={usersOptions}
+                    onEditClick={handleEditClick}
+                />
+            ))}
+
+            <Button
+                fullWidth
+                onClick={() => setAddItemOpen(true)}
+                sx={{
+                    my: 1.5,
+                    py: 1.25,
+                    borderRadius: '11px',
+                    border: '1px solid #C3B394',
+                    color: '#2E2519',
+                    fontSize: 13.5,
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    '&:hover': {
+                        border: '1px solid #C3B394',
+                        backgroundColor: '#F1E7D0',
+                    },
+                }}
+            >
+                ＋ Добавить позицию
+            </Button>
+
+            <Box sx={{ p: '15px', borderRadius: '14px', background: '#EFE6CF' }}>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'baseline',
+                        mb: 1.25,
+                    }}
+                >
+                    <Typography sx={{ fontSize: 12.5, color: '#7C6E58' }}>
+                        Итого по чеку
+                    </Typography>
+                    <Typography
+                        sx={{
+                            fontSize: 23,
+                            fontWeight: 700,
+                            color: '#2E2519',
+                            fontVariantNumeric: 'tabular-nums',
+                        }}
+                    >
+                        {total} ₽
+                    </Typography>
+                </Box>
+                {usersOptions
+                    .filter((u) => (perPerson[u.value] || 0) > 0)
+                    .map((u) => (
+                        <Box
+                            key={u.value}
+                            sx={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                fontSize: 12.5,
+                                color: '#7C6E58',
+                                py: 0.4,
+                            }}
+                        >
+                            <span>{u.label}</span>
+                            <span
+                                style={{
+                                    color: '#2E2519',
+                                    fontVariantNumeric: 'tabular-nums',
+                                }}
+                            >
+                                {(perPerson[u.value] || 0).toFixed(2)} ₽
+                            </span>
+                        </Box>
+                    ))}
+            </Box>
+
+            <Button
+                fullWidth
+                onClick={handleSaveClick}
+                sx={{
+                    mt: 1.75,
+                    py: 2,
+                    borderRadius: '14px',
+                    backgroundColor: '#2E2519',
+                    color: '#F7F1E3',
+                    fontSize: 16,
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    boxShadow: 'none',
+                    '&:hover': { backgroundColor: '#3a2c20', boxShadow: 'none' },
+                }}
+            >
+                Сохранить чек
+            </Button>
 
             <AddItem
                 open={addItemOpen}
@@ -240,7 +330,6 @@ export default function ReceiptModal({
                 usersOptions={usersOptions}
                 onAdd={handleItemAdded}
             />
-
             <EditItem
                 open={editItemOpen}
                 onClose={() => setEditItemOpen(false)}

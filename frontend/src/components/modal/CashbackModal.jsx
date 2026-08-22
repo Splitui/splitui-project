@@ -1,26 +1,101 @@
-import { useState } from 'react';
-import { CASHBACK_OPTIONS } from '../Options';
+import { useState, useEffect, useCallback } from 'react';
 import { Button, Dialog, DialogContent, IconButton, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import Cookies from 'js-cookie';
+import { useSnackbar } from '../SnackbarProvider';
+
+const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 
 export default function CashbackModal({ open, onClose, onSave }) {
-    const [cashbacks, setCashbacks] = useState(CASHBACK_OPTIONS);
+    const [cashbacks, setCashbacks] = useState([]);
 
-    const handleAmountChange = (id, delta) => {
+    const meetingCookie = JSON.parse(Cookies.get('meeting') || '{}');
+    const meetingId = meetingCookie.id;
+    const sessionId = meetingCookie.sessionId;
+
+    const showSnackbar = useSnackbar();
+
+    const fetchUserCashbacks = useCallback(async () => {
+        try {
+            const allCatsRes = await fetch(`${API_URL}/cashback-categories`);
+            const allCategories = await allCatsRes.json();
+
+            const userCatsRes = await fetch(
+                `${API_URL}/meetings/${meetingId}/cashback-categories`,
+                {
+                    headers: { 'session-id': sessionId },
+                },
+            );
+            const userCategories = await userCatsRes.json();
+
+            const merged = allCategories.map((cat) => {
+                const userSetting = userCategories.find((u) => u.category_id === cat.id);
+                return {
+                    category_id: cat.id,
+                    name: cat.name,
+                    percent: userSetting ? userSetting.percent : 0,
+                };
+            });
+
+            setCashbacks(merged);
+        } catch (e) {
+            console.error('Ошибка инициализации кэшбэков', e);
+        }
+    }, [meetingId, sessionId]);
+
+    useEffect(() => {
+        if (open && meetingId) {
+            const loadData = async () => {
+                await fetchUserCashbacks();
+            };
+            loadData();
+        }
+    }, [open, meetingId, fetchUserCashbacks]);
+
+    const handleAmountChange = (categoryId, delta) => {
         setCashbacks((prev) =>
             prev.map((item) => {
-                if (item.id === id) {
-                    const value = Math.max(0, Math.min(100, item.value + delta));
-                    return { ...item, value: value };
+                if (item.category_id === categoryId) {
+                    const newValue = Math.max(
+                        0,
+                        Math.min(100, (item.percent || 0) + delta),
+                    );
+                    return { ...item, percent: newValue };
                 }
                 return item;
             }),
         );
     };
 
-    const handleSave = () => {
-        alert('Кэшбеки сохранены');
-        if (onSave) onSave(cashbacks);
+    const handleSave = async () => {
+        try {
+            const payload = {
+                categories: cashbacks.map((c) => ({
+                    category_id: c.category_id,
+                    percent: c.percent,
+                })),
+            };
+
+            const res = await fetch(
+                `${API_URL}/meetings/${meetingId}/cashback-categories`,
+                {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'session-id': sessionId,
+                    },
+                    body: JSON.stringify(payload),
+                },
+            );
+
+            if (res.ok) {
+                showSnackbar('Сохранено!', 'success');
+                if (onSave) onSave();
+                onClose();
+            }
+        } catch (e) {
+            console.error('Ошибка сохранения', e);
+        }
     };
 
     const controlBtnClass =
@@ -33,10 +108,7 @@ export default function CashbackModal({ open, onClose, onSave }) {
             open={open}
             onClose={onClose}
             slotProps={{
-                paper: {
-                    className:
-                        '!bg-[#F8F4EC] !rounded-[24px] !p-4 sm:!p-6 !m-4 !max-h-[85vh]',
-                },
+                paper: { className: '!bg-[#F8F4EC] !rounded-[24px] !p-4 !m-4' },
             }}
         >
             <IconButton
@@ -47,39 +119,35 @@ export default function CashbackModal({ open, onClose, onSave }) {
             </IconButton>
 
             <div className="text-center pt-4 pb-2">
-                <Typography className="!font-black !text-[#463628] !text-2xl tracking-wide uppercase">
+                <Typography className="!font-black !text-[#463628] !text-2xl uppercase">
                     Мои кэшбэки
                 </Typography>
             </div>
 
-            <DialogContent
-                className="!flex !flex-col !gap-6 !px-2 !pb-4
-                [&::-webkit-scrollbar]:!w-[6px] 
-                [&::-webkit-scrollbar-track]:!bg-[#EAE0CD] [&::-webkit-scrollbar-track]:!rounded-[10px] 
-                [&::-webkit-scrollbar-thumb]:!bg-[#463628] [&::-webkit-scrollbar-thumb]:!rounded-[10px]"
-            >
+            <DialogContent className="!flex !flex-col !gap-6 !px-2">
                 {cashbacks.map((item) => (
-                    <div key={item.id} className="flex flex-col items-center gap-2">
-                        <Typography className="!font-extrabold !text-[#463628] !text-base tracking-widest uppercase">
-                            {item.label}
+                    <div
+                        key={item.category_id}
+                        className="flex flex-col items-center gap-2"
+                    >
+                        <Typography className="!font-extrabold !text-[#463628] !text-base uppercase tracking-widest text-center">
+                            {item.name}
                         </Typography>
-
                         <div className="flex items-center justify-center gap-4 w-full">
                             <Button
                                 variant="contained"
                                 className={controlBtnClass}
-                                onClick={() => handleAmountChange(item.id, -1)}
+                                onClick={() => handleAmountChange(item.category_id, -1)}
                             >
                                 -
                             </Button>
-                            <Typography className="!font-black !text-[#463628] !text-[2.5rem] !w-[80px] text-center leading-none">
-                                {item.value}%
+                            <Typography className="!font-black !text-[#463628] !text-[2.5rem] !w-[100px] text-center">
+                                {item.percent}%
                             </Typography>
-
                             <Button
                                 variant="contained"
                                 className={controlBtnClass}
-                                onClick={() => handleAmountChange(item.id, 1)}
+                                onClick={() => handleAmountChange(item.category_id, 1)}
                             >
                                 +
                             </Button>
@@ -93,7 +161,7 @@ export default function CashbackModal({ open, onClose, onSave }) {
                     fullWidth
                     variant="contained"
                     onClick={handleSave}
-                    className="!bg-[#463628] !text-[#F8F4EC] !font-bold !rounded-xl !py-3 !text-base !shadow-none hover:!bg-[#3a2c20]"
+                    className="!bg-[#463628] !text-[#F8F4EC] !font-bold !rounded-xl !py-3"
                 >
                     СОХРАНИТЬ
                 </Button>
