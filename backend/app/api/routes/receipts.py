@@ -106,6 +106,11 @@ def read_qr_and_parse(
             status_code=422,
             detail="Получены некорректные данные чека",
         )
+    except Exception:
+        raise HTTPException(
+            status_code=422,
+            detail="Не удалось обработать данные чека",
+        )
 
 
 @router.delete(

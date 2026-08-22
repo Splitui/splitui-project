@@ -9,22 +9,30 @@ def get_receipt(qr_raw: str):
 
     if qr_raw is None:
         return None
-    
-    response = requests.post(
-        settings.check_api_url,
-        data={
-            "qrraw": qr_raw,
-            "token": settings.check_api_token,
-        },
-        timeout=(20, 60),
-    )
-    response.raise_for_status()
-    result = response.json()
 
-    if result.get("code") != 1:
-        return None
 
-    return result["data"]["json"]
+    for token in settings.check_api_token:
+        response = requests.post(
+            settings.check_api_url,
+            data={
+                "qrraw": qr_raw,
+                "token": token,
+            },
+            timeout=(20, 60),
+        )
+
+        if response.status_code in {401, 403, 429}:
+            continue
+
+        response.raise_for_status()
+        result = response.json()
+
+        if result.get("code") != 1:
+            return None
+
+        return result["data"]["json"]
+
+    return None
 
 
 def kopecks_to_rubles(value: int | float) -> Decimal:
@@ -46,11 +54,11 @@ def parse_receipt(receipt: dict):
             quantity = 1
             unit_price = kopecks_to_rubles(item["sum"])
 
-        title = item["name"].replace("\xa0", " ").strip()
+        title = item.get("name") or "Товар"
 
         parsed_items.append(
             ParsedReceiptItem(
-                title=title[:300],
+                title=title.replace("\xa0", " ").strip()[:300],
                 unit_price=unit_price,
                 quantity=quantity,
             )
@@ -58,8 +66,8 @@ def parse_receipt(receipt: dict):
 
     return ParsedReceipt(
         title=(
-            receipt.get("retailPlace")
-            or receipt.get("user")
+            receipt.get("user")
+            or receipt.get("retailPlace")
             or "Чек"
         ),
         purchase_date=receipt["dateTime"],

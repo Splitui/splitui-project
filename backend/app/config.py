@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    check_api_token: str
+    check_api_token: list[str]
     check_api_url: str
     DATABASE_URL: str
     class Config:
