@@ -137,7 +137,7 @@ def get_debt_payment_info(connection: Connection, meeting_uuid: UUID, session_id
 
 
 @transaction
-def mark_debt_as_paid(connection: Connection, meeting_uuid: UUID, session_id: str, debt_id: int):
+def confirm_debt(connection: Connection, meeting_uuid: UUID, session_id: str, debt_id: int):
     """Отмечает долг как погашенный.
 
     :param connection: соединение с базой данных.

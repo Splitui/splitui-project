@@ -1,6 +1,7 @@
+import json
+import secrets
 from datetime import datetime
 from uuid import uuid4
-import json
 
 import pytest
 from fastapi.testclient import TestClient
@@ -10,8 +11,11 @@ from app.db.database import metadata
 from app.db.dependencies import get_connection
 from app.db.tables.meetings import MeetingStatus
 from app.main import app
+from app.utils.security import hash_password, hash_token
 from tests.utils import future_date
-from app.repositories.participants_repository import hash_token
+
+API_PREFIX = "/api"
+
 
 @pytest.fixture
 def db_engine(tmp_path):
@@ -34,10 +38,43 @@ def app_client(db_engine):
 
     app.dependency_overrides[get_connection] = override_get_connection
 
-    with TestClient(app) as test_client:
+    with TestClient(app, base_url=f"http://testserver{API_PREFIX}") as test_client:
         yield test_client
 
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def create_user(db_engine):
+    users_table = metadata.tables["users"]
+    user_sessions = metadata.tables["user_sessions"]
+
+    def _create_user(username="testuser", password="Qwerty12"):
+        with db_engine.begin() as connection:
+            result = connection.execute(
+                users_table.insert().values(
+                    username=username,
+                    password_hash=hash_password(password),
+                )
+            )
+            user_id = result.inserted_primary_key[0]
+
+            token = secrets.token_urlsafe(32)
+            connection.execute(
+                user_sessions.insert().values(
+                    user_id=user_id,
+                    token_hash=hash_token(token)
+                )
+            )
+
+        return {
+            "id": user_id,
+            "username": username,
+            "password": password,
+            "auth_token": token
+        }
+
+    return _create_user
 
 
 @pytest.fixture
@@ -48,8 +85,9 @@ def create_meeting(db_engine):
     def _create_meeting(
             title="Тестовая Встреча",
             start_date: datetime = future_date(),
-            creator_nickname="Тестовый создатель"
-    ):  
+            creator_nickname="Тестовый создатель",
+            user_id: int | None = None
+    ):
         creator_session_id = str(uuid4())
         meeting_uuid = str(uuid4())
         with db_engine.begin() as connection:
@@ -68,6 +106,7 @@ def create_meeting(db_engine):
                     nickname=creator_nickname,
                     is_creator=True,
                     session_id_hash=hash_token(creator_session_id),
+                    user_id=user_id
                 )
             )
 
@@ -87,7 +126,6 @@ def create_participant(db_engine):
     participants_table = metadata.tables["participants"]
 
     def _create_participant(meeting_id, nickname="Тестовый участник", is_creator=False):
-
         session_id = str(uuid4())
 
         with db_engine.begin() as connection:
@@ -111,22 +149,22 @@ def create_participant(db_engine):
 
     return _create_participant
 
+
 @pytest.fixture
 def create_receipt(db_engine):
     receipts_table = metadata.tables["receipts"]
 
     def _create_receipt(
-        meeting_id,
-        payer_id,
-        title = "Тестовый чек",
-        total_amount=1000,
-        purchase_date = None,
-        category = "Еда",
-        comment= None,
-        image_url= None,
-        is_confirmed= False,
+            meeting_id,
+            payer_id,
+            title="Тестовый чек",
+            total_amount=1000,
+            purchase_date=None,
+            category="Еда",
+            comment=None,
+            image_url=None,
+            is_confirmed=False,
     ):
-
         values = {
             "meeting_id": meeting_id,
             "payer_id": payer_id,
@@ -140,7 +178,7 @@ def create_receipt(db_engine):
 
         if purchase_date is not None:
             values["purchase_date"] = purchase_date
-        
+
         with db_engine.begin() as connection:
             result = connection.execute(
                 receipts_table.insert().values(**values)
@@ -161,10 +199,10 @@ def create_receipt_item(db_engine):
     receipt_items_table = metadata.tables["receipt_items"]
 
     def _create_receipt_item(
-        receipt_id,
-        title = "Тестовая позиция",
-        quantity = 1,
-        unit_price=100,
+            receipt_id,
+            title="Тестовая позиция",
+            quantity=1,
+            unit_price=100,
     ):
         with db_engine.begin() as connection:
             result = connection.execute(
@@ -192,9 +230,9 @@ def create_item_participant(db_engine):
     ]
 
     def _create_item_participant(
-        receipt_item_id,
-        participant_id,
-        share_amount,
+            receipt_item_id,
+            participant_id,
+            share_amount,
     ):
         with db_engine.begin() as connection:
             connection.execute(
@@ -215,14 +253,14 @@ def create_item_participant(db_engine):
 
 @pytest.fixture
 def create_meeting_with_participants(
-    create_meeting,
-    create_participant,
+        create_meeting,
+        create_participant,
 ):
     def _create_meeting_with_participants(
-        meeting_title: str = "Тестовая встреча",
-        creator_nickname: str = "Создатель",
-        payer_nickname: str = "Плательщик",
-        participant_names: list[str] | None = None,
+            meeting_title: str = "Тестовая встреча",
+            creator_nickname: str = "Создатель",
+            payer_nickname: str = "Плательщик",
+            participant_names: list[str] | None = None,
     ):
         if participant_names is None:
             participant_names = [
@@ -256,6 +294,7 @@ def create_meeting_with_participants(
 
     return _create_meeting_with_participants
 
+
 @pytest.fixture
 def get_change_logs(db_engine):
     change_log_table = metadata.tables["change_log"]
@@ -281,6 +320,7 @@ def get_change_logs(db_engine):
         return changes
 
     return _get_change_logs
+
 
 @pytest.fixture
 def create_bank(db_engine):

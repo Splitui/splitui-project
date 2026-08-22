@@ -45,7 +45,7 @@ def calculate_debts(
     return debts_service.calculate_debts(connection, meeting_uuid, session_id)
 
 
-@router.get("/meetings/{meeting_uuid}/debts/{debt_id}/pay", summary="Получить данные для оплаты долга")
+@router.get("/meetings/{meeting_uuid}/debts/{debt_id}/payment", summary="Получить данные для оплаты долга")
 def get_debt_payment_info(
         meeting_uuid: UUID,
         debt_id: int,
@@ -63,8 +63,8 @@ def get_debt_payment_info(
     return debts_service.get_debt_payment_info(connection, meeting_uuid, session_id, debt_id)
 
 
-@router.patch("/meetings/{meeting_uuid}/debts/{debt_id}/confirm", summary="Отметить долг как оплаченный")
-def pay_debt(
+@router.post("/meetings/{meeting_uuid}/debts/{debt_id}/confirm", summary="Отметить долг как оплаченный")
+def confirm_debt(
         meeting_uuid: UUID,
         debt_id: int,
         session_id: str = Header(),
@@ -78,4 +78,4 @@ def pay_debt(
     :param connection: соединение с базой данных.
     :return: обновлённые данные долга.
     """
-    return debts_service.mark_debt_as_paid(connection, meeting_uuid, session_id, debt_id)
+    return debts_service.confirm_debt(connection, meeting_uuid, session_id, debt_id)
