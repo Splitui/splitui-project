@@ -3,7 +3,6 @@ import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import CallSplitIcon from '@mui/icons-material/CallSplit';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import EditIcon from '@mui/icons-material/Edit';
 
 const features = [
     {

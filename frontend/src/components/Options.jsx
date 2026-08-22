@@ -40,9 +40,11 @@ export const CASHBACK_OPTIONS = [
 
 export const BANKS = [
     { value: 1, label: 'Сбербанк' },
-    { value: 2, label: 'Т-Банк' },
-    { value: 3, label: 'Альфа-Банк' },
-    { value: 4, label: 'ВТБ' },
+    { value: 2, label: 'Альфа-Банк' },
+    { value: 3, label: 'ВТБ' },
+    { value: 4, label: 'Т-Банк' },
+    { value: 5, label: 'Райффайзен Банк' },
+    { value: 6, label: 'OZON банк' },
 ];
 
 export const PAYMENTS = [

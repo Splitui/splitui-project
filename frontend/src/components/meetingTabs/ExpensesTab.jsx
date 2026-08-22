@@ -25,7 +25,10 @@ export default function ExpensesTab({ refresh, onExpenseClick }) {
         const meeting = JSON.parse(Cookies.get('meeting') || '{}');
         const meetingUuid = meeting.id;
         if (!meetingUuid) {
-            setError('Не найден UUID встречи');
+            const loadError = async () => {
+                await setError('Не найден UUID встречи');
+            };
+            loadError();
             return;
         }
 
@@ -62,7 +65,7 @@ export default function ExpensesTab({ refresh, onExpenseClick }) {
         fetchExpenses();
 
         return () => controller.abort();
-    }, [refresh]);
+    }, [refresh, showSnackbar]);
 
     return (
         <Box sx={{ p: 2 }}>
