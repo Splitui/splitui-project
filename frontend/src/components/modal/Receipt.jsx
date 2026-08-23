@@ -3,6 +3,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { useState, forwardRef } from 'react';
 import AddItem from './AddItem';
 import EditItem from './EditItem';
+import { useSnackbar } from '../SnackbarProvider';
 
 const Transition = forwardRef(function Transition(props, ref) {
     return <Slide direction="up" ref={ref} {...props} />;
@@ -126,6 +127,7 @@ export default function ReceiptModal({
     onSave,
 }) {
     const { total, perPerson } = computeTotals(items, usersOptions);
+    const showSnackbar = useSnackbar();
 
     const [addItemOpen, setAddItemOpen] = useState(false);
     const handleItemAdded = (newItem) => {
@@ -149,7 +151,23 @@ export default function ReceiptModal({
     };
 
     const handleSaveClick = () => {
+        if (items.length === 0) {
+            showSnackbar(
+                'Добавьте хотя бы одну позицию в чек или используйте "Быстрый" режим',
+            );
+            return;
+        }
+
+        const hasEmptyItems = items.some(
+            (it) => !it.participantIds || it.participantIds.length === 0,
+        );
+        if (hasEmptyItems) {
+            showSnackbar('У каждой позиции должен быть хотя бы один участник');
+            return;
+        }
+
         onSave?.();
+        showSnackbar('Позиции чека сохранены', 'success');
         onClose();
     };
 

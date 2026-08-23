@@ -55,20 +55,42 @@ export default function PaymentTab({ onUpdate, participants, refresh }) {
             if (res.ok) {
                 const data = await res.json();
                 processDebts(data);
+                showSnackbar('Расчет выполнен', 'success');
+            } else {
+                const errorData = await res.json().catch(() => ({}));
+                showSnackbar(errorData.detail || 'Ошибка при расчете долгов');
             }
         } catch (e) {
-            console.error('Ошибка расчёта', e);
+            showSnackbar('Нет связи с сервером для расчета', e);
         }
-    }, [meetingId, sessionId, processDebts]);
+    }, [meetingId, sessionId, processDebts, showSnackbar]);
 
-    const fetchDebts = useCallback(async () => {
-        if (!meetingId) return;
-        try {
-            await handleCalculate();
-        } catch (e) {
-            console.error('Ошибка загрузки долгов:', e);
-        }
-    }, [meetingId, handleCalculate]);
+    const fetchDebts = useCallback(
+        async (forceRecalculate = false) => {
+            if (!meetingId) return;
+            try {
+                const res = await fetch(`${API_URL}/meetings/${meetingId}/debts`, {
+                    method: 'GET',
+                    headers: { 'session-id': sessionId },
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.length === 0 || forceRecalculate) {
+                        await handleCalculate();
+                    } else {
+                        processDebts(data);
+                    }
+                } else {
+                    const errorData = await res.json().catch(() => ({}));
+                    showSnackbar(errorData.detail || 'Не удалось получить список долгов');
+                }
+            } catch (e) {
+                showSnackbar('Ошибка сети при загрузке долгов', e);
+            }
+        },
+        [meetingId, handleCalculate, sessionId, processDebts, showSnackbar],
+    );
 
     useEffect(() => {
         const loadData = async () => {
@@ -174,6 +196,14 @@ export default function PaymentTab({ onUpdate, participants, refresh }) {
                         ? 'ВСЕ ПЕРЕВОДЫ ЗАКРЫТЫ'
                         : `${pendingCount} ПЕРЕВОДА ЗАКРОЮТ ВСТРЕЧУ`}
                 </Typography>
+
+                <Button
+                    onClick={() => fetchDebts(true)}
+                    className="!text-[11px] !font-bold !text-[#32281E] !bg-[#E8DFC7] !rounded-lg !px-2 !min-w-0"
+                    size="small"
+                >
+                    ПЕРЕСЧИТАТЬ
+                </Button>
             </div>
 
             <div className="flex flex-col gap-3">

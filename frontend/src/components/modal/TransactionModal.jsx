@@ -1,11 +1,21 @@
 import { Dialog, Typography, Button } from '@mui/material';
+import { useSnackbar } from '../SnackbarProvider';
 
 export default function TransactionModal({ open, onClose, transaction, onConfirm }) {
+    const showSnackbar = useSnackbar();
     if (!transaction) return null;
-
     const isPayment = transaction.action === 'оплата';
 
     const isLink = isPayment && !!transaction.bank_deeplink;
+
+    const handleAction = () => {
+        if (isLink) {
+            showSnackbar('Открываем приложение банка...', 'info');
+            setTimeout(onClose, 1000);
+        } else {
+            onConfirm();
+        }
+    };
 
     return (
         <Dialog
@@ -32,7 +42,7 @@ export default function TransactionModal({ open, onClose, transaction, onConfirm
             <div className="flex gap-3">
                 <Button
                     fullWidth
-                    onClick={!isLink ? onConfirm : onClose}
+                    onClick={handleAction}
                     component={isLink ? 'a' : 'button'}
                     href={isLink ? transaction.bank_deeplink : undefined}
                     target={isLink ? '_blank' : undefined}

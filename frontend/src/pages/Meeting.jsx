@@ -443,9 +443,12 @@ export default function Meeting() {
                 if (res.ok) {
                     const data = await res.json();
                     setBalance(data);
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    showSnackbar(errData.detail || 'Не удалось загрузить баланс');
                 }
             } catch (e) {
-                showSnackbar('Ошибка загрузки данных', e);
+                showSnackbar('Ошибка сети при загрузке баланса', e);
             }
         };
         fetchBalance();
@@ -511,6 +514,9 @@ export default function Meeting() {
                         }),
                     );
                     setParticipants(fullDataParticipants);
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    showSnackbar(errData.detail || 'Ошибка загрузки участников');
                 }
             } catch (e) {
                 console.error(e);
@@ -556,12 +562,13 @@ export default function Meeting() {
             if (res.ok) {
                 setIsFinished(true);
                 setOpenEndMeeting(false);
+                showSnackbar('Встреча успешно завершена', 'success');
             } else {
-                alert('Не удалось завершить встречу');
+                const errData = await res.json().catch(() => ({}));
+                showSnackbar(errData.detail || 'Не удалось завершить встречу');
             }
         } catch (e) {
-            console.error(e);
-            alert('Ошибка сети');
+            showSnackbar('Ошибка сети при попытке завершить встречу', e);
         }
     };
     const handleStatusChange = async (newStatus) => {
@@ -583,13 +590,17 @@ export default function Meeting() {
                 },
             });
             if (!res.ok) {
-                showSnackbar('Не удалось изменить статус');
+                const errData = await res.json().catch(() => ({}));
+                showSnackbar(errData.detail || 'Бэкенд отклонил смену статуса');
                 return;
             }
             Cookies.set('meeting', JSON.stringify({ ...cookie, status: newStatus }));
             if (newStatus === 'done') setIsFinished(true);
             setRefresh((n) => n + 1);
-            showSnackbar('Статус обновлён', 'success');
+            showSnackbar(
+                `Статус изменен на "${STATUS_META[newStatus].label}"`,
+                'success',
+            );
         } catch (e) {
             showSnackbar('Сеть недоступна', e);
         }

@@ -2,11 +2,13 @@ import { Dialog, IconButton, Button, Typography, Box } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useRef } from 'react';
 import Cookies from 'js-cookie';
+import { useSnackbar } from '../SnackbarProvider';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 
 export default function InviteMeeting({ open, onClose, meetingId, onJoined }) {
     const nameRef = useRef(null);
+    const showSnackbar = useSnackbar();
 
     const inputStyle = {
         width: '100%',
@@ -31,6 +33,10 @@ export default function InviteMeeting({ open, onClose, meetingId, onJoined }) {
 
         try {
             const meetingRes = await fetch(`${API_URL}/meetings/${meetingId}`);
+            if (!meetingRes.ok) {
+                showSnackbar('Встреча не найдена или удалена');
+                return;
+            }
             const meetingData = await meetingRes.json();
 
             const res = await fetch(`${API_URL}/meetings/${meetingId}/participants`, {
@@ -58,9 +64,11 @@ export default function InviteMeeting({ open, onClose, meetingId, onJoined }) {
                         sessionId: userData.session_id,
                     }),
                 );
+                showSnackbar(`Добро пожаловать, ${name}!`, 'success');
                 onJoined(meetingId);
             }
         } catch (e) {
+            showSnackbar('Ошибка сети. Проверьте подключение.');
             console.error('Не получилось войти', e);
         }
     };

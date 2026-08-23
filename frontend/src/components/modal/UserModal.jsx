@@ -52,8 +52,8 @@ export default function UserModal({
     const handleSave = async () => {
         const allData = {
             nickname: nickname.trim(),
-            card_number: cardNumber.trim() || '',
-            phone_number: phoneNumber.trim() || '',
+            card_number: cardNumber.trim() || null,
+            phone_number: phoneNumber.trim() || null,
             bank_id: Number(bank),
         };
 
