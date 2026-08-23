@@ -142,7 +142,8 @@ export default function AddExpense({ open, onClose, onCreated }) {
                 body: JSON.stringify({ qr_raw: qrRaw }),
             });
             if (!res.ok) {
-                showSnackbar('Не удалось распознать чек');
+                const errorData = await res.json().catch(() => ({}));
+                showSnackbar(errorData.detail || 'Не удалось распознать чек');
                 return;
             }
             onCreated?.();
@@ -162,10 +163,11 @@ export default function AddExpense({ open, onClose, onCreated }) {
             return;
         }
         if (!paidBy) {
+            showSnackbar('Выберите, кто оплатил чек');
             return;
         }
         if (!singleItem && receiptItems.length === 0) {
-            setUsersError('Добавьте хотя бы одну позицию в чек');
+            showSnackbar('Выберите хотя бы одного участника, на кого делим');
             return;
         }
         const expenseName = nameRef.current.value.trim();
@@ -228,10 +230,11 @@ export default function AddExpense({ open, onClose, onCreated }) {
             });
 
             if (!res.ok) {
-                console.error('422:', await res.text());
-                showSnackbar('Не удалось сохранить расход');
+                const errorData = await res.json().catch(() => ({}));
+                showSnackbar(errorData.detail || 'Не удалось сохранить расход');
                 return;
             }
+            showSnackbar('Расход сохранен', 'success');
             onCreated?.();
             onClose();
         } catch (e) {

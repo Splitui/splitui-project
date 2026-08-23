@@ -39,9 +39,9 @@ export default function CashbackModal({ open, onClose, onSave }) {
 
             setCashbacks(merged);
         } catch (e) {
-            console.error('Ошибка инициализации кэшбэков', e);
+            showSnackbar(e.message);
         }
-    }, [meetingId, sessionId]);
+    }, [meetingId, sessionId, showSnackbar]);
 
     useEffect(() => {
         if (open && meetingId) {
@@ -92,9 +92,12 @@ export default function CashbackModal({ open, onClose, onSave }) {
                 showSnackbar('Сохранено!', 'success');
                 if (onSave) onSave();
                 onClose();
+            } else {
+                const errorData = await res.json().catch(() => ({}));
+                showSnackbar(errorData.detail || 'Ошибка при сохранении');
             }
         } catch (e) {
-            console.error('Ошибка сохранения', e);
+            showSnackbar('Ошибка сети при сохранении', e);
         }
     };
 

@@ -57,7 +57,10 @@ export default function EditExpense({ open, onClose, onUpdated, expenseId }) {
         const meetingUuid = meeting.id;
         const sessionId = meeting.sessionId;
         if (!meetingUuid) {
-            setError('Не найден UUID встречи');
+            const loadError = async () => {
+                await setError('Не найден UUID встречи');
+            };
+            loadError();
             return;
         }
 
@@ -71,7 +74,10 @@ export default function EditExpense({ open, onClose, onUpdated, expenseId }) {
                     `${API_BASE}/meetings/${meetingUuid}/participants?limit=100&offset=0`,
                     { signal: controller.signal, headers: { 'session-id': sessionId } },
                 );
-                if (!partRes.ok) throw new Error(`Ошибка участников: ${partRes.status}`);
+                if (!partRes.ok) {
+                    const err = await partRes.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Ошибка загрузки участников');
+                }
                 const partData = await partRes.json();
                 setUsersOptions(
                     partData.map((p) => ({ value: p.id, label: p.nickname })),
@@ -79,15 +85,19 @@ export default function EditExpense({ open, onClose, onUpdated, expenseId }) {
                 const catRes = await fetch(`${API_BASE}/cashback-categories`, {
                     signal: controller.signal,
                 });
+                if (!catRes.ok) throw new Error('Ошибка загрузки категорий');
                 if (catRes.ok) {
                     const cats = await catRes.json();
-                    setCashbackOptions(cats.map((c) => ({ id: c.id, label: c.name }))); 
+                    setCashbackOptions(cats.map((c) => ({ id: c.id, label: c.name })));
                 }
                 const recRes = await fetch(
                     `${API_BASE}/meetings/${meetingUuid}/receipts/${expenseId}?limit=100&offset=0`,
                     { signal: controller.signal, headers: { 'session-id': sessionId } },
                 );
-                if (!recRes.ok) throw new Error(`Ошибка чека: ${recRes.status}`);
+                if (!recRes.ok) {
+                    const err = await recRes.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Ошибка загрузки данных чека');
+                }
                 const rec = await recRes.json();
                 setTitle(rec.title || '');
                 setPaidBy(rec.payer_id || '');
@@ -123,12 +133,12 @@ export default function EditExpense({ open, onClose, onUpdated, expenseId }) {
 
         load();
         return () => controller.abort();
-    }, [open, expenseId]);
+    }, [open, expenseId, showSnackbar]);
 
     const togglePayer = (id) =>
         setPayer((prev) => {
             if (prev.includes(id)) {
-                if (prev.length === 1) return prev; // последнего убрать нельзя
+                if (prev.length === 1) return prev;
                 return prev.filter((x) => x !== id);
             }
             return [...prev, id];
@@ -199,14 +209,16 @@ export default function EditExpense({ open, onClose, onUpdated, expenseId }) {
                 },
                 body: JSON.stringify(body),
             });
-            if (!res.ok) {
-                showSnackbar('Не удалось обновить расход');
-                return;
+            if (res.ok) {
+                showSnackbar('Изменения сохранены', 'success');
+                onUpdated?.();
+                onClose();
+            } else {
+                const errorData = await res.json().catch(() => ({}));
+                showSnackbar(errorData.detail || 'Не удалось обновить расход');
             }
-            onUpdated?.();
-            onClose();
         } catch (e) {
-            showSnackbar('Сеть недоступна');
+            showSnackbar('Ошибка сети при сохранении', e);
         }
     };
 
@@ -221,14 +233,16 @@ export default function EditExpense({ open, onClose, onUpdated, expenseId }) {
                 `${API_BASE}/meetings/${meetingUuid}/receipts/${expenseId}`,
                 { method: 'DELETE', headers: { 'session-id': sessionId } },
             );
-            if (!res.ok) {
-                showSnackbar('Не удалось удалить расход');
-                return;
+            if (res.ok) {
+                showSnackbar('Расход удален', 'success');
+                onUpdated?.();
+                onClose();
+            } else {
+                const errorData = await res.json().catch(() => ({}));
+                showSnackbar(errorData.detail || 'Не удалось удалить расход');
             }
-            onUpdated?.();
-            onClose();
         } catch (e) {
-            showSnackbar('Сеть недоступна');
+            showSnackbar('Ошибка сети при удалении', e);
         }
     };
 
@@ -399,8 +413,18 @@ export default function EditExpense({ open, onClose, onUpdated, expenseId }) {
                     }}
                 />
             </Box>
-            <Box sx={{ ...cardSx, mb: 1.25, display: 'flex', alignItems: 'center', gap: 1.25 }}>
-                <Typography sx={{ fontSize: 12.5, color: '#8A7C66', width: 78, flexShrink: 0 }}>
+            <Box
+                sx={{
+                    ...cardSx,
+                    mb: 1.25,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.25,
+                }}
+            >
+                <Typography
+                    sx={{ fontSize: 12.5, color: '#8A7C66', width: 78, flexShrink: 0 }}
+                >
                     Платил
                 </Typography>
                 <select
@@ -420,8 +444,18 @@ export default function EditExpense({ open, onClose, onUpdated, expenseId }) {
                 </select>
                 <span style={{ color: '#B5A78C', flexShrink: 0 }}>▾</span>
             </Box>
-            <Box sx={{ ...cardSx, mb: 1.25, display: 'flex', alignItems: 'center', gap: 1.25 }}>
-                <Typography sx={{ fontSize: 12.5, color: '#8A7C66', width: 78, flexShrink: 0 }}>
+            <Box
+                sx={{
+                    ...cardSx,
+                    mb: 1.25,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.25,
+                }}
+            >
+                <Typography
+                    sx={{ fontSize: 12.5, color: '#8A7C66', width: 78, flexShrink: 0 }}
+                >
                     Категория
                 </Typography>
                 <select

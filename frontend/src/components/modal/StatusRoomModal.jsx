@@ -2,6 +2,7 @@ import { Drawer, Typography, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useState } from 'react';
 import clsx from 'clsx';
+import { useSnackbar } from '../SnackbarProvider';
 
 const STATUSES = [
     {
@@ -38,6 +39,7 @@ export default function StatusRoomModal({
     creatorName,
     canChange = true,
 }) {
+    const showSnackbar = useSnackbar();
     const [chosenStatus, setChosenStatus] = useState(status);
     const [wasOpen, setWasOpen] = useState(open);
     if (open !== wasOpen) {
@@ -46,8 +48,27 @@ export default function StatusRoomModal({
     }
 
     const handleDone = () => {
-        if (canChange && chosenStatus !== status) onChange?.(chosenStatus);
+        if (!canChange) {
+            showSnackbar(
+                `Только создатель (${creatorName || 'админ'}) может менять статус`,
+                'info',
+            );
+            onClose();
+            return;
+        }
+
+        if (chosenStatus !== status) {
+            onChange?.(chosenStatus);
+        }
         onClose();
+    };
+
+    const handleStatusClick = (key) => {
+        if (!canChange) {
+            showSnackbar('У вас недостаточно прав для смены состояния', 'warning');
+            return;
+        }
+        setChosenStatus(key);
     };
 
     return (
@@ -98,7 +119,7 @@ export default function StatusRoomModal({
                                 key={key}
                                 type="button"
                                 disabled={!canChange}
-                                onClick={() => setChosenStatus(key)}
+                                onClick={() => handleStatusClick(key)}
                                 className={clsx(
                                     'w-full text-left select-none p-3.5 rounded-[13px] border border-solid transition-colors',
                                     isChosen

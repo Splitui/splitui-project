@@ -40,7 +40,6 @@ const dayKey = (value) => {
     return date.toLocaleDateString('sv-SE');
 };
 
-/** Группирует чеки по дню покупки: свежий день сверху, внутри дня — по порядку. */
 const groupByDay = (expenses) => {
     const groups = new Map();
 
@@ -100,7 +99,10 @@ export default function ExpensesTab({
                 );
 
                 if (!response.ok) {
-                    throw new Error(`Ошибка загрузки расходов: ${response.status}`);
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorMessage =
+                        errorData.detail || `Ошибка сервера: ${response.status}`;
+                    throw new Error(errorMessage);
                 }
 
                 const data = await response.json();
@@ -108,7 +110,7 @@ export default function ExpensesTab({
             } catch (err) {
                 if (err.name !== 'AbortError') {
                     setError(err.message);
-                    showSnackbar(err.message);
+                    showSnackbar(err.message, 'error');
                 }
             } finally {
                 setLoading(false);

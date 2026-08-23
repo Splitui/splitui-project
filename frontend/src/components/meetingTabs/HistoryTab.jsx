@@ -2,6 +2,7 @@ import { useMemo, useState, useCallback, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { Avatar, Button } from '@mui/material';
 import HistoryIcon from '@mui/icons-material/History';
+import { useSnackbar } from '../SnackbarProvider';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 
@@ -9,6 +10,7 @@ export default function HistoryTab() {
     const [changes, setChanges] = useState([]);
     const [offset, setOffset] = useState(0);
     const [hasMore, setHasMore] = useState(false);
+    const showSnackbar = useSnackbar();
     const LIMIT = 10;
 
     const { meetingId } = useMemo(() => {
@@ -28,12 +30,18 @@ export default function HistoryTab() {
                     setHasMore(data.length === LIMIT);
 
                     setChanges((prev) => (newOffset === 0 ? data : [...prev, ...data]));
+                } else {
+                    const errorData = await res.json().catch(() => ({}));
+                    showSnackbar(
+                        errorData.detail || 'Не удалось загрузить историю событий',
+                    );
                 }
             } catch (e) {
+                showSnackbar('Ошибка сети при загрузке истории');
                 console.error('Ошибка загрузки', e);
             }
         },
-        [meetingId],
+        [meetingId, showSnackbar],
     );
 
     useEffect(() => {

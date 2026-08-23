@@ -63,7 +63,8 @@ export default function AddMeeting({ open, onClose }) {
             });
 
             if (!res.ok) {
-                showSnackbar('Не удалось создать встречу');
+                const errorData = await res.json().catch(() => ({}));
+                showSnackbar(errorData.detail || 'Не удалось создать встречу');
                 return;
             }
 
@@ -86,6 +87,7 @@ export default function AddMeeting({ open, onClose }) {
             );
             onClose();
             navigate(`/meetings/${meetingId}`);
+            showSnackbar('Встреча создана!', 'success');
         } catch (e) {
             console.error(e);
             showSnackbar('Произошла ошибка при создании встречи');
