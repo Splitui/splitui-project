@@ -61,7 +61,6 @@ requires-dist = [
     { name = "reportlab", specifier = ">=5.0.0" },
     { name = "requests", specifier = ">=2.34.2" },
     { name = "sqlalchemy", specifier = ">=2.0.51" },
-    { name = "uvicorn", specifier = ">=0.52.1" },
 ]
 
 [[package]]

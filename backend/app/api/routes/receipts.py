@@ -3,6 +3,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Header
+from pydantic import ValidationError
 from sqlalchemy.engine import Connection
 
 from app.api.dependencies import get_meeting_for_participant
@@ -91,14 +92,25 @@ def read_qr_and_parse(
             detail="Не удалось получить данные чека",
         )
 
-    parsed_receipt = parse_receipt(receipt_info)
+    try:
+        parsed_receipt = parse_receipt(receipt_info)
 
-    return receipts_service.create_receipt_from_qr(
-        connection=connection,
-        meeting_uuid=meeting_uuid,
-        session_id=session_id,
-        parsed_receipt=parsed_receipt,
-    )
+        return receipts_service.create_receipt_from_qr(
+            connection=connection,
+            meeting_uuid=meeting_uuid,
+            session_id=session_id,
+            parsed_receipt=parsed_receipt,
+        )
+    except ValidationError:
+        raise HTTPException(
+            status_code=422,
+            detail="Получены некорректные данные чека",
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=422,
+            detail="Не удалось обработать данные чека",
+        )
 
 
 @router.delete(

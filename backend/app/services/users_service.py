@@ -7,7 +7,7 @@ from sqlalchemy.engine import Connection
 
 from app.db.dependencies import transaction
 from app.repositories import users_repository
-from app.repositories.participants_repository import hash_token
+from app.utils.security import hash_token, hash_password
 
 
 @transaction
@@ -28,7 +28,6 @@ def register(connection: Connection, username: str, password: str):
     user = users_repository.create(connection, username, hash_password(password))
     token = secrets.token_urlsafe(32)
     users_repository.create_session(connection, user["id"], hash_token(token))
-
     user["auth_token"] = token
     return user
 
@@ -42,7 +41,13 @@ def login(connection: Connection, username: str, password: str):
     :return: данные пользователя и токен сессии.
     """
     user = users_repository.get_by_username(connection, username)
-    if user is None or not verify_password(password, user["password_hash"]):
+    if user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Введенный логин не найден"
+        )
+
+    if not verify_password(password, user["password_hash"]):
         raise HTTPException(
             status_code=401,
             detail="Неверный логин или пароль"
@@ -66,15 +71,6 @@ def get_user_id_by_token(connection: Connection, token: str | None):
         user = users_repository.get_by_token(connection, token)
         user_id = user["id"] if user else None
     return user_id
-
-
-def hash_password(password: str):
-    """Хеширует пароль.
-
-    :param password: пароль в открытом виде.
-    :return: хеш пароля.
-    """
-    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(password: str, password_hash: str):

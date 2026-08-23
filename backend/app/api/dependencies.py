@@ -37,6 +37,8 @@ def get_current_user(
     :param connection: соединение с базой данных.
     :return: данные пользователя.
     """
+    if credentials is None:
+        raise HTTPException(status_code=401, detail="Не найден токен")
     user = users_repository.get_by_token(connection, credentials.credentials)
     if user is None:
         raise HTTPException(status_code=401, detail="Невалидный токен")

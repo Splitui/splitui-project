@@ -149,7 +149,7 @@ def link_participant_to_user(
     :return: обновлённые данные участника.
     """
     if credentials is None:
-        raise HTTPException(status_code=401, detail="Невалидный токен")
+        raise HTTPException(status_code=401, detail="Не найден токен")
     return participants_service.link_participant_to_user(
         connection,
         meeting_uuid,

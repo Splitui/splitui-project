@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 def test_meeting_created_change_log(
     app_client,
     get_change_logs,
-):      
+):
 
     start_date = (
         datetime.now(tz=UTC) + timedelta(days=1)
@@ -31,7 +31,7 @@ def test_meeting_created_change_log(
     assert change["meeting_id"] == meeting["id"]
     assert change["participant_id"] == creator["id"]
     assert change["value"] == {
-        "message": "Вова создал встречу «Новая встреча»",
+        "message": "Создана встреча «Новая встреча»",
         "context": {
             "meeting_id": meeting["id"],
             "entity_id": meeting["id"],
@@ -62,7 +62,7 @@ def test_meeting_updated_change_log(
     assert change["meeting_id"] == meeting["id"]
     assert change["participant_id"] is None
     assert change["value"] == {
-        "message": "Встреча «Новое название» изменена",
+        "message": "Изменена встреча «Новое название»",
         "context": {
             "meeting_id": meeting["id"],
             "entity_id": meeting["id"],
@@ -94,7 +94,7 @@ def test_participant_created_change_log(
     assert change["meeting_id"] == meeting["id"]
     assert change["participant_id"] == participant["id"]
     assert change["value"] == {
-        "message": "Петя присоединился к встрече",
+        "message": "Петя: присоединение к встрече",
         "context": {
             "meeting_id": meeting["id"],
             "entity_id": participant["id"],
@@ -133,7 +133,7 @@ def test_participant_updated_change_log(
     assert change["action"] == "participant.updated"
     assert change["participant_id"] == participant["id"]
     assert change["value"]["message"] == (
-        "Вася изменил данные участника"
+        "Вася: данные участника изменены"
     )
     assert change["value"]["context"] == {
         "meeting_id": meeting["id"],
@@ -176,7 +176,7 @@ def test_receipt_created_change_log(
     assert change["meeting_id"] == meeting["id"]
     assert change["participant_id"] == payer["id"]
     assert change["value"] == {
-        "message": f"{payer['nickname']} добавил чек «Ужин»",
+        "message": f"{payer['nickname']}: добавлен чек «Ужин»",
         "context": {
             "meeting_id": meeting["id"],
             "entity_id": receipt["id"],
@@ -227,10 +227,7 @@ def test_receipt_updated_change_log(
     assert change["action"] == "receipt.updated"
     assert change["participant_id"] == payer["id"]
     assert change["value"] == {
-        "message": (
-            f"{payer['nickname']} изменил чек "
-            "«Обновлённый чек»"
-        ),
+        "message": f"{payer['nickname']}: изменён чек «Обновлённый чек»",
         "context": {
             "meeting_id": meeting["id"],
             "entity_id": receipt["id"],
@@ -267,10 +264,7 @@ def test_receipt_deleted_change_log(
     assert change["action"] == "receipt.deleted"
     assert change["participant_id"] == payer["id"]
     assert change["value"] == {
-        "message": (
-            f"{payer['nickname']} удалил чек "
-            "«Удаляемый чек»"
-        ),
+        "message": f"{payer['nickname']}: удалён чек «Удаляемый чек»",
         "context": {
             "meeting_id": meeting["id"],
             "entity_id": receipt["id"],
@@ -441,7 +435,7 @@ def test_bank_data_updated_change_log(
     assert change["meeting_id"] == meeting["id"]
     assert change["participant_id"] == participant["id"]
     assert change["value"] == {
-        "message": "Вова изменил банковские реквизиты",
+        "message": "Вова: банковские реквизиты изменены",
         "context": {
             "participant_id": participant["id"],
         },

@@ -1,10 +1,11 @@
 """Модуль с запросами к базе данных для работы с участниками встреч."""
 
-import hashlib
 import secrets
 
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
+
+from app.utils.security import hash_token
 
 
 def create(
@@ -243,12 +244,3 @@ def generate_session_id(connection: Connection, participant_id: int):
         }
     )
     return session_id
-
-
-def hash_token(token: str) -> str:
-    """Возвращает SHA-256 хеш токена в hex-виде.
-
-    :param token: исходный токен.
-    :return: hex-представление хеша.
-    """
-    return hashlib.sha256(token.encode("utf-8")).hexdigest()

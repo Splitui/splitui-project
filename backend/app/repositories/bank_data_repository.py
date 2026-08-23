@@ -114,7 +114,7 @@ def get_banks(connection: Connection):
     """
     result = connection.execute(
         text("""
-             SELECT *
+             SELECT id, name
              FROM banks
              ORDER BY id
              """)
