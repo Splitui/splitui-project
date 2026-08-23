@@ -34,7 +34,6 @@ const nativeSelectStyle = {
     appearance: 'none',
 };
 
-
 export default function AddExpense({ open, onClose, onCreated }) {
     const nameRef = useRef(null);
     const amountRef = useRef(null);
@@ -98,9 +97,7 @@ export default function AddExpense({ open, onClose, onCreated }) {
                 });
                 if (catRes.ok) {
                     const cats = await catRes.json();
-                    setCashbackOptions(
-                        cats.map((c) => ({ id: c.id, label: c.name })), 
-                    );
+                    setCashbackOptions(cats.map((c) => ({ id: c.id, label: c.name })));
                 }
             } catch (err) {
                 if (err.name !== 'AbortError') {
@@ -115,7 +112,7 @@ export default function AddExpense({ open, onClose, onCreated }) {
         fetchParticipants();
 
         return () => controller.abort();
-    }, [open]);
+    }, [open, showSnackbar]);
     const togglePayer = (id) =>
         setPayer((prev) => {
             if (prev.includes(id)) {
@@ -136,17 +133,14 @@ export default function AddExpense({ open, onClose, onCreated }) {
         const meetingUuid = meeting.id;
         const sessionId = meeting.sessionId;
         try {
-            const res = await fetch(
-                `${API_BASE}/meetings/${meetingUuid}/receipts/qr`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'session-id': sessionId,
-                    },
-                    body: JSON.stringify({ qr_raw: qrRaw }),
+            const res = await fetch(`${API_BASE}/meetings/${meetingUuid}/receipts/qr`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'session-id': sessionId,
                 },
-            );
+                body: JSON.stringify({ qr_raw: qrRaw }),
+            });
             if (!res.ok) {
                 showSnackbar('Не удалось распознать чек');
                 return;
@@ -155,7 +149,7 @@ export default function AddExpense({ open, onClose, onCreated }) {
             onClose();
             showSnackbar('Чек добавлен', 'success');
         } catch (e) {
-            showSnackbar('Сеть недоступна');
+            showSnackbar('Сеть недоступна', e);
         }
     };
 
@@ -444,8 +438,18 @@ export default function AddExpense({ open, onClose, onCreated }) {
                 />
             </Box>
 
-            <Box sx={{ ...cardSx, mb: 1.25, display: 'flex', alignItems: 'center', gap: 1.25 }}>
-                <Typography sx={{ fontSize: 12.5, color: '#8A7C66', width: 78, flexShrink: 0 }}>
+            <Box
+                sx={{
+                    ...cardSx,
+                    mb: 1.25,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.25,
+                }}
+            >
+                <Typography
+                    sx={{ fontSize: 12.5, color: '#8A7C66', width: 78, flexShrink: 0 }}
+                >
                     Платил
                 </Typography>
                 <select
@@ -466,8 +470,18 @@ export default function AddExpense({ open, onClose, onCreated }) {
                 <span style={{ color: '#B5A78C', flexShrink: 0 }}>▾</span>
             </Box>
 
-            <Box sx={{ ...cardSx, mb: 1.25, display: 'flex', alignItems: 'center', gap: 1.25 }}>
-                <Typography sx={{ fontSize: 12.5, color: '#8A7C66', width: 78, flexShrink: 0 }}>
+            <Box
+                sx={{
+                    ...cardSx,
+                    mb: 1.25,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.25,
+                }}
+            >
+                <Typography
+                    sx={{ fontSize: 12.5, color: '#8A7C66', width: 78, flexShrink: 0 }}
+                >
                     Категория
                 </Typography>
                 <select

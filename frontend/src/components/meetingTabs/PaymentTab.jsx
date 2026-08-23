@@ -64,22 +64,11 @@ export default function PaymentTab({ onUpdate, participants, refresh }) {
     const fetchDebts = useCallback(async () => {
         if (!meetingId) return;
         try {
-            const res = await fetch(`${API_URL}/meetings/${meetingId}/debts`, {
-                headers: { 'session-id': sessionId },
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                if (data.length === 0) {
-                    await handleCalculate();
-                } else {
-                    processDebts(data);
-                }
-            }
+            await handleCalculate();
         } catch (e) {
             console.error('Ошибка загрузки долгов:', e);
         }
-    }, [meetingId, handleCalculate, sessionId, processDebts]);
+    }, [meetingId, handleCalculate]);
 
     useEffect(() => {
         const loadData = async () => {

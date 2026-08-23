@@ -38,7 +38,18 @@ export default function AddMeeting({ open, onClose }) {
         const rawDate = dateRef.current.value.trim();
         const userName = userRef.current.value.trim();
 
+        if (!meetingName || !rawDate || !userName) {
+            showSnackbar('Пожалуйста, заполните все поля');
+            return;
+        }
+
         try {
+            const dateObj = new Date(rawDate);
+            if (isNaN(dateObj.getTime())) {
+                showSnackbar('Указана некорректная дата');
+                return;
+            }
+
             const res = await fetch(`${API_URL}/meetings`, {
                 method: 'POST',
                 headers: {
@@ -46,18 +57,21 @@ export default function AddMeeting({ open, onClose }) {
                 },
                 body: JSON.stringify({
                     title: meetingName,
-                    start_date: new Date(rawDate).toISOString(),
+                    start_date: dateObj.toISOString(),
                     creator_nickname: userName,
                 }),
             });
+
             if (!res.ok) {
                 showSnackbar('Не удалось создать встречу');
                 return;
             }
+
             const data = await res.json();
             const meetingId = data.uuid;
             const creatorId = data.meeting_creator?.id;
             const sessionId = data.meeting_creator?.session_id;
+
             Cookies.set(
                 'meeting',
                 JSON.stringify({
@@ -73,7 +87,8 @@ export default function AddMeeting({ open, onClose }) {
             onClose();
             navigate(`/meetings/${meetingId}`);
         } catch (e) {
-            showSnackbar('Сеть недоступна', e);
+            console.error(e);
+            showSnackbar('Произошла ошибка при создании встречи');
         }
     };
 
@@ -99,7 +114,6 @@ export default function AddMeeting({ open, onClose }) {
                 },
             }}
         >
-            {/* полоска-ручка сверху */}
             <Box
                 sx={{
                     width: 38,
@@ -158,8 +172,8 @@ export default function AddMeeting({ open, onClose }) {
             >
                 <span style={{ fontSize: 15 }}>🔗</span>
                 <Typography sx={{ fontSize: 12.5, color: '#5C5142', lineHeight: 1.45 }}>
-                    После создания вы получите ссылку и QR-код — отправьте их друзьям,
-                    аккаунты им не нужны.
+                    После создания вы получите ссылку — отправьте её друзьям, аккаунты им
+                    не нужны.
                 </Typography>
             </Box>
             <Button
