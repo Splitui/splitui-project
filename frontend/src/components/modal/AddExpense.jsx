@@ -3,7 +3,6 @@ import CloseIcon from '@mui/icons-material/Close';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import { useEffect, useRef, useState, forwardRef } from 'react';
 import Cookies from 'js-cookie';
-import { CASHBACK_OPTIONS } from '../Options';
 import Receipt from './Receipt';
 import { useSnackbar } from '../SnackbarProvider';
 import QrScanner from './QrScanner';
@@ -35,6 +34,7 @@ const nativeSelectStyle = {
     appearance: 'none',
 };
 
+
 export default function AddExpense({ open, onClose, onCreated }) {
     const nameRef = useRef(null);
     const amountRef = useRef(null);
@@ -51,6 +51,7 @@ export default function AddExpense({ open, onClose, onCreated }) {
     const [receiptOpen, setReceiptOpen] = useState(false);
     const [receiptItems, setReceiptItems] = useState([]);
     const [scannerOpen, setScannerOpen] = useState(false);
+    const [cashbackOptions, setCashbackOptions] = useState([]);
 
     useEffect(() => {
         if (!open) return;
@@ -92,6 +93,15 @@ export default function AddExpense({ open, onClose, onCreated }) {
                         label: participant.nickname,
                     })),
                 );
+                const catRes = await fetch(`${API_BASE}/cashback-categories`, {
+                    signal: controller.signal,
+                });
+                if (catRes.ok) {
+                    const cats = await catRes.json();
+                    setCashbackOptions(
+                        cats.map((c) => ({ id: c.id, label: c.name })), 
+                    );
+                }
             } catch (err) {
                 if (err.name !== 'AbortError') {
                     setUsersError(err.message);
@@ -105,7 +115,7 @@ export default function AddExpense({ open, onClose, onCreated }) {
         fetchParticipants();
 
         return () => controller.abort();
-    }, [open, showSnackbar]);
+    }, [open]);
     const togglePayer = (id) =>
         setPayer((prev) => {
             if (prev.includes(id)) {
@@ -123,33 +133,29 @@ export default function AddExpense({ open, onClose, onCreated }) {
     const handleQrScanned = async (qrRaw) => {
         setScannerOpen(false);
         const meeting = JSON.parse(Cookies.get('meeting') || '{}');
+        const meetingUuid = meeting.id;
+        const sessionId = meeting.sessionId;
         try {
-            const res = await fetch(`${API_BASE}/qr`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'session-id': meeting.sessionId,
+            const res = await fetch(
+                `${API_BASE}/meetings/${meetingUuid}/receipts/qr`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'session-id': sessionId,
+                    },
+                    body: JSON.stringify({ qr_raw: qrRaw }),
                 },
-                body: JSON.stringify({ qr_raw: qrRaw }),
-            });
+            );
             if (!res.ok) {
                 showSnackbar('Не удалось распознать чек');
                 return;
             }
-            const data = await res.json();
-            setSingleItem(false);
-            setReceiptItems(
-                (data.items || []).map((it, idx) => ({
-                    id: it.id ?? Date.now() + idx,
-                    title: it.title,
-                    unitPrice: Number(it.unit_price) || 0,
-                    quantity: it.quantity,
-                    participantIds: [],
-                })),
-            );
-            setReceiptOpen(true);
+            onCreated?.();
+            onClose();
+            showSnackbar('Чек добавлен', 'success');
         } catch (e) {
-            showSnackbar('Сеть недоступна', e);
+            showSnackbar('Сеть недоступна');
         }
     };
 
@@ -438,18 +444,8 @@ export default function AddExpense({ open, onClose, onCreated }) {
                 />
             </Box>
 
-            <Box
-                sx={{
-                    ...cardSx,
-                    mb: 1.25,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.25,
-                }}
-            >
-                <Typography
-                    sx={{ fontSize: 12.5, color: '#8A7C66', width: 78, flexShrink: 0 }}
-                >
+            <Box sx={{ ...cardSx, mb: 1.25, display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                <Typography sx={{ fontSize: 12.5, color: '#8A7C66', width: 78, flexShrink: 0 }}>
                     Платил
                 </Typography>
                 <select
@@ -470,18 +466,8 @@ export default function AddExpense({ open, onClose, onCreated }) {
                 <span style={{ color: '#B5A78C', flexShrink: 0 }}>▾</span>
             </Box>
 
-            <Box
-                sx={{
-                    ...cardSx,
-                    mb: 1.25,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.25,
-                }}
-            >
-                <Typography
-                    sx={{ fontSize: 12.5, color: '#8A7C66', width: 78, flexShrink: 0 }}
-                >
+            <Box sx={{ ...cardSx, mb: 1.25, display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                <Typography sx={{ fontSize: 12.5, color: '#8A7C66', width: 78, flexShrink: 0 }}>
                     Категория
                 </Typography>
                 <select
@@ -492,7 +478,7 @@ export default function AddExpense({ open, onClose, onCreated }) {
                     <option value="" disabled>
                         Выберите
                     </option>
-                    {CASHBACK_OPTIONS.map((o) => (
+                    {cashbackOptions.map((o) => (
                         <option key={o.id} value={o.id}>
                             {o.label}
                         </option>

@@ -16,6 +16,7 @@ import AddExpense from '../components/modal/AddExpense';
 import BestCashback from '../components/modal/BestCashback';
 import EditExpense from '../components/modal/EditExpense';
 import { useSnackbar } from '../components/SnackbarProvider';
+import StatusRoomModal from '../components/modal/StatusRoomModal';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 
@@ -26,6 +27,11 @@ const getParticipantWord = (count) => {
     if (num10 === 1) return 'участник';
     if (num10 >= 2 && num10 <= 4) return 'участника';
     return 'участников';
+};
+const STATUS_META = {
+    active: { label: 'Активна', bg: '#DCEBD8', color: '#2F6B2A' },
+    settle: { label: 'Оплата', bg: '#F6E7C4', color: '#8A5B12' },
+    done: { label: 'Завершена', bg: '#E5DFD2', color: '#6B6153' },
 };
 
 const MeetingHeader = ({
@@ -40,56 +46,66 @@ const MeetingHeader = ({
     isCreator,
     participantsCount,
     onMembersClick,
-}) => (
-    <header className="flex items-center gap-4 mb-6 shrink-0">
-        <button
-            onClick={() => navigate('/')}
-            className="w-[42px] h-[42px] rounded-[14px] bg-[#EBE1CB] flex items-center justify-center text-2xl text-[#2E2519] shrink-0 transition-transform"
-        >
-            <LastPageIcon />
-        </button>
+    onStatusClick,
+    status = 'active',
+}) => {
+    const meta = STATUS_META[status] ?? STATUS_META.active;
 
-        <div className="flex-1 min-w-0 flex flex-col justify-center">
-            <div className="flex items-center gap-1.5">
-                <h1 className="text-[22px] sm:text-[25px] font-bold text-[#2E2519] truncate leading-none">
-                    {name}
-                </h1>
-                {isCreator && (
-                    <IconButton
-                        size="small"
-                        onClick={onEditClick}
-                        sx={{ color: '#8A7C66', p: 0 }}
+    return (
+        <header className="flex items-center gap-4 mb-6 shrink-0">
+            <button
+                onClick={() => navigate('/')}
+                className="w-[42px] h-[42px] rounded-[14px] bg-[#EBE1CB] flex items-center justify-center text-2xl text-[#2E2519] shrink-0 transition-transform"
+            >
+                <LastPageIcon />
+            </button>
+
+            <div className="flex-1 min-w-0 flex flex-col justify-center">
+                <div className="flex items-center gap-1.5">
+                    <h1 className="text-[22px] sm:text-[25px] font-bold text-[#2E2519] truncate leading-none">
+                        {name}
+                    </h1>
+                    {isCreator && (
+                        <IconButton
+                            size="small"
+                            onClick={onEditClick}
+                            sx={{ color: '#8A7C66', p: 0 }}
+                        >
+                            <EditIcon sx={{ fontSize: '18px' }} />
+                        </IconButton>
+                    )}
+                </div>
+
+                <div className="flex items-center gap-2 mt-2">
+                    <button
+                        onClick={onStatusClick}
+                        className="px-2 py-[3px] rounded-md text-[11px] font-bold tracking-wide uppercase leading-none"
+                        style={{ backgroundColor: meta.bg, color: meta.color }}
                     >
-                        <EditIcon sx={{ fontSize: '18px' }} />
-                    </IconButton>
-                )}
+                        {meta.label} ▾
+                    </button>
+
+                    <button
+                        onClick={onMembersClick}
+                        className="text-[13px] text-[#8A7C66] hover:text-[#463628] transition-colors truncate font-medium leading-none mt-[1px]"
+                    >
+                        {date ? date.split('-').reverse().join('.') : ''} ·{' '}
+                        {participantsCount} {getParticipantWord(participantsCount)}
+                    </button>
+                </div>
             </div>
 
-            <div className="flex items-center gap-2 mt-2">
-                <span className="bg-[#DFF1E4] text-[#32935A] px-2 py-[3px] rounded-md text-[11px] font-bold tracking-wide uppercase leading-none">
-                    Активна ▾
-                </span>
-
-                <button
-                    onClick={onMembersClick}
-                    className="text-[13px] text-[#8A7C66] hover:text-[#463628] transition-colors truncate font-medium leading-none mt-[1px]"
-                >
-                    {date ? date.split('-').reverse().join('.') : ''} ·{' '}
-                    {participantsCount} {getParticipantWord(participantsCount)}
-                </button>
+            <div className="shrink-0 flex items-center justify-center">
+                <UserAvatar
+                    user={user}
+                    meetingId={meetingId}
+                    participantId={participantId}
+                    onSave={onSave}
+                />
             </div>
-        </div>
-
-        <div className="shrink-0 flex items-center justify-center">
-            <UserAvatar
-                user={user}
-                meetingId={meetingId}
-                participantId={participantId}
-                onSave={onSave}
-            />
-        </div>
-    </header>
-);
+        </header>
+    );
+};
 
 const BalanceCard = ({ data }) => {
     const spend = data.participant_spend || 0;
@@ -374,13 +390,14 @@ export default function Meeting() {
     const [openAddExpense, setOpenAddExpense] = useState(false);
     const [refresh, setRefresh] = useState(0);
     const [editExpenseId, setEditExpenseId] = useState(null);
+    const [openStatus, setOpenStatus] = useState(false);
     const navigate = useNavigate();
     const meeting = JSON.parse(Cookies.get('meeting') || '{}');
     const meetingId = meeting.id;
     const participantId = meeting.participantId;
     const [isFinished, setIsFinished] = useState(false);
     const showSnackbar = useSnackbar();
-    const roomStatus = isFinished ? 'finished' : meeting.status || 'active';
+    const roomStatus = isFinished ? 'done' : meeting.status || 'active';
     const isLocked = roomStatus !== 'active';
 
     const [currentMeetingName, setCurrentMeetingName] = useState(
@@ -547,6 +564,36 @@ export default function Meeting() {
             alert('Ошибка сети');
         }
     };
+    const handleStatusChange = async (newStatus) => {
+    const cookie = JSON.parse(Cookies.get('meeting') || '{}');
+    const endpointByStatus = {
+        active: 'edit',
+        settle: 'calculate',
+        done: 'finish',
+    };
+    const action = endpointByStatus[newStatus];
+    if (!action) return;
+
+    try {
+        const res = await fetch(`${API_URL}/meetings/${meetingId}/${action}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'session-id': cookie.sessionId,
+            },
+        });
+        if (!res.ok) {
+            showSnackbar('Не удалось изменить статус');
+            return;
+        }
+        Cookies.set('meeting', JSON.stringify({ ...cookie, status: newStatus }));
+        if (newStatus === 'done') setIsFinished(true);
+        setRefresh((n) => n + 1);
+        showSnackbar('Статус обновлён', 'success');
+    } catch (e) {
+        showSnackbar('Сеть недоступна');
+    }
+};
 
     const handleBottomButtonClick = () => {
         if (value === 'expenses') {
@@ -570,6 +617,8 @@ export default function Meeting() {
                     onEditClick={() => setOpenEditMeeting(true)}
                     onSave={(data) => handleUpdateParticipant(data, participantId)}
                     onMembersClick={() => setOpenMembers(true)}
+                    onStatusClick={() => setOpenStatus(true)}
+                    status={roomStatus}
                 />
 
                 <BalanceCard data={balance} />
@@ -581,6 +630,8 @@ export default function Meeting() {
                         <ExpensesTab
                             refresh={refresh}
                             onExpenseClick={setEditExpenseId}
+                            participants={participants} 
+                            participantId={participantId} 
                         />
                     )}
                     {value === 'payment' && (
@@ -669,6 +720,14 @@ export default function Meeting() {
                     onSave={(data) =>
                         handleUpdateParticipant(data, data.id || participantId)
                     }
+                />
+                <StatusRoomModal
+                    open={openStatus}
+                    onClose={() => setOpenStatus(false)}
+                    status={roomStatus}
+                    creatorName={currentUser?.nickname}
+                    canChange={meeting.isCreator}
+                    onChange={handleStatusChange} 
                 />
                 <AddExpense
                     open={openAddExpense}
