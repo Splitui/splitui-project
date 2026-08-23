@@ -2,12 +2,10 @@ import { Dialog, IconButton, Button, Typography, Box } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useRef } from 'react';
 import Cookies from 'js-cookie';
-import { useSnackbar } from '../SnackbarProvider';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 
 export default function InviteMeeting({ open, onClose, meetingId, onJoined }) {
-    const showSnackbar = useSnackbar();
     const nameRef = useRef(null);
 
     const inputStyle = {
@@ -29,55 +27,25 @@ export default function InviteMeeting({ open, onClose, meetingId, onJoined }) {
 
     const handleJoin = async () => {
         const name = nameRef.current.value.trim();
-        if (!name) {
-            showSnackbar('Пожалуйста, введите имя');
-            return;
-        }
+        if (!name) return;
 
         try {
-            const headers = {
-                'Content-type': 'application/json',
-                'session-id': cookie.sessionId || '',
-            };
-
-            const participantsRes = await fetch(
-                `${API_URL}/meetings/${meetingId}/participants?limit=100&offset=0`,
-                { headers },
-            );
-
-            if (participantsRes.ok) {
-                const participants = await participantsRes.json();
-                const alreadyExists = participants.some(
-                    (p) => p.nickname.toLowerCase() === name.toLowerCase(),
-                );
-
-                if (alreadyExists) {
-                    showSnackbar('Участник с таким именем уже есть в комнате.', 'error');
-                    return;
-                }
-            }
-
-            const meetingRes = await fetch(`${API_URL}/meetings/${meetingId}`, {
-                headers,
-            });
-            if (!meetingRes.ok) {
-                showSnackbar('Встреча не найдена');
-                return;
-            }
+            const meetingRes = await fetch(`${API_URL}/meetings/${meetingId}`);
             const meetingData = await meetingRes.json();
 
             const res = await fetch(`${API_URL}/meetings/${meetingId}/participants`, {
                 method: `POST`,
-                headers: headers,
+                headers: {
+                    'Content-type': 'application/json',
+                    'session-id': cookie.sessionId || '',
+                },
                 body: JSON.stringify({ nickname: name }),
             });
-
             if (res.ok) {
                 const userData = await res.json();
                 const meetingDate = meetingData.start_date
                     ? meetingData.start_date.substring(0, 10)
                     : '';
-
                 Cookies.set(
                     'meeting',
                     JSON.stringify({
@@ -90,15 +58,9 @@ export default function InviteMeeting({ open, onClose, meetingId, onJoined }) {
                         sessionId: userData.session_id,
                     }),
                 );
-
-                showSnackbar(`Добро пожаловать, ${name}!`, 'success');
                 onJoined(meetingId);
-            } else {
-                const errorData = await res.json().catch(() => ({}));
-                showSnackbar(errorData.detail || 'Не удалось войти в комнату');
             }
         } catch (e) {
-            showSnackbar('Ошибка сети. Проверьте подключение.');
             console.error('Не получилось войти', e);
         }
     };
