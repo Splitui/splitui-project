@@ -67,13 +67,19 @@ export default function PaymentTab({ onUpdate, participants, refresh }) {
             const res = await fetch(`${API_URL}/meetings/${meetingId}/debts`, {
                 headers: { 'session-id': sessionId },
             });
+
             if (res.ok) {
-                await handleCalculate();
+                const data = await res.json();
+                if (data.length === 0) {
+                    await handleCalculate();
+                } else {
+                    processDebts(data);
+                }
             }
         } catch (e) {
-            console.error(e);
+            console.error('Ошибка загрузки долгов:', e);
         }
-    }, [meetingId, handleCalculate, sessionId]);
+    }, [meetingId, handleCalculate, sessionId, processDebts]);
 
     useEffect(() => {
         const loadData = async () => {
@@ -88,20 +94,27 @@ export default function PaymentTab({ onUpdate, participants, refresh }) {
             const res = await fetch(
                 `${API_URL}/meetings/${meetingId}/debts/${id}/confirm`,
                 {
-                    method: 'PATCH',
-                    headers: { 'session-id': sessionId },
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'session-id': sessionId,
+                    },
+                    body: JSON.stringify({}),
                 },
             );
-            if (res.ok || res.status === 400) {
+            if (res.ok) {
                 showSnackbar('Статус обновлен!', 'success');
                 await fetchDebts();
                 if (onUpdate) onUpdate();
+            } else if (res.status === 400) {
+                showSnackbar('Ошибка: действие невозможно');
             } else {
                 const errorData = await res.json();
                 showSnackbar(errorData.detail || 'Не удалось обновить статус');
             }
         } catch (e) {
-            showSnackbar('Ошибка сети', e);
+            showSnackbar('Ошибка сети');
+            console.error(e);
         } finally {
             setSelectedTransaction(null);
         }
@@ -114,7 +127,7 @@ export default function PaymentTab({ onUpdate, participants, refresh }) {
         }
         try {
             const res = await fetch(
-                `${API_URL}/meetings/${meetingId}/debts/${row.id}/pay`,
+                `${API_URL}/meetings/${meetingId}/debts/${row.id}/payment`,
                 {
                     headers: { 'session-id': sessionId },
                 },
@@ -222,7 +235,7 @@ export default function PaymentTab({ onUpdate, participants, refresh }) {
                                 <Button
                                     fullWidth
                                     onClick={() => handleInitiatePayment(row)}
-                                    className="!bg-[#2E2519] !text-white !font-bold !rounded-xl !py-3 !normal-case !shadow-none"
+                                    className="!bg-[#2E2519] !text-white !font-bold !rounded-xl !py-3"
                                 >
                                     {row.action === 'оплата'
                                         ? 'Перевести'
@@ -232,7 +245,7 @@ export default function PaymentTab({ onUpdate, participants, refresh }) {
                                 {row.action === 'оплата' && (
                                     <Button
                                         onClick={() => handleGetRequisites(row)}
-                                        className="!bg-[#E8DFC7] !text-[#2E2519] !font-bold !rounded-xl !px-5 !normal-case !shadow-none"
+                                        className="!bg-[#E8DFC7] !text-[#2E2519] !font-bold !rounded-xl !px-5"
                                     >
                                         Реквизиты
                                     </Button>

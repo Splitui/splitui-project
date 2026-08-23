@@ -565,35 +565,35 @@ export default function Meeting() {
         }
     };
     const handleStatusChange = async (newStatus) => {
-    const cookie = JSON.parse(Cookies.get('meeting') || '{}');
-    const endpointByStatus = {
-        active: 'edit',
-        settle: 'calculate',
-        done: 'finish',
-    };
-    const action = endpointByStatus[newStatus];
-    if (!action) return;
+        const cookie = JSON.parse(Cookies.get('meeting') || '{}');
+        const endpointByStatus = {
+            active: 'edit',
+            settle: 'calculate',
+            done: 'finish',
+        };
+        const action = endpointByStatus[newStatus];
+        if (!action) return;
 
-    try {
-        const res = await fetch(`${API_URL}/meetings/${meetingId}/${action}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'session-id': cookie.sessionId,
-            },
-        });
-        if (!res.ok) {
-            showSnackbar('Не удалось изменить статус');
-            return;
+        try {
+            const res = await fetch(`${API_URL}/meetings/${meetingId}/${action}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'session-id': cookie.sessionId,
+                },
+            });
+            if (!res.ok) {
+                showSnackbar('Не удалось изменить статус');
+                return;
+            }
+            Cookies.set('meeting', JSON.stringify({ ...cookie, status: newStatus }));
+            if (newStatus === 'done') setIsFinished(true);
+            setRefresh((n) => n + 1);
+            showSnackbar('Статус обновлён', 'success');
+        } catch (e) {
+            showSnackbar('Сеть недоступна', e);
         }
-        Cookies.set('meeting', JSON.stringify({ ...cookie, status: newStatus }));
-        if (newStatus === 'done') setIsFinished(true);
-        setRefresh((n) => n + 1);
-        showSnackbar('Статус обновлён', 'success');
-    } catch (e) {
-        showSnackbar('Сеть недоступна');
-    }
-};
+    };
 
     const handleBottomButtonClick = () => {
         if (value === 'expenses') {
@@ -630,8 +630,8 @@ export default function Meeting() {
                         <ExpensesTab
                             refresh={refresh}
                             onExpenseClick={setEditExpenseId}
-                            participants={participants} 
-                            participantId={participantId} 
+                            participants={participants}
+                            participantId={participantId}
                         />
                     )}
                     {value === 'payment' && (
@@ -683,8 +683,8 @@ export default function Meeting() {
                             disabled={isLocked && value === 'expenses'}
                             sx={{
                                 backgroundColor: isLocked
-                                    ? '#BDBDBD !important'
-                                    : '#463628',
+                                    ? '#F8F4EC !important'
+                                    : '#32281E',
                                 color: isLocked ? '#757575 !important' : '#EAE0CD',
                                 fontWeight: 'bold',
                                 borderRadius: '12px',
@@ -727,7 +727,7 @@ export default function Meeting() {
                     status={roomStatus}
                     creatorName={currentUser?.nickname}
                     canChange={meeting.isCreator}
-                    onChange={handleStatusChange} 
+                    onChange={handleStatusChange}
                 />
                 <AddExpense
                     open={openAddExpense}
