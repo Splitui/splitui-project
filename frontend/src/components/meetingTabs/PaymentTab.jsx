@@ -8,11 +8,13 @@ import { useSnackbar } from '../SnackbarProvider';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 
-export default function PaymentTab({ onUpdate, participants, refresh }) {
+export default function PaymentTab({ onUpdate, participants, refresh, roomStatus }) {
     const [payments, setPayments] = useState([]);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [viewingUser, setViewingUser] = useState(null);
     const showSnackbar = useSnackbar();
+
+    const isLocked = roomStatus === 'done';
 
     const { meetingId, sessionId, myParticipantId } = useMemo(() => {
         const cookie = JSON.parse(Cookies.get('meeting') || '{}');
@@ -198,9 +200,17 @@ export default function PaymentTab({ onUpdate, participants, refresh }) {
                 </Typography>
 
                 <Button
+                    disabled={isLocked}
                     onClick={() => fetchDebts(true)}
                     className="!text-[11px] !font-bold !text-[#32281E] !bg-[#E8DFC7] !rounded-lg !px-2 !min-w-0"
                     size="small"
+                    sx={{
+                        '&.Mui-disabled': {
+                            backgroundColor: '#F0EADF',
+                            color: '#BDBDBD',
+                            opacity: 0.6,
+                        },
+                    }}
                 >
                     ПЕРЕСЧИТАТЬ
                 </Button>
