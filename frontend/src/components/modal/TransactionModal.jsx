@@ -5,6 +5,8 @@ export default function TransactionModal({ open, onClose, transaction, onConfirm
 
     const isPayment = transaction.action === 'оплата';
 
+    const isLink = isPayment && !!transaction.bank_deeplink;
+
     return (
         <Dialog
             fullWidth
@@ -13,57 +15,39 @@ export default function TransactionModal({ open, onClose, transaction, onConfirm
             onClose={onClose}
             slotProps={{
                 paper: {
-                    className:
-                        '!bg-[#F8F4EC] !rounded-[24px] !p-6 sm:!p-8 !m-4 !max-w-[420px]',
+                    className: '!bg-[#F7F1E3] !rounded-[32px] !p-6 !m-4 !max-w-[340px]',
                 },
             }}
         >
-            <Typography className="!font-bold !text-[#463628] !text-[1.05rem] sm:!text-[1.15rem] !mb-8 !leading-snug !text-center">
-                Уверены, что хотите {isPayment ? 'перевести' : 'уведомить'} пользовател
-                {isPayment ? 'ю' : 'я'} {transaction.name} {isPayment ? '' : 'об оплате'}{' '}
-                {transaction.amount} рублей?
+            <Typography className="!font-bold !text-[#32281E] !text-xl !mb-2 !text-left">
+                {isPayment ? `Перевести ${transaction.name}?` : 'Подтвердить получение?'}
             </Typography>
 
-            <div className="flex flex-col gap-3">
-                {isPayment ? (
-                    <div className="flex gap-2">
-                        <Button
-                            fullWidth
-                            onClick={onClose}
-                            className="!bg-[#DAB672] !text-[#463628] !font-bold !rounded-xl !py-3 !text-sm sm:!text-base !shadow-none hover:!bg-[#c7a35f]"
-                        >
-                            Оплатить
-                        </Button>
-                        <Button
-                            fullWidth
-                            onClick={onClose}
-                            variant="outlined"
-                            className="!border-[1px] !border-[#463628] !text-[#463628] !font-bold !rounded-xl !py-3 !text-sm sm:!text-base hover:!bg-[#463628]/5"
-                        >
-                            ОТМЕНА
-                        </Button>
-                    </div>
-                ) : (
-                    <>
-                        <div className="flex gap-2">
-                            <Button
-                                fullWidth
-                                onClick={onConfirm}
-                                className="!bg-[#DAB672] !text-[#463628] !font-bold !rounded-xl !py-3 !text-sm sm:!text-base !shadow-none hover:!bg-[#c7a35f]"
-                            >
-                                ПОЛУЧИЛ
-                            </Button>
-                            <Button
-                                fullWidth
-                                onClick={onClose}
-                                variant="outlined"
-                                className="!border-[1px] !border-[#463628] !text-[#463628] !font-bold !rounded-xl !py-3 !text-sm sm:!text-base hover:!bg-[#463628]/5"
-                            >
-                                ОТМЕНА
-                            </Button>
-                        </div>
-                    </>
-                )}
+            <Typography className="!text-[#463628] !opacity-70 !text-sm !mb-8">
+                {isPayment
+                    ? `Спишется ${transaction.amount.toLocaleString()} ₽. Вы уверены, что хотите оплатить пользователю ${transaction.name}.`
+                    : `Вы подтверждаете, что получили ${transaction.amount.toLocaleString()} ₽ от ${transaction.name}.`}
+            </Typography>
+
+            <div className="flex gap-3">
+                <Button
+                    fullWidth
+                    onClick={!isLink ? onConfirm : onClose}
+                    component={isLink ? 'a' : 'button'}
+                    href={isLink ? transaction.bank_deeplink : undefined}
+                    target={isLink ? '_blank' : undefined}
+
+                    className="!bg-[#32281E] !text-[#F8F4EC] !font-bold !rounded-2xl !py-4 text-center"
+                >
+                    {isPayment ? `Перевести` : 'Подтвердить получение'}
+                </Button>
+                <Button
+                    fullWidth
+                    onClick={onClose}
+                    className="!bg-[#FAF7F2] !text-[#463628] !font-bold !rounded-2xl !py-3"
+                >
+                    Отмена
+                </Button>
             </div>
         </Dialog>
     );

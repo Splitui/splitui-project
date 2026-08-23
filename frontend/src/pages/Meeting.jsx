@@ -10,11 +10,13 @@ import LastPageIcon from '@mui/icons-material/LastPage';
 import EditMeeting from '../components/modal/EditMeeting';
 import ExpensesTab from '../components/meetingTabs/ExpensesTab';
 import PaymentTab from '../components/meetingTabs/PaymentTab';
+import HistoryTab from '../components/meetingTabs/HistoryTab';
 import UserAvatar from '../components/UserAvatar';
 import AddExpense from '../components/modal/AddExpense';
 import BestCashback from '../components/modal/BestCashback';
 import EditExpense from '../components/modal/EditExpense';
 import { useSnackbar } from '../components/SnackbarProvider';
+import StatusRoomModal from '../components/modal/StatusRoomModal';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 
@@ -25,6 +27,11 @@ const getParticipantWord = (count) => {
     if (num10 === 1) return 'участник';
     if (num10 >= 2 && num10 <= 4) return 'участника';
     return 'участников';
+};
+const STATUS_META = {
+    active: { label: 'Активна', bg: '#DCEBD8', color: '#2F6B2A' },
+    settle: { label: 'Оплата', bg: '#F6E7C4', color: '#8A5B12' },
+    done: { label: 'Завершена', bg: '#E5DFD2', color: '#6B6153' },
 };
 
 const MeetingHeader = ({
@@ -39,56 +46,66 @@ const MeetingHeader = ({
     isCreator,
     participantsCount,
     onMembersClick,
-}) => (
-    <header className="flex items-center gap-4 mb-6 shrink-0">
-        <button
-            onClick={() => navigate('/')}
-            className="w-[42px] h-[42px] rounded-[14px] bg-[#EBE1CB] flex items-center justify-center text-2xl text-[#2E2519] shrink-0 transition-transform"
-        >
-            <LastPageIcon />
-        </button>
+    onStatusClick,
+    status = 'active',
+}) => {
+    const meta = STATUS_META[status] ?? STATUS_META.active;
 
-        <div className="flex-1 min-w-0 flex flex-col justify-center">
-            <div className="flex items-center gap-1.5">
-                <h1 className="text-[22px] sm:text-[25px] font-bold text-[#2E2519] truncate leading-none">
-                    {name}
-                </h1>
-                {isCreator && (
-                    <IconButton
-                        size="small"
-                        onClick={onEditClick}
-                        sx={{ color: '#8A7C66', p: 0 }}
+    return (
+        <header className="flex items-center gap-4 mb-6 shrink-0">
+            <button
+                onClick={() => navigate('/')}
+                className="w-[42px] h-[42px] rounded-[14px] bg-[#EBE1CB] flex items-center justify-center text-2xl text-[#2E2519] shrink-0 transition-transform"
+            >
+                <LastPageIcon />
+            </button>
+
+            <div className="flex-1 min-w-0 flex flex-col justify-center">
+                <div className="flex items-center gap-1.5">
+                    <h1 className="text-[22px] sm:text-[25px] font-bold text-[#2E2519] truncate leading-none">
+                        {name}
+                    </h1>
+                    {isCreator && (
+                        <IconButton
+                            size="small"
+                            onClick={onEditClick}
+                            sx={{ color: '#8A7C66', p: 0 }}
+                        >
+                            <EditIcon sx={{ fontSize: '18px' }} />
+                        </IconButton>
+                    )}
+                </div>
+
+                <div className="flex items-center gap-2 mt-2">
+                    <button
+                        onClick={onStatusClick}
+                        className="px-2 py-[3px] rounded-md text-[11px] font-bold tracking-wide uppercase leading-none"
+                        style={{ backgroundColor: meta.bg, color: meta.color }}
                     >
-                        <EditIcon sx={{ fontSize: '18px' }} />
-                    </IconButton>
-                )}
+                        {meta.label} ▾
+                    </button>
+
+                    <button
+                        onClick={onMembersClick}
+                        className="text-[13px] text-[#8A7C66] hover:text-[#463628] transition-colors truncate font-medium leading-none mt-[1px]"
+                    >
+                        {date ? date.split('-').reverse().join('.') : ''} ·{' '}
+                        {participantsCount} {getParticipantWord(participantsCount)}
+                    </button>
+                </div>
             </div>
 
-            <div className="flex items-center gap-2 mt-2">
-                <span className="bg-[#DFF1E4] text-[#32935A] px-2 py-[3px] rounded-md text-[11px] font-bold tracking-wide uppercase leading-none">
-                    Активна ▾
-                </span>
-
-                <button
-                    onClick={onMembersClick}
-                    className="text-[13px] text-[#8A7C66] hover:text-[#463628] transition-colors truncate font-medium leading-none mt-[1px]"
-                >
-                    {date ? date.split('-').reverse().join('.') : ''} ·{' '}
-                    {participantsCount} {getParticipantWord(participantsCount)}
-                </button>
+            <div className="shrink-0 flex items-center justify-center">
+                <UserAvatar
+                    user={user}
+                    meetingId={meetingId}
+                    participantId={participantId}
+                    onSave={onSave}
+                />
             </div>
-        </div>
-
-        <div className="shrink-0 flex items-center justify-center">
-            <UserAvatar
-                user={user}
-                meetingId={meetingId}
-                participantId={participantId}
-                onSave={onSave}
-            />
-        </div>
-    </header>
-);
+        </header>
+    );
+};
 
 const BalanceCard = ({ data }) => {
     const spend = data.participant_spend || 0;
@@ -167,6 +184,24 @@ const MeetingTabs = ({ value, onChange }) => (
             <Tab
                 value="payment"
                 label="Оплата"
+                sx={{
+                    minHeight: '40px',
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    borderRadius: '11px',
+                    color: '#8A7C66',
+                    transition: '0.2s',
+                    '&.Mui-selected': {
+                        backgroundColor: '#FFFFFF',
+                        color: '#2E2519',
+                        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+                    },
+                }}
+            />
+            <Tab
+                value="history"
+                label="История"
                 sx={{
                     minHeight: '40px',
                     textTransform: 'none',
@@ -355,13 +390,14 @@ export default function Meeting() {
     const [openAddExpense, setOpenAddExpense] = useState(false);
     const [refresh, setRefresh] = useState(0);
     const [editExpenseId, setEditExpenseId] = useState(null);
+    const [openStatus, setOpenStatus] = useState(false);
     const navigate = useNavigate();
     const meeting = JSON.parse(Cookies.get('meeting') || '{}');
     const meetingId = meeting.id;
     const participantId = meeting.participantId;
     const [isFinished, setIsFinished] = useState(false);
     const showSnackbar = useSnackbar();
-    const roomStatus = isFinished ? 'finished' : meeting.status || 'active';
+    const roomStatus = isFinished ? 'done' : meeting.status || 'active';
     const isLocked = roomStatus !== 'active';
 
     const [currentMeetingName, setCurrentMeetingName] = useState(
@@ -413,7 +449,7 @@ export default function Meeting() {
             }
         };
         fetchBalance();
-    }, [meetingId, participantId, refresh, showSnackbar, meeting.sessionId]);
+    }, [meetingId, participantId, refresh, showSnackbar, meeting.sessionId, refresh]);
 
     useEffect(() => {
         const fetchParticipants = async () => {
@@ -509,8 +545,13 @@ export default function Meeting() {
 
     const handleFinishMeetingAPI = async () => {
         try {
+            const cookie = JSON.parse(Cookies.get('meeting') || '{}');
             const res = await fetch(`${API_URL}/meetings/${meetingId}/finish`, {
                 method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'session-id': cookie.sessionId,
+                },
             });
             if (res.ok) {
                 setIsFinished(true);
@@ -521,6 +562,36 @@ export default function Meeting() {
         } catch (e) {
             console.error(e);
             alert('Ошибка сети');
+        }
+    };
+    const handleStatusChange = async (newStatus) => {
+        const cookie = JSON.parse(Cookies.get('meeting') || '{}');
+        const endpointByStatus = {
+            active: 'edit',
+            settle: 'calculate',
+            done: 'finish',
+        };
+        const action = endpointByStatus[newStatus];
+        if (!action) return;
+
+        try {
+            const res = await fetch(`${API_URL}/meetings/${meetingId}/${action}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'session-id': cookie.sessionId,
+                },
+            });
+            if (!res.ok) {
+                showSnackbar('Не удалось изменить статус');
+                return;
+            }
+            Cookies.set('meeting', JSON.stringify({ ...cookie, status: newStatus }));
+            if (newStatus === 'done') setIsFinished(true);
+            setRefresh((n) => n + 1);
+            showSnackbar('Статус обновлён', 'success');
+        } catch (e) {
+            showSnackbar('Сеть недоступна', e);
         }
     };
 
@@ -546,6 +617,8 @@ export default function Meeting() {
                     onEditClick={() => setOpenEditMeeting(true)}
                     onSave={(data) => handleUpdateParticipant(data, participantId)}
                     onMembersClick={() => setOpenMembers(true)}
+                    onStatusClick={() => setOpenStatus(true)}
+                    status={roomStatus}
                 />
 
                 <BalanceCard data={balance} />
@@ -553,14 +626,22 @@ export default function Meeting() {
                 <MeetingTabs value={value} onChange={handleChange} />
 
                 <main className="flex-1 overflow-y-auto custom-scrollbar px-2">
-                    {value === 'expenses' ? (
+                    {value === 'expenses' && (
                         <ExpensesTab
                             refresh={refresh}
                             onExpenseClick={setEditExpenseId}
+                            participants={participants}
+                            participantId={participantId}
                         />
-                    ) : (
-                        <PaymentTab />
                     )}
+                    {value === 'payment' && (
+                        <PaymentTab
+                            onUpdate={() => setRefresh((n) => n + 1)}
+                            participants={participants}
+                            refresh={refresh}
+                        />
+                    )}
+                    {value === 'history' && <HistoryTab />}
                 </main>
 
                 <div className="pt-4 shrink-0">
@@ -571,7 +652,7 @@ export default function Meeting() {
                             fullWidth
                             disabled={isLocked}
                             sx={{
-                                backgroundColor: '#DAB672',
+                                backgroundColor: '#ffffff',
                                 color: '#463628',
                                 fontWeight: 'bold',
                                 borderRadius: '12px',
@@ -581,7 +662,7 @@ export default function Meeting() {
                                 letterSpacing: '0.1em',
                                 boxShadow: '0px 4px 6px rgba(0,0,0,0.1)',
                                 '&:hover': {
-                                    backgroundColor: '#c5a363',
+                                    backgroundColor: '#E8DFC7',
                                     boxShadow: '0px 6px 10px rgba(0,0,0,0.2)',
                                 },
                             }}
@@ -593,37 +674,41 @@ export default function Meeting() {
                     )}
                 </div>
 
-                <div className="pt-4 shrink-0">
-                    <Button
-                        variant="contained"
-                        fullWidth
-                        onClick={isLocked ? null : handleBottomButtonClick}
-                        disabled={isLocked && value === 'expenses'}
-                        sx={{
-                            backgroundColor: isLocked ? '#BDBDBD !important' : '#463628',
-                            color: isLocked ? '#757575 !important' : '#EAE0CD',
-                            fontWeight: 'bold',
-                            borderRadius: '12px',
-                            py: 2,
-                            fontSize: '1rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.1em',
-                            boxShadow: 'none',
-                            '&.Mui-disabled': {
-                                backgroundColor: '#CCCCCC',
-                                color: '#888888',
-                            },
-                        }}
-                    >
-                        {isFinished
-                            ? 'Встреча завершена'
-                            : roomStatus === 'calculating'
-                              ? 'Идет расчет...'
-                              : value === 'expenses'
-                                ? 'Добавить расход'
-                                : 'Завершить встречу'}
-                    </Button>
-                </div>
+                {value !== 'history' && (
+                    <div className="pt-4 shrink-0">
+                        <Button
+                            variant="contained"
+                            fullWidth
+                            onClick={isLocked ? null : handleBottomButtonClick}
+                            disabled={isLocked && value === 'expenses'}
+                            sx={{
+                                backgroundColor: isLocked
+                                    ? '#F8F4EC !important'
+                                    : '#32281E',
+                                color: isLocked ? '#757575 !important' : '#EAE0CD',
+                                fontWeight: 'bold',
+                                borderRadius: '12px',
+                                py: 2,
+                                fontSize: '1rem',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.1em',
+                                boxShadow: 'none',
+                                '&.Mui-disabled': {
+                                    backgroundColor: '#CCCCCC',
+                                    color: '#888888',
+                                },
+                            }}
+                        >
+                            {isFinished
+                                ? 'Встреча завершена'
+                                : roomStatus === 'calculating'
+                                  ? 'Идет расчет...'
+                                  : value === 'expenses'
+                                    ? 'Добавить расход'
+                                    : 'Завершить встречу'}
+                        </Button>
+                    </div>
+                )}
 
                 <MembersDialog
                     className="#F8F4EC"
@@ -635,6 +720,14 @@ export default function Meeting() {
                     onSave={(data) =>
                         handleUpdateParticipant(data, data.id || participantId)
                     }
+                />
+                <StatusRoomModal
+                    open={openStatus}
+                    onClose={() => setOpenStatus(false)}
+                    status={roomStatus}
+                    creatorName={currentUser?.nickname}
+                    canChange={meeting.isCreator}
+                    onChange={handleStatusChange}
                 />
                 <AddExpense
                     open={openAddExpense}

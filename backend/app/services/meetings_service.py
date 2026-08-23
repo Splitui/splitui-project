@@ -1,4 +1,5 @@
 """Модуль с бизнес-логикой для работы со встречами."""
+from datetime import datetime, UTC
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -179,6 +180,16 @@ def finish_meeting(connection: Connection, meeting_uuid: UUID, session_id):
         raise HTTPException(
             status_code=409,
             detail=f"Нельзя завершить встречу, так как есть непогашенные долги: {unpaid_count}"
+        )
+
+    start_date = datetime.fromisoformat(meeting["start_date"])
+    if start_date > datetime.now(UTC):
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Нельзя завершить встречу - дата начала ещё не наступила "
+                f"({start_date.strftime('%d.%m.%Y')})"
+            )
         )
 
     return meetings_repository.finish(connection, meeting["id"])

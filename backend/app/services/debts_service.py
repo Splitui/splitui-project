@@ -54,7 +54,7 @@ def get_debts_by_balances(balances: list[dict]) -> list[dict]:
     """
     creditors = sorted(
         (
-            {"participant_id": b["participant_id"], "amount": Decimal(b["balance"])}
+            {"participant_id": b["participant_id"], "amount": Decimal(b["balance"]).quantize(Decimal("0.01"))}
             for b in balances
             if Decimal(b["balance"]) > 0
         ),
@@ -63,7 +63,7 @@ def get_debts_by_balances(balances: list[dict]) -> list[dict]:
     )
     debtors = sorted(
         (
-            {"participant_id": b["participant_id"], "amount": -Decimal(b["balance"])}
+            {"participant_id": b["participant_id"], "amount": (-Decimal(b["balance"])).quantize(Decimal("0.01"))}
             for b in balances
             if Decimal(b["balance"]) < 0
         ),
@@ -75,7 +75,7 @@ def get_debts_by_balances(balances: list[dict]) -> list[dict]:
     i, j = 0, 0
     while i < len(creditors) and j < len(debtors):
         creditor, debtor = creditors[i], debtors[j]
-        amount = min(creditor["amount"], debtor["amount"])
+        amount = min(creditor["amount"], debtor["amount"]).quantize(Decimal("0.01"))
 
         debts.append({
             "debtor_id": debtor["participant_id"],
@@ -129,7 +129,7 @@ def get_debt_payment_info(connection: Connection, meeting_uuid: UUID, session_id
         "creditor_nickname": creditor["nickname"],
         "card_number": bank_data["card_number"],
         "phone_number": bank_data["phone_number"],
-        "bank_name": bank["bank_name"],
+        "bank_name": bank["name"],
         "bank_deeplink": _build_deeplink(bank["deeplink"], bank_data["phone_number"]),
         "is_paid": debt["is_paid"],
         "paid_at": debt["paid_at"]
@@ -137,7 +137,7 @@ def get_debt_payment_info(connection: Connection, meeting_uuid: UUID, session_id
 
 
 @transaction
-def mark_debt_as_paid(connection: Connection, meeting_uuid: UUID, session_id: str, debt_id: int):
+def confirm_debt(connection: Connection, meeting_uuid: UUID, session_id: str, debt_id: int):
     """Отмечает долг как погашенный.
 
     :param connection: соединение с базой данных.

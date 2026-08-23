@@ -3,7 +3,7 @@
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
-from app.repositories.participants_repository import hash_token
+from app.utils.security import hash_token
 
 
 def create(connection: Connection, username: str, password_hash: str):

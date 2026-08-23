@@ -143,3 +143,38 @@ def test_cannot_update_participant_bank_data_to_finished_meeting(
     )
 
     assert response.status_code == 409
+
+
+def test_restore_session_success(app_client, create_user, create_meeting):
+    user = create_user()
+    token = user["auth_token"]
+    meeting = create_meeting(user_id=user["id"])
+    meeting_uuid = meeting["uuid"]
+
+    response = app_client.post(
+        f"/meetings/{meeting_uuid}/participants/restore-session",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert "session_id" in body
+    assert body["nickname"] == "Тестовый создатель"
+
+
+def test_link_participant_to_user_success(app_client, create_user, create_meeting, create_participant):
+    meeting = create_meeting()
+    participant = create_participant(meeting_id=meeting["id"], nickname="Гость")
+    user = create_user()
+    token = user["auth_token"]
+
+    response = app_client.post(
+        f"/meetings/{meeting['uuid']}/participants/link-account",
+        headers={
+            "Session-Id": participant["session_id"],
+            "Authorization": f"Bearer {token}",
+        }
+    )
+
+    assert response.status_code == 200
+    assert response.json()["user_id"] == user["id"]
