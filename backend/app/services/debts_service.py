@@ -24,10 +24,6 @@ def get_debts(connection: Connection, meeting_id: int):
 
 
 @transaction
-@change_log(
-    action="debts.recalculated",
-    context_parser=parse_debts_context,
-)
 def calculate_debts(connection: Connection, meeting_uuid: UUID, session_id):
     """Подсчитывает долги участников встречи на основе чеков.
 
@@ -123,6 +119,12 @@ def get_debt_payment_info(connection: Connection, meeting_uuid: UUID, session_id
             detail="У получателя не указаны банковские реквизиты"
         )
 
+    if meeting["status"] != MeetingStatus.CALCULATING:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Погасить долг можно только в статусе встречи '{MeetingStatus.CALCULATING}'",
+        )
+
     bank = bank_data_service.get_bank_or_error(connection, bank_data["bank_id"])
     return {
         "amount": debt["amount"],
@@ -165,7 +167,7 @@ def confirm_debt(connection: Connection, meeting_uuid: UUID, session_id: str, de
     if meeting["status"] != MeetingStatus.CALCULATING:
         raise HTTPException(
             status_code=409,
-            detail="Отметить долг оплаченным можно только в статусе встречи 'В расчёте'"
+            detail=f"Отметить долг оплаченным можно только в статусе встречи '{MeetingStatus.CALCULATING}'"
         )
 
     return debts_repository.mark_as_paid(connection, debt_id)
