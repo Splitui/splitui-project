@@ -112,7 +112,7 @@ def build_report_data(
                 "payer": expense["payer"],
                 "category": expense["category"] or "Без категории",
                 "amount": float(expense["amount"]),
-                "confirmed": bool(expense["confirmed"]),
+                "confirmed": True,
             }
             for expense in expenses
         ],
