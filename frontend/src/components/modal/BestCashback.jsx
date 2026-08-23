@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Drawer, IconButton, Avatar, Button, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import Cookies from 'js-cookie';
+import { useSnackbar } from '../SnackbarProvider';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 
@@ -9,6 +10,7 @@ export default function BestCashback({ open, onClose }) {
     const [categories, setCategories] = useState([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState(null);
     const [rankings, setRankings] = useState([]);
+    const showSnackbar = useSnackbar();
 
     const meetingCookie = JSON.parse(Cookies.get('meeting') || '{}');
     const meetingId = meetingCookie.id;
@@ -24,11 +26,11 @@ export default function BestCashback({ open, onClose }) {
                     if (data.length > 0) setSelectedCategoryId(data[0].id);
                 }
             } catch (e) {
-                console.error('Ошибка загрузки категорий', e);
+                showSnackbar('Ошибка сети при загрузке категорий', e);
             }
         };
         if (open) fetchCategories();
-    }, [open]);
+    }, [open, showSnackbar]);
 
     useEffect(() => {
         const fetchRankings = async () => {
@@ -43,13 +45,16 @@ export default function BestCashback({ open, onClose }) {
                 if (res.ok) {
                     const data = await res.json();
                     setRankings(data);
+                } else {
+                    const errorData = await res.json().catch(() => ({}));
+                    showSnackbar(errorData.detail || 'Не удалось загрузить рейтинг');
                 }
             } catch (e) {
-                console.error('Ошибка загрузки рейтинга', e);
+                showSnackbar('Ошибка сети при загрузке рейтинга', e);
             }
         };
         fetchRankings();
-    }, [selectedCategoryId, meetingId, open, sessionId]);
+    }, [selectedCategoryId, meetingId, open, sessionId, showSnackbar]);
 
     const winner = rankings[0];
     const others = rankings.slice(1);

@@ -49,7 +49,8 @@ export default function JoinMeeting({ open, onClose }) {
             };
             const response = await fetch(`${API_URL}/meetings/${meetingId}`, { headers });
             if (!response.ok) {
-                showSnackbar('Комната с таким id не найдена');
+                const errorData = await response.json().catch(() => ({}));
+                showSnackbar(errorData.detail || 'Комната с таким ID не найдена');
                 return;
             }
             const meetingData = await response.json();
@@ -97,6 +98,7 @@ export default function JoinMeeting({ open, onClose }) {
             );
 
             onClose();
+            showSnackbar(`С возвращением, ${name}!`, 'success');
             navigate(`/meetings/${meetingId}`);
         } catch (e) {
             showSnackbar('Нет связи с сервером', e);

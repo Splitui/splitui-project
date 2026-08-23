@@ -1,6 +1,7 @@
 import { Dialog, IconButton, Button, Typography, Box, Slide } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useRef, useState, forwardRef } from 'react';
+import { useSnackbar } from '../SnackbarProvider';
 
 const Transition = forwardRef(function Transition(props, ref) {
     return <Slide direction="up" ref={ref} {...props} />;
@@ -23,6 +24,7 @@ const labelStyle = { fontSize: 12, color: '#8A7C66', mb: 0.6 };
 export default function AddItem({ open, onClose, usersOptions, onAdd }) {
     const titleRef = useRef(null);
     const priceRef = useRef(null);
+    const showSnackbar = useSnackbar();
     const quantityRef = useRef(null);
     const [participantIds, setParticipantIds] = useState([]);
     const toggle = (id) =>
@@ -34,7 +36,16 @@ export default function AddItem({ open, onClose, usersOptions, onAdd }) {
         const unitPrice = parseFloat(priceRef.current.value) || 0;
         const quantity = parseInt(quantityRef.current.value, 10) || 1;
 
-        if (!title || participantIds.length === 0) {
+        if (!title) {
+            showSnackbar('Введите название товара');
+            return;
+        }
+        if (unitPrice <= 0) {
+            showSnackbar('Цена должна быть больше нуля');
+            return;
+        }
+        if (participantIds.length === 0) {
+            showSnackbar('Выберите хотя бы одного участника для этой позиции');
             return;
         }
 
