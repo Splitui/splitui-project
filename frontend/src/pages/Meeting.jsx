@@ -33,6 +33,12 @@ const STATUS_META = {
     settle: { label: 'Оплата', bg: '#F6E7C4', color: '#8A5B12' },
     done: { label: 'Завершена', bg: '#E5DFD2', color: '#6B6153' },
 };
+const STATUS_MAP = {
+    Активная: 'active',
+    'В расчёте': 'settle',
+    Завершена: 'done',
+};
+const mapStatus = (s) => STATUS_MAP[s] ?? 'active';
 
 const MeetingHeader = ({
     navigate,
@@ -395,9 +401,8 @@ export default function Meeting() {
     const meeting = JSON.parse(Cookies.get('meeting') || '{}');
     const meetingId = meeting.id;
     const participantId = meeting.participantId;
-    const [isFinished, setIsFinished] = useState(false);
+    const [roomStatus, setRoomStatus] = useState('active');
     const showSnackbar = useSnackbar();
-    const roomStatus = isFinished ? 'done' : meeting.status || 'active';
     const isLocked = roomStatus !== 'active';
 
     const [currentMeetingName, setCurrentMeetingName] = useState(
@@ -534,10 +539,7 @@ export default function Meeting() {
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.status === 'Завершена' || data.is_finished) {
-                        setIsFinished(true);
-                    }
-
+                    setRoomStatus(mapStatus(data.status)); // ← статус с бэка
                     if (data.title) setCurrentMeetingName(data.title);
                     if (data.start_date)
                         setCurrentMeetingDate(data.start_date.substring(0, 10));
@@ -547,6 +549,8 @@ export default function Meeting() {
             }
         };
         checkMeetingStatus();
+        const interval = setInterval(checkMeetingStatus, 5000);
+        return () => clearInterval(interval);
     }, [meetingId, meeting.sessionId]);
 
     const handleFinishMeetingAPI = async () => {
@@ -594,8 +598,7 @@ export default function Meeting() {
                 showSnackbar(errData.detail || 'Бэкенд отклонил смену статуса');
                 return;
             }
-            Cookies.set('meeting', JSON.stringify({ ...cookie, status: newStatus }));
-            if (newStatus === 'done') setIsFinished(true);
+            setRoomStatus(newStatus);
             setRefresh((n) => n + 1);
             showSnackbar(
                 `Статус изменен на "${STATUS_META[newStatus].label}"`,
@@ -603,6 +606,28 @@ export default function Meeting() {
             );
         } catch (e) {
             showSnackbar('Сеть недоступна', e);
+        }
+    };
+    const handleDownloadReport = async () => {
+        try {
+            const res = await fetch(`${API_URL}/meetings/${meetingId}/report`, {
+                headers: { 'session-id': meeting.sessionId },
+            });
+            if (!res.ok) {
+                showSnackbar('Не удалось скачать отчёт');
+                return;
+            }
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Отчёт ${currentMeetingName}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            showSnackbar('Сеть недоступна');
         }
     };
 
@@ -687,37 +712,55 @@ export default function Meeting() {
 
                 {value !== 'history' && (
                     <div className="pt-4 shrink-0">
-                        <Button
-                            variant="contained"
-                            fullWidth
-                            onClick={isLocked ? null : handleBottomButtonClick}
-                            disabled={isLocked && value === 'expenses'}
-                            sx={{
-                                backgroundColor: isLocked
-                                    ? '#F8F4EC !important'
-                                    : '#32281E',
-                                color: isLocked ? '#757575 !important' : '#EAE0CD',
-                                fontWeight: 'bold',
-                                borderRadius: '12px',
-                                py: 2,
-                                fontSize: '1rem',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.1em',
-                                boxShadow: 'none',
-                                '&.Mui-disabled': {
-                                    backgroundColor: '#CCCCCC',
-                                    color: '#888888',
-                                },
-                            }}
-                        >
-                            {isFinished
-                                ? 'Встреча завершена'
-                                : roomStatus === 'calculating'
-                                  ? 'Идет расчет...'
-                                  : value === 'expenses'
+                        {roomStatus === 'done' ? (
+                            <Button
+                                variant="contained"
+                                fullWidth
+                                onClick={handleDownloadReport}
+                                sx={{
+                                    backgroundColor: '#463628',
+                                    color: '#EAE0CD',
+                                    fontWeight: 'bold',
+                                    borderRadius: '12px',
+                                    py: 2,
+                                    fontSize: '1rem',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.1em',
+                                    boxShadow: 'none',
+                                    '&:hover': { backgroundColor: '#3a2c20' },
+                                }}
+                            >
+                                Скачать PDF отчёт
+                            </Button>
+                        ) : (
+                            <Button
+                                variant="contained"
+                                fullWidth
+                                onClick={isLocked ? null : handleBottomButtonClick}
+                                disabled={isLocked && value === 'expenses'}
+                                sx={{
+                                    backgroundColor: isLocked ? '#BDBDBD !important' : '#463628',
+                                    color: isLocked ? '#757575 !important' : '#EAE0CD',
+                                    fontWeight: 'bold',
+                                    borderRadius: '12px',
+                                    py: 2,
+                                    fontSize: '1rem',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.1em',
+                                    boxShadow: 'none',
+                                    '&.Mui-disabled': {
+                                        backgroundColor: '#CCCCCC',
+                                        color: '#888888',
+                                    },
+                                }}
+                            >
+                                {roomStatus === 'settle'
+                                    ? 'Идёт расчёт...'
+                                    : value === 'expenses'
                                     ? 'Добавить расход'
                                     : 'Завершить встречу'}
-                        </Button>
+                            </Button>
+                        )}
                     </div>
                 )}
 
