@@ -31,6 +31,7 @@ export default function EditItem({
 }) {
     const titleRef = useRef(null);
     const priceRef = useRef(null);
+    const quantityRef = useRef(null); 
     const [participantIds, setParticipantIds] = useState([]);
 
     useEffect(() => {
@@ -55,8 +56,9 @@ export default function EditItem({
     const handleSubmit = () => {
         const title = titleRef.current.value.trim();
         const unitPrice = parseFloat(priceRef.current.value) || 0;
+        const quantity = parseInt(quantityRef.current.value, 10) || 1;
         if (!title || participantIds.length === 0) return;
-        onSave({ ...item, title, unitPrice, participantIds });
+        onSave({ ...item, title, unitPrice, quantity });
         onClose();
     };
 
@@ -127,17 +129,31 @@ export default function EditItem({
                 />
             </Box>
 
-            <Box sx={{ mb: 1.5 }}>
-                <Typography sx={labelStyle}>Сумма</Typography>
-                <input
-                    key={`price-${item.id}`}
-                    ref={priceRef}
-                    type="text"
-                    inputMode="decimal"
-                    defaultValue={item.unitPrice}
-                    placeholder="0"
-                    style={{ ...inputStyle, textAlign: 'right' }}
-                />
+            <Box sx={{ display: 'flex', gap: 1.25, mb: 1.5 }}>
+                <Box sx={{ flex: 1 }}>
+                    <Typography sx={labelStyle}>Сумма</Typography>
+                    <input
+                        key={`price-${item.id}`}
+                        ref={priceRef}
+                        type="text"
+                        inputMode="decimal"
+                        defaultValue={item.unitPrice}
+                        placeholder="0"
+                        style={{ ...inputStyle, textAlign: 'right' }}
+                    />
+                </Box>
+                <Box sx={{ width: 100 }}>
+                    <Typography sx={labelStyle}>Кол-во</Typography>
+                    <input
+                        key={`qty-${item.id}`}
+                        ref={quantityRef}
+                        type="text"
+                        inputMode="numeric"
+                        defaultValue={item.quantity}
+                        placeholder="1"
+                        style={{ ...inputStyle, textAlign: 'center' }}
+                    />
+                </Box>
             </Box>
 
             <Box

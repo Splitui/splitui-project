@@ -2,7 +2,6 @@ import { Dialog, IconButton, Button, Typography, Box, Slide } from '@mui/materia
 import CloseIcon from '@mui/icons-material/Close';
 import { useEffect, useState, forwardRef } from 'react';
 import Cookies from 'js-cookie';
-import { CASHBACK_OPTIONS } from '../Options';
 import Receipt from './Receipt';
 import { useSnackbar } from '../SnackbarProvider';
 
@@ -49,6 +48,7 @@ export default function EditExpense({ open, onClose, onUpdated, expenseId }) {
     const [receiptOpen, setReceiptOpen] = useState(false);
     const [receiptItems, setReceiptItems] = useState([]);
     const [confirmOpen, setConfirmOpen] = useState(false);
+    const [cashbackOptions, setCashbackOptions] = useState([]);
 
     useEffect(() => {
         if (!open || !expenseId) return;
@@ -76,6 +76,13 @@ export default function EditExpense({ open, onClose, onUpdated, expenseId }) {
                 setUsersOptions(
                     partData.map((p) => ({ value: p.id, label: p.nickname })),
                 );
+                const catRes = await fetch(`${API_BASE}/cashback-categories`, {
+                    signal: controller.signal,
+                });
+                if (catRes.ok) {
+                    const cats = await catRes.json();
+                    setCashbackOptions(cats.map((c) => ({ id: c.id, label: c.name }))); 
+                }
                 const recRes = await fetch(
                     `${API_BASE}/meetings/${meetingUuid}/receipts/${expenseId}?limit=100&offset=0`,
                     { signal: controller.signal, headers: { 'session-id': sessionId } },
@@ -392,18 +399,8 @@ export default function EditExpense({ open, onClose, onUpdated, expenseId }) {
                     }}
                 />
             </Box>
-            <Box
-                sx={{
-                    ...cardSx,
-                    mb: 1.25,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.25,
-                }}
-            >
-                <Typography
-                    sx={{ fontSize: 12.5, color: '#8A7C66', width: 78, flexShrink: 0 }}
-                >
+            <Box sx={{ ...cardSx, mb: 1.25, display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                <Typography sx={{ fontSize: 12.5, color: '#8A7C66', width: 78, flexShrink: 0 }}>
                     Платил
                 </Typography>
                 <select
@@ -423,18 +420,8 @@ export default function EditExpense({ open, onClose, onUpdated, expenseId }) {
                 </select>
                 <span style={{ color: '#B5A78C', flexShrink: 0 }}>▾</span>
             </Box>
-            <Box
-                sx={{
-                    ...cardSx,
-                    mb: 1.25,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.25,
-                }}
-            >
-                <Typography
-                    sx={{ fontSize: 12.5, color: '#8A7C66', width: 78, flexShrink: 0 }}
-                >
+            <Box sx={{ ...cardSx, mb: 1.25, display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                <Typography sx={{ fontSize: 12.5, color: '#8A7C66', width: 78, flexShrink: 0 }}>
                     Категория
                 </Typography>
                 <select
@@ -445,7 +432,7 @@ export default function EditExpense({ open, onClose, onUpdated, expenseId }) {
                     <option value="" disabled>
                         Выберите
                     </option>
-                    {CASHBACK_OPTIONS.map((o) => (
+                    {cashbackOptions.map((o) => (
                         <option key={o.id} value={o.id}>
                             {o.label}
                         </option>

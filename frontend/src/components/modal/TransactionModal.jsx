@@ -23,7 +23,7 @@ export default function TransactionModal({ open, onClose, transaction, onConfirm
                 {isPayment ? `Перевести ${transaction.name}?` : 'Подтвердить получение?'}
             </Typography>
 
-            <Typography className="!text-[#463628] !opacity-70 !text-sm !mb-8 !leading-snug">
+            <Typography className="!text-[#463628] !opacity-70 !text-sm !mb-8">
                 {isPayment
                     ? `Спишется ${transaction.amount.toLocaleString()} ₽. Вы уверены, что хотите оплатить пользователю ${transaction.name}.`
                     : `Вы подтверждаете, что получили ${transaction.amount.toLocaleString()} ₽ от ${transaction.name}.`}
@@ -34,17 +34,17 @@ export default function TransactionModal({ open, onClose, transaction, onConfirm
                     fullWidth
                     onClick={!isLink ? onConfirm : onClose}
                     component={isLink ? 'a' : 'button'}
-                    href={isLink ? transaction.bank_deeplink : onClose}
-                    target={isLink ? '_blank' : onClose}
+                    href={isLink ? transaction.bank_deeplink : undefined}
+                    target={isLink ? '_blank' : undefined}
 
-                    className="!bg-[#32281E] !text-[#F8F4EC] !font-bold !rounded-2xl !py-4 !normal-case !shadow-none text-center"
+                    className="!bg-[#32281E] !text-[#F8F4EC] !font-bold !rounded-2xl !py-4 text-center"
                 >
                     {isPayment ? `Перевести` : 'Подтвердить получение'}
                 </Button>
                 <Button
                     fullWidth
                     onClick={onClose}
-                    className="!bg-[#FAF7F2] !text-[#463628] !font-bold !rounded-2xl !py-3 !normal-case !shadow-none"
+                    className="!bg-[#FAF7F2] !text-[#463628] !font-bold !rounded-2xl !py-3"
                 >
                     Отмена
                 </Button>
