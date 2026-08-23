@@ -53,7 +53,7 @@ export default function FourthSlide() {
                     </AccordionSummary>
                     <AccordionDetails className="border-t border-[#EAE0CD]">
                         <p className="text-left opacity-70">
-                            Отправить ссылку, показать qr или назвать id номер.
+                            Отправить ссылку или назвать id номер.
                         </p>
                     </AccordionDetails>
                 </Accordion>

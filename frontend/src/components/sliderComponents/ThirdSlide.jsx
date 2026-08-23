@@ -8,7 +8,7 @@ const features = [
     {
         icon: LoginIcon,
         title: 'Без регистрации',
-        text: 'Вход по ссылке, QR-коду или ID + коду',
+        text: 'Вход по ссылке или ID + коду',
     },
     {
         icon: CameraAltIcon,
@@ -18,7 +18,7 @@ const features = [
     {
         icon: CallSplitIcon,
         title: 'Умное деление',
-        text: 'Общий чек, на всех, на выбранных или на одного',
+        text: 'Общий чек на всех, на выбранных или на одного',
     },
     {
         icon: CreditCardIcon,
