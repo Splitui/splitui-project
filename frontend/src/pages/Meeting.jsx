@@ -3,7 +3,6 @@ import { Tabs, Tab, Button, IconButton, Avatar, Drawer } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import CloseIcon from '@mui/icons-material/Close';
 import { useNavigate } from 'react-router-dom';
-import EndMeeting from '../components/modal/EndMeeting';
 import Cookies from 'js-cookie';
 import UserModal from '../components/modal/UserModal';
 import LastPageIcon from '@mui/icons-material/LastPage';
@@ -389,7 +388,6 @@ const MembersDialog = ({
 };
 
 export default function Meeting() {
-    const [openEndMeeting, setOpenEndMeeting] = useState(false);
     const [value, setValue] = useState('expenses');
     const [openMembers, setOpenMembers] = useState(false);
     const [participants, setParticipants] = useState([]);
@@ -553,28 +551,6 @@ export default function Meeting() {
         return () => clearInterval(interval);
     }, [meetingId, meeting.sessionId]);
 
-    const handleFinishMeetingAPI = async () => {
-        try {
-            const cookie = JSON.parse(Cookies.get('meeting') || '{}');
-            const res = await fetch(`${API_URL}/meetings/${meetingId}/finish`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'session-id': cookie.sessionId,
-                },
-            });
-            if (res.ok) {
-                setIsFinished(true);
-                setOpenEndMeeting(false);
-                showSnackbar('Встреча успешно завершена', 'success');
-            } else {
-                const errData = await res.json().catch(() => ({}));
-                showSnackbar(errData.detail || 'Не удалось завершить встречу');
-            }
-        } catch (e) {
-            showSnackbar('Ошибка сети при попытке завершить встречу', e);
-        }
-    };
     const handleStatusChange = async (newStatus) => {
         const cookie = JSON.parse(Cookies.get('meeting') || '{}');
         const endpointByStatus = {
@@ -627,17 +603,10 @@ export default function Meeting() {
             a.remove();
             URL.revokeObjectURL(url);
         } catch (e) {
-            showSnackbar('Сеть недоступна');
+            showSnackbar('Сеть недоступна', e);
         }
     };
 
-    const handleBottomButtonClick = () => {
-        if (value === 'expenses') {
-            setOpenAddExpense(true);
-        } else {
-            setOpenEndMeeting(true);
-        }
-    };
     return (
         <div className="h-screen bg-[#F7F1E3] flex flex-col items-center overflow-hidden font-sans">
             <div className="w-full max-w-4xl flex flex-col h-full p-4 md:p-8">
@@ -675,6 +644,7 @@ export default function Meeting() {
                             onUpdate={() => setRefresh((n) => n + 1)}
                             participants={participants}
                             refresh={refresh}
+                            roomStatus={roomStatus}
                         />
                     )}
                     {value === 'history' && <HistoryTab />}
@@ -732,14 +702,16 @@ export default function Meeting() {
                             >
                                 Скачать PDF отчёт
                             </Button>
-                        ) : (
+                        ) : value === 'expenses' ? (
                             <Button
                                 variant="contained"
                                 fullWidth
-                                onClick={isLocked ? null : handleBottomButtonClick}
-                                disabled={isLocked && value === 'expenses'}
+                                onClick={isLocked ? null : () => setOpenAddExpense(true)}
+                                disabled={isLocked}
                                 sx={{
-                                    backgroundColor: isLocked ? '#BDBDBD !important' : '#463628',
+                                    backgroundColor: isLocked
+                                        ? '#BDBDBD !important'
+                                        : '#463628',
                                     color: isLocked ? '#757575 !important' : '#EAE0CD',
                                     fontWeight: 'bold',
                                     borderRadius: '12px',
@@ -748,19 +720,11 @@ export default function Meeting() {
                                     textTransform: 'uppercase',
                                     letterSpacing: '0.1em',
                                     boxShadow: 'none',
-                                    '&.Mui-disabled': {
-                                        backgroundColor: '#CCCCCC',
-                                        color: '#888888',
-                                    },
                                 }}
                             >
-                                {roomStatus === 'settle'
-                                    ? 'Идёт расчёт...'
-                                    : value === 'expenses'
-                                    ? 'Добавить расход'
-                                    : 'Завершить встречу'}
+                                Добавить расход
                             </Button>
-                        )}
+                        ) : null}
                     </div>
                 )}
 
@@ -793,11 +757,6 @@ export default function Meeting() {
                     expenseId={editExpenseId}
                     onClose={() => setEditExpenseId(null)}
                     onUpdated={() => setRefresh((n) => n + 1)}
-                />
-                <EndMeeting
-                    open={openEndMeeting}
-                    onClose={() => setOpenEndMeeting(false)}
-                    onConfirm={handleFinishMeetingAPI}
                 />
 
                 <BestCashback
