@@ -1,5 +1,5 @@
 """Модуль с бизнес-логикой для работы со встречами."""
-from datetime import datetime, UTC
+from datetime import datetime, UTC, timedelta
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -182,7 +182,7 @@ def finish_meeting(connection: Connection, meeting_uuid: UUID, session_id):
         )
 
     start_date = datetime.fromisoformat(meeting["start_date"])
-    if start_date.replace(tzinfo=UTC) > datetime.now(UTC):
+    if start_date.replace(tzinfo=UTC) > datetime.now(UTC) + timedelta(hours=3):
         raise HTTPException(
             status_code=409,
             detail=(
