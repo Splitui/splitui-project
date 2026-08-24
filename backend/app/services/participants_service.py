@@ -110,6 +110,10 @@ def update_participant(connection, meeting_uuid, session_id, data: ParticipantUp
     if data.nickname is not None:
         participant = participants_repository.update(connection, participant["id"], data.nickname)
 
+    bank_data = bank_data_repository.get_bank_data_by_participant_id(connection, participant["id"])
+    if bank_data is not None and data.card_number is None and data.phone_number is None:
+        bank_data_repository.delete_by_participant_id(connection, participant["id"])
+
     if data.card_number is not None or data.phone_number is not None:
         bank = bank_data_service.get_bank_or_error(connection, data.bank_id)
         bank_data = bank_data_repository.upsert(
