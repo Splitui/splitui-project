@@ -134,6 +134,10 @@ export default function PaymentTab({ onUpdate, participants, refresh, roomStatus
     };
 
     const handleInitiatePayment = async (row) => {
+        if (roomStatus === 'active') {
+            showSnackbar("Погасить долг можно только в статусе встречи 'В расчёте'");
+            return;
+        }
         if (row.action === 'получение') {
             setSelectedTransaction(row);
             return;
@@ -152,7 +156,7 @@ export default function PaymentTab({ onUpdate, participants, refresh, roomStatus
                     ...payData,
                 });
             } else {
-                showSnackbar('Не удалось получить данные для оплаты');
+                showSnackbar('У получателя не указаны банковские реквизиты');
             }
         } catch (e) {
             showSnackbar('Ошибка сети при получении данных оплаты', e);
