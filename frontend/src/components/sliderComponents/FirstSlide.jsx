@@ -1,4 +1,4 @@
-import logo from '../logo/logo.png';
+import logo from '../../../public/logo.png';
 
 export default function FirstSlide() {
     return (
@@ -25,13 +25,13 @@ export default function FirstSlide() {
 
             <div data-swiper-parallax="-100" className="mt-5 flex flex-col gap-2.5 pb-2">
                 <div className="flex items-center gap-2.5 text-sm text-[#5C5142]">
-                    <span className="text-[#9A6B22]">✓</span>Без аккаунтов и регистрации
-                </div>
-                <div className="flex items-center gap-2.5 text-sm text-[#5C5142]">
                     <span className="text-[#9A6B22]">✓</span>Сканирование чеков по фото
                 </div>
                 <div className="flex items-center gap-2.5 text-sm text-[#5C5142]">
                     <span className="text-[#9A6B22]">✓</span>Минимум переводов в конце
+                </div>
+                <div className="flex items-center gap-2.5 text-sm text-[#5C5142]">
+                    <span className="text-[#9A6B22]">✓</span>Без аккаунтов и регистрации
                 </div>
             </div>
         </div>

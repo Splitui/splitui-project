@@ -32,7 +32,7 @@ def get_amount_info(connection:Connection,meeting_uuid: UUID, session_id: str, p
         participant_debt = 0
 
     return  {
-         "meeting_amount": meeting_amount,
-         "participant_spend": participant_spend,
-         "participant_debt": participant_debt,
+         "meeting_amount": round(meeting_amount,2),
+         "participant_spend": round(participant_spend,2),
+         "participant_debt": round(participant_debt,2),
     }

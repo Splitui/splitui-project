@@ -1,6 +1,7 @@
 """Модуль со схемами для работы с участниками встречи."""
+from typing import Any
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_validator, field_validator
 
 from app.schemas.utils.validators import Nickname, CardNumber, PhoneNumber
 
@@ -25,8 +26,16 @@ class ParticipantUpdate(BaseModel):
 
     nickname: Nickname | None = None
     bank_id: int | None = Field(default=None, ge=1)
-    card_number: CardNumber = None
-    phone_number: PhoneNumber = None
+    card_number: CardNumber | None = None
+    phone_number: PhoneNumber | None = None
+
+    @field_validator("card_number", "phone_number", mode="before")
+    @classmethod
+    def empty_string_to_none(cls, value: Any) -> Any:
+        if isinstance(value, str) and not value.strip():
+            return None
+
+        return value
 
     @model_validator(mode="after")
     def validate_bank_data(self):

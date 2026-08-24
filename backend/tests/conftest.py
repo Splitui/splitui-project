@@ -84,12 +84,14 @@ def create_meeting(db_engine):
 
     def _create_meeting(
             title="Тестовая Встреча",
-            start_date: datetime = future_date(),
+            start_date: datetime | None = None,
             creator_nickname="Тестовый создатель",
             user_id: int | None = None
     ):
         creator_session_id = str(uuid4())
         meeting_uuid = str(uuid4())
+        if start_date is None:
+            start_date = future_date()
         with db_engine.begin() as connection:
             result = connection.execute(
                 meetings_table.insert().values(

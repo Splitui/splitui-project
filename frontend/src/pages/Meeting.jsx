@@ -3,7 +3,6 @@ import { Tabs, Tab, Button, IconButton, Avatar, Drawer } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import CloseIcon from '@mui/icons-material/Close';
 import { useNavigate } from 'react-router-dom';
-import EndMeeting from '../components/modal/EndMeeting';
 import Cookies from 'js-cookie';
 import UserModal from '../components/modal/UserModal';
 import LastPageIcon from '@mui/icons-material/LastPage';
@@ -33,6 +32,12 @@ const STATUS_META = {
     settle: { label: 'Оплата', bg: '#F6E7C4', color: '#8A5B12' },
     done: { label: 'Завершена', bg: '#E5DFD2', color: '#6B6153' },
 };
+const STATUS_MAP = {
+    Активная: 'active',
+    'В расчёте': 'settle',
+    Завершена: 'done',
+};
+const mapStatus = (s) => STATUS_MAP[s] ?? 'active';
 
 const MeetingHeader = ({
     navigate,
@@ -383,7 +388,6 @@ const MembersDialog = ({
 };
 
 export default function Meeting() {
-    const [openEndMeeting, setOpenEndMeeting] = useState(false);
     const [value, setValue] = useState('expenses');
     const [openMembers, setOpenMembers] = useState(false);
     const [participants, setParticipants] = useState([]);
@@ -395,9 +399,8 @@ export default function Meeting() {
     const meeting = JSON.parse(Cookies.get('meeting') || '{}');
     const meetingId = meeting.id;
     const participantId = meeting.participantId;
-    const [isFinished, setIsFinished] = useState(false);
+    const [roomStatus, setRoomStatus] = useState('active');
     const showSnackbar = useSnackbar();
-    const roomStatus = isFinished ? 'done' : meeting.status || 'active';
     const isLocked = roomStatus !== 'active';
 
     const [currentMeetingName, setCurrentMeetingName] = useState(
@@ -443,9 +446,12 @@ export default function Meeting() {
                 if (res.ok) {
                     const data = await res.json();
                     setBalance(data);
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    showSnackbar(errData.detail || 'Не удалось загрузить баланс');
                 }
             } catch (e) {
-                showSnackbar('Ошибка загрузки данных', e);
+                showSnackbar('Ошибка сети при загрузке баланса', e);
             }
         };
         fetchBalance();
@@ -511,6 +517,9 @@ export default function Meeting() {
                         }),
                     );
                     setParticipants(fullDataParticipants);
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    showSnackbar(errData.detail || 'Ошибка загрузки участников');
                 }
             } catch (e) {
                 console.error(e);
@@ -528,10 +537,7 @@ export default function Meeting() {
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.status === 'Завершена' || data.is_finished) {
-                        setIsFinished(true);
-                    }
-
+                    setRoomStatus(mapStatus(data.status)); // ← статус с бэка
                     if (data.title) setCurrentMeetingName(data.title);
                     if (data.start_date)
                         setCurrentMeetingDate(data.start_date.substring(0, 10));
@@ -541,29 +547,10 @@ export default function Meeting() {
             }
         };
         checkMeetingStatus();
+        const interval = setInterval(checkMeetingStatus, 5000);
+        return () => clearInterval(interval);
     }, [meetingId, meeting.sessionId]);
 
-    const handleFinishMeetingAPI = async () => {
-        try {
-            const cookie = JSON.parse(Cookies.get('meeting') || '{}');
-            const res = await fetch(`${API_URL}/meetings/${meetingId}/finish`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'session-id': cookie.sessionId,
-                },
-            });
-            if (res.ok) {
-                setIsFinished(true);
-                setOpenEndMeeting(false);
-            } else {
-                alert('Не удалось завершить встречу');
-            }
-        } catch (e) {
-            console.error(e);
-            alert('Ошибка сети');
-        }
-    };
     const handleStatusChange = async (newStatus) => {
         const cookie = JSON.parse(Cookies.get('meeting') || '{}');
         const endpointByStatus = {
@@ -583,25 +570,43 @@ export default function Meeting() {
                 },
             });
             if (!res.ok) {
-                showSnackbar('Не удалось изменить статус');
+                const errData = await res.json().catch(() => ({}));
+                showSnackbar(errData.detail || 'Бэкенд отклонил смену статуса');
                 return;
             }
-            Cookies.set('meeting', JSON.stringify({ ...cookie, status: newStatus }));
-            if (newStatus === 'done') setIsFinished(true);
+            setRoomStatus(newStatus);
             setRefresh((n) => n + 1);
-            showSnackbar('Статус обновлён', 'success');
+            showSnackbar(
+                `Статус изменен на "${STATUS_META[newStatus].label}"`,
+                'success',
+            );
+        } catch (e) {
+            showSnackbar('Сеть недоступна', e);
+        }
+    };
+    const handleDownloadReport = async () => {
+        try {
+            const res = await fetch(`${API_URL}/meetings/${meetingId}/report`, {
+                headers: { 'session-id': meeting.sessionId },
+            });
+            if (!res.ok) {
+                showSnackbar('Не удалось скачать отчёт');
+                return;
+            }
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Отчёт ${currentMeetingName}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
         } catch (e) {
             showSnackbar('Сеть недоступна', e);
         }
     };
 
-    const handleBottomButtonClick = () => {
-        if (value === 'expenses') {
-            setOpenAddExpense(true);
-        } else {
-            setOpenEndMeeting(true);
-        }
-    };
     return (
         <div className="h-screen bg-[#F7F1E3] flex flex-col items-center overflow-hidden font-sans">
             <div className="w-full max-w-4xl flex flex-col h-full p-4 md:p-8">
@@ -639,6 +644,7 @@ export default function Meeting() {
                             onUpdate={() => setRefresh((n) => n + 1)}
                             participants={participants}
                             refresh={refresh}
+                            roomStatus={roomStatus}
                         />
                     )}
                     {value === 'history' && <HistoryTab />}
@@ -676,37 +682,49 @@ export default function Meeting() {
 
                 {value !== 'history' && (
                     <div className="pt-4 shrink-0">
-                        <Button
-                            variant="contained"
-                            fullWidth
-                            onClick={isLocked ? null : handleBottomButtonClick}
-                            disabled={isLocked && value === 'expenses'}
-                            sx={{
-                                backgroundColor: isLocked
-                                    ? '#F8F4EC !important'
-                                    : '#32281E',
-                                color: isLocked ? '#757575 !important' : '#EAE0CD',
-                                fontWeight: 'bold',
-                                borderRadius: '12px',
-                                py: 2,
-                                fontSize: '1rem',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.1em',
-                                boxShadow: 'none',
-                                '&.Mui-disabled': {
-                                    backgroundColor: '#CCCCCC',
-                                    color: '#888888',
-                                },
-                            }}
-                        >
-                            {isFinished
-                                ? 'Встреча завершена'
-                                : roomStatus === 'calculating'
-                                  ? 'Идет расчет...'
-                                  : value === 'expenses'
-                                    ? 'Добавить расход'
-                                    : 'Завершить встречу'}
-                        </Button>
+                        {roomStatus === 'done' ? (
+                            <Button
+                                variant="contained"
+                                fullWidth
+                                onClick={handleDownloadReport}
+                                sx={{
+                                    backgroundColor: '#463628',
+                                    color: '#EAE0CD',
+                                    fontWeight: 'bold',
+                                    borderRadius: '12px',
+                                    py: 2,
+                                    fontSize: '1rem',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.1em',
+                                    boxShadow: 'none',
+                                    '&:hover': { backgroundColor: '#3a2c20' },
+                                }}
+                            >
+                                Скачать PDF отчёт
+                            </Button>
+                        ) : value === 'expenses' ? (
+                            <Button
+                                variant="contained"
+                                fullWidth
+                                onClick={isLocked ? null : () => setOpenAddExpense(true)}
+                                disabled={isLocked}
+                                sx={{
+                                    backgroundColor: isLocked
+                                        ? '#BDBDBD !important'
+                                        : '#463628',
+                                    color: isLocked ? '#757575 !important' : '#EAE0CD',
+                                    fontWeight: 'bold',
+                                    borderRadius: '12px',
+                                    py: 2,
+                                    fontSize: '1rem',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.1em',
+                                    boxShadow: 'none',
+                                }}
+                            >
+                                Добавить расход
+                            </Button>
+                        ) : null}
                     </div>
                 )}
 
@@ -739,11 +757,6 @@ export default function Meeting() {
                     expenseId={editExpenseId}
                     onClose={() => setEditExpenseId(null)}
                     onUpdated={() => setRefresh((n) => n + 1)}
-                />
-                <EndMeeting
-                    open={openEndMeeting}
-                    onClose={() => setOpenEndMeeting(false)}
-                    onConfirm={handleFinishMeetingAPI}
                 />
 
                 <BestCashback

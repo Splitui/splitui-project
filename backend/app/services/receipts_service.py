@@ -226,6 +226,8 @@ def create_or_update_receipt(
             detail="Нет информации о стоимости",
         )
 
+    total_amount = round(total_amount,2)
+
     if data.id is None:
         receipt = receipts_repository.create(
             connection,

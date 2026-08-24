@@ -56,7 +56,8 @@ def update_cashback_categories(
     if meeting["status"] not in {MeetingStatus.ACTIVE, MeetingStatus.EDITING}:
         raise HTTPException(
             status_code=409,
-            detail="Обновлять кешбэки участника можно только в статусе встречи 'Активная' или 'Корректировка'",
+            detail=f"Обновлять кешбэки участника можно только "
+                   f"в статусе встречи '{MeetingStatus.ACTIVE}' или '{MeetingStatus.EDITING}'",
         )
 
     existing_category_ids = {c["id"] for c in cashback_repository.get_all_categories(connection)}

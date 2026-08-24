@@ -1,6 +1,7 @@
 import { Dialog, IconButton, Button, Typography, Box, Slide } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useEffect, useRef, useState, forwardRef } from 'react';
+import { useSnackbar } from '../SnackbarProvider';
 
 const Transition = forwardRef(function Transition(props, ref) {
     return <Slide direction="up" ref={ref} {...props} />;
@@ -31,8 +32,9 @@ export default function EditItem({
 }) {
     const titleRef = useRef(null);
     const priceRef = useRef(null);
-    const quantityRef = useRef(null); 
+    const quantityRef = useRef(null);
     const [participantIds, setParticipantIds] = useState([]);
+    const showSnackbar = useSnackbar();
 
     useEffect(() => {
         if (!open || !item) return;
@@ -57,8 +59,19 @@ export default function EditItem({
         const title = titleRef.current.value.trim();
         const unitPrice = parseFloat(priceRef.current.value) || 0;
         const quantity = parseInt(quantityRef.current.value, 10) || 1;
-        if (!title || participantIds.length === 0) return;
-        onSave({ ...item, title, unitPrice, quantity });
+        if (!title) {
+            showSnackbar('Введите название позиции');
+            return;
+        }
+        if (unitPrice <= 0) {
+            showSnackbar('Сумма должна быть больше нуля');
+            return;
+        }
+        if (participantIds.length === 0) {
+            showSnackbar('Выберите хотя бы одного участника');
+            return;
+        }
+        onSave({ ...item, title, unitPrice, quantity, participantIds });
         onClose();
     };
 

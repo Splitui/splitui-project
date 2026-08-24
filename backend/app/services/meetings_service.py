@@ -1,5 +1,5 @@
 """Модуль с бизнес-логикой для работы со встречами."""
-from datetime import datetime, UTC
+from datetime import datetime, UTC, timedelta
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -85,7 +85,8 @@ def update_meeting(connection, meeting_uuid, session_id, data: MeetingUpdate):
     if meeting["status"] not in {MeetingStatus.ACTIVE, MeetingStatus.EDITING}:
         raise HTTPException(
             status_code=409,
-            detail="Редактировать встречу можно только в статусе 'Активная' или 'Корректировка'",
+            detail=f"Редактировать встречу можно только "
+                   f"в статусе '{MeetingStatus.ACTIVE}' или '{MeetingStatus.EDITING}'",
         )
 
     return meetings_repository.update(connection, meeting["id"], data)
@@ -170,9 +171,7 @@ def finish_meeting(connection: Connection, meeting_uuid: UUID, session_id):
     if meeting["status"] != MeetingStatus.CALCULATING:
         raise HTTPException(
             status_code=409,
-            detail=(
-                "Завершить встречу можно только в статусе 'В расчёте'"
-            )
+            detail=f"Завершить встречу можно только в статусе '{MeetingStatus.CALCULATING}'"
         )
 
     unpaid_count = debts_repository.count_unpaid_for_meeting(connection, meeting["id"])
@@ -183,7 +182,7 @@ def finish_meeting(connection: Connection, meeting_uuid: UUID, session_id):
         )
 
     start_date = datetime.fromisoformat(meeting["start_date"])
-    if start_date > datetime.now(UTC):
+    if start_date.replace(tzinfo=UTC) > datetime.now(UTC) + timedelta(hours=3):
         raise HTTPException(
             status_code=409,
             detail=(
@@ -219,9 +218,7 @@ def edit_meeting(connection, meeting_uuid, session_id):
     if meeting["status"] != MeetingStatus.CALCULATING:
         raise HTTPException(
             status_code=409,
-            detail=(
-                "Вернуть к корректировкам можно только в статусе 'В расчёте'"
-            )
+            detail=f"Вернуть к корректировкам можно только в статусе '{MeetingStatus.CALCULATING}'"
         )
     return meetings_repository.update_status(
         connection=connection,

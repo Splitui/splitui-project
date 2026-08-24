@@ -273,32 +273,6 @@ def test_receipt_deleted_change_log(
         },
     }
 
-def test_debts_recalculated_change_log(
-    app_client,
-    create_meeting,
-    get_change_logs,
-):
-    meeting = create_meeting()
-
-    response = app_client.post(
-        f"/meetings/{meeting['uuid']}/debts",
-        headers={
-            "session-id": meeting["creator_session_id"],
-        },
-    )
-
-    change = get_change_logs(meeting["id"])[0]
-
-    assert change["action"] == "debts.recalculated"
-    assert change["meeting_id"] == meeting["id"]
-    assert change["participant_id"] is None
-    assert change["value"] == {
-        "message": "Долги встречи пересчитаны",
-        "context": {
-            "debts_count": 0,
-        },
-    }
-
 
 def test_meeting_calculating_change_log(
     app_client,

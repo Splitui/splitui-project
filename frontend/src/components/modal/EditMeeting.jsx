@@ -58,7 +58,8 @@ export default function EditMeeting({
                 showSnackbar('Встреча обновлена!', 'success');
                 onClose();
             } else {
-                showSnackbar('Не удалось сохранить изменения');
+                const errorData = await res.json().catch(() => ({}));
+                showSnackbar(errorData.detail || 'Не удалось сохранить изменения');
             }
         } catch (e) {
             console.error(e);

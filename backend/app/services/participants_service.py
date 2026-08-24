@@ -64,7 +64,8 @@ def add_participant(connection, meeting_uuid, data: ParticipantCreate, token: st
     if meeting["status"] not in {MeetingStatus.ACTIVE, MeetingStatus.EDITING}:
         raise HTTPException(
             status_code=409,
-            detail="Добавлять участника можно только в статусе встречи 'Активная' или 'Корректировка'",
+            detail=f"Добавлять участника можно только "
+                   f"в статусе встречи '{MeetingStatus.ACTIVE}' или '{MeetingStatus.EDITING}'",
         )
 
     try:
@@ -102,7 +103,8 @@ def update_participant(connection, meeting_uuid, session_id, data: ParticipantUp
     if meeting["status"] not in {MeetingStatus.ACTIVE, MeetingStatus.EDITING}:
         raise HTTPException(
             status_code=409,
-            detail="Редактировать участника можно только в статусе встречи 'Активная' или 'Корректировка'",
+            detail=f"Редактировать участника можно только "
+                   f"в статусе встречи '{MeetingStatus.ACTIVE}' или '{MeetingStatus.EDITING}'",
         )
 
     if data.nickname is not None:

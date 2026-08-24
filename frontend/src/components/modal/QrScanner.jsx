@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { Dialog, IconButton, Box, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import { useSnackbar } from '../SnackbarProvider';
 
 export default function QrScanner({ open, onClose, onScanned }) {
+    const showSnackbar = useSnackbar();
     useEffect(() => {
         if (!open) return;
         let html5QrCode;
@@ -37,14 +39,20 @@ export default function QrScanner({ open, onClose, onScanned }) {
                     onSuccess,
                     () => {},
                 )
-                .catch(() => {});
+                .catch((err) => {
+                    console.error(err);
+                    showSnackbar(
+                        'Не удалось включить камеру. Проверьте разрешения в браузере.',
+                    );
+                    onClose();
+                });
         })();
 
         return () => {
             cancelled = true;
             stop();
         };
-    }, [open, onScanned]);
+    }, [open, onScanned, showSnackbar, onClose]);
 
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">

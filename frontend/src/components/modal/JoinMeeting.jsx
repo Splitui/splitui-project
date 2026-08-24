@@ -1,14 +1,4 @@
-import {
-    Dialog,
-    DialogContent,
-    IconButton,
-    Button,
-    useTheme,
-    useMediaQuery,
-    TextField,
-    Typography,
-    Box,
-} from '@mui/material';
+import { Dialog, IconButton, Button, Typography, Box } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useRef } from 'react';
 import Cookies from 'js-cookie';
@@ -18,13 +8,26 @@ import { useSnackbar } from '../SnackbarProvider';
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 
 export default function JoinMeeting({ open, onClose }) {
-    const theme = useTheme();
-    const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
     const navigate = useNavigate();
     const showSnackbar = useSnackbar();
 
     const nameRef = useRef(null);
     const meetingIdRef = useRef(null);
+
+    const inputStyle = {
+        width: '100%',
+        boxSizing: 'border-box',
+        border: '1px solid #D9CBAE',
+        borderRadius: '11px',
+        padding: '13px',
+        fontSize: '15px',
+        background: '#FFFDF7',
+        color: '#2E2519',
+        outline: 'none',
+        fontFamily: 'inherit',
+    };
+
+    const labelStyle = { fontSize: 12, color: '#8A7C66', mb: 0.6 };
 
     const cookie = open ? JSON.parse(Cookies.get('meeting') || '{}') : {};
     const userName = cookie.userName || '';
@@ -46,29 +49,18 @@ export default function JoinMeeting({ open, onClose }) {
             };
             const response = await fetch(`${API_URL}/meetings/${meetingId}`, { headers });
             if (!response.ok) {
-                showSnackbar('Комната с таким id не найдена');
+                const errorData = await response.json().catch(() => ({}));
+                showSnackbar(errorData.detail || 'Комната с таким ID не найдена');
                 return;
             }
             const meetingData = await response.json();
 
             let participantId;
             let isCreator = false;
+
             if (cookie.id === meetingId && cookie.participantId) {
                 participantId = cookie.participantId;
                 isCreator = cookie.isCreator;
-
-                if (name !== userName) {
-                    await fetch(
-                        `${API_URL}/meetings/${meetingId}/participants/${participantId}`,
-                        {
-                            method: 'PATCH',
-                            headers: {
-                                headers,
-                            },
-                            body: JSON.stringify({ nickname: name }),
-                        },
-                    );
-                }
             } else {
                 const participantsResponse = await fetch(
                     `${API_URL}/meetings/${meetingId}/participants?limit=50&offset=0`,
@@ -77,9 +69,7 @@ export default function JoinMeeting({ open, onClose }) {
                 const participantsList = participantsResponse.ok
                     ? await participantsResponse.json()
                     : [];
-
                 const existingUser = participantsList.find((p) => p.nickname === name);
-
                 if (existingUser) {
                     participantId = existingUser.id;
                     isCreator =
@@ -98,9 +88,9 @@ export default function JoinMeeting({ open, onClose }) {
                 'meeting',
                 JSON.stringify({
                     id: meetingId,
-                    participantId: participantId,
+                    participantId,
                     userName: name,
-                    isCreator: isCreator,
+                    isCreator,
                     name: meetingData.title,
                     date: meetingDate,
                     sessionId: cookie.sessionId,
@@ -108,117 +98,113 @@ export default function JoinMeeting({ open, onClose }) {
             );
 
             onClose();
+            showSnackbar(`С возвращением, ${name}!`, 'success');
             navigate(`/meetings/${meetingId}`);
         } catch (e) {
-            console.error('Ошибочка', e);
-            showSnackbar('Нет связи с сервером');
+            showSnackbar('Нет связи с сервером', e);
         }
     };
 
     return (
         <Dialog
-            fullScreen={fullScreen}
-            fullWidth
-            maxWidth="sm"
             open={open}
             onClose={onClose}
-            PaperProps={{
-                sx: {
-                    backgroundColor: '#F8F4EC',
-                    borderRadius: fullScreen ? 0 : '20px',
-                    p: { xs: 2, sm: 3 },
+            fullWidth
+            maxWidth="sm"
+            sx={{ '& .MuiDialog-container': { alignItems: 'flex-end' } }}
+            slotProps={{
+                paper: {
+                    sx: {
+                        m: 0,
+                        width: '100%',
+                        maxWidth: '100%',
+                        borderRadius: '26px 26px 0 0',
+                        backgroundColor: '#F7F1E3',
+                        p: '10px 22px 24px',
+                    },
                 },
             }}
         >
-            <IconButton
-                onClick={onClose}
-                sx={{ position: 'absolute', top: 12, right: 12, color: '#463628' }}
-            >
-                <CloseIcon />
-            </IconButton>
+            <Box
+                sx={{
+                    width: 38,
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor: '#D3C4A5',
+                    mx: 'auto',
+                    mb: 2,
+                }}
+            />
 
-            <Box sx={{ textAlign: 'center', pt: 2, pb: 1 }}>
-                <Typography
-                    sx={{
-                        fontWeight: 800,
-                        color: '#463628',
-                        fontSize: { xs: '1.75rem', sm: '2.5rem' },
-                        lineHeight: 1.1,
-                        letterSpacing: '0.03em',
-                    }}
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    mb: 1,
+                }}
+            >
+                <Box>
+                    <Typography
+                        sx={{
+                            fontSize: 22,
+                            fontWeight: 700,
+                            color: '#2E2519',
+                            lineHeight: 1.2,
+                        }}
+                    >
+                        Войти в комнату
+                    </Typography>
+                    <Typography sx={{ fontSize: 13, color: '#8A7C66', mt: 0.5 }}>
+                        Вернитесь к своим расходам
+                    </Typography>
+                </Box>
+                <IconButton
+                    onClick={onClose}
+                    sx={{ color: '#9C8B6F', mt: -0.5, mr: -0.5 }}
                 >
-                    ИДЕАЛЬНОЕ ПУТЕШЕСТВИЕ
-                </Typography>
-                <Typography
-                    sx={{
-                        color: '#463628',
-                        fontSize: { xs: '1rem', sm: '1.25rem' },
-                        letterSpacing: '0.05em',
-                        mt: 1,
-                    }}
-                >
-                    УЖЕ ЗДЕСЬ
-                </Typography>
+                    <CloseIcon />
+                </IconButton>
             </Box>
 
-            <DialogContent
-                sx={{ display: 'flex', flexDirection: 'column', gap: 3, py: 3 }}
-            >
-                <TextField
-                    fullWidth
-                    label="Твое имя"
+            <Box sx={{ mt: 2 }}>
+                <Typography sx={labelStyle}>Твое имя</Typography>
+                <input
+                    ref={nameRef}
                     defaultValue={userName}
-                    inputRef={nameRef}
-                    sx={{
-                        '& .MuiOutlinedInput-root': {
-                            borderRadius: '12px',
-                            '& fieldset': { borderColor: '#463628' },
-                            '&:hover fieldset': { borderColor: '#463628' },
-                            '&.Mui-focused fieldset': { borderColor: '#463628' },
-                        },
-                        '& label': { color: '#463628' },
-                        '& label.Mui-focused': { color: '#463628' },
-                        '& input': { color: '#463628' },
-                    }}
+                    placeholder="Имя"
+                    style={inputStyle}
                 />
-                <TextField
-                    fullWidth
-                    label="ID комнаты"
-                    defaultValue={defaultMeetingId}
-                    inputRef={meetingIdRef}
-                    sx={{
-                        '& .MuiOutlinedInput-root': {
-                            borderRadius: '12px',
-                            '& fieldset': { borderColor: '#463628' },
-                            '&:hover fieldset': { borderColor: '#463628' },
-                            '&.Mui-focused fieldset': { borderColor: '#463628' },
-                        },
-                        '& label': { color: '#463628' },
-                        '& label.Mui-focused': { color: '#463628' },
-                        '& input': { color: '#463628' },
-                    }}
-                />
-            </DialogContent>
-
-            <Box sx={{ px: 3, pb: 2 }}>
-                <Button
-                    fullWidth
-                    variant="contained"
-                    onClick={handleJoin}
-                    sx={{
-                        backgroundColor: '#463628',
-                        color: '#F8F4EC',
-                        fontWeight: 'bold',
-                        borderRadius: '12px',
-                        py: 1.5,
-                        fontSize: '1.1rem',
-                        boxShadow: 'none',
-                        '&:hover': { backgroundColor: '#3a2c20', boxShadow: 'none' },
-                    }}
-                >
-                    ВОЙТИ В КОМНАТУ
-                </Button>
             </Box>
+
+            <Box sx={{ mt: 1.5, mb: 3 }}>
+                <Typography sx={labelStyle}>ID комнаты</Typography>
+                <input
+                    ref={meetingIdRef}
+                    defaultValue={defaultMeetingId}
+                    placeholder="Например, c9f829ea..."
+                    style={inputStyle}
+                />
+            </Box>
+
+            <Button
+                fullWidth
+                variant="contained"
+                onClick={handleJoin}
+                sx={{
+                    py: 2,
+                    borderRadius: '14px',
+                    backgroundColor: '#2E2519',
+                    color: '#F7F1E3',
+                    fontSize: 16,
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    boxShadow: 'none',
+                    '&:hover': { backgroundColor: '#3a2c20', boxShadow: 'none' },
+                }}
+            >
+                ВОЙТИ В КОМНАТУ
+            </Button>
         </Dialog>
     );
 }
