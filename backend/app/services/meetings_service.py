@@ -82,11 +82,10 @@ def update_meeting(connection, meeting_uuid, session_id, data: MeetingUpdate):
             detail="Редактировать встречу может только создатель встречи"
         )
 
-    if meeting["status"] not in {MeetingStatus.ACTIVE, MeetingStatus.EDITING}:
+    if meeting["status"] == MeetingStatus.FINISHED:
         raise HTTPException(
             status_code=409,
-            detail=f"Редактировать встречу можно только "
-                   f"в статусе '{MeetingStatus.ACTIVE}' или '{MeetingStatus.EDITING}'",
+            detail=f"Нельзя редактировать встречу в статусе '{MeetingStatus.FINISHED}'"
         )
 
     return meetings_repository.update(connection, meeting["id"], data)
