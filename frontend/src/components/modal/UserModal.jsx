@@ -90,7 +90,11 @@ export default function UserModal({
                 onSave(allData);
                 onClose();
             } else {
-                showSnackbar('Ошибка при сохранении. Проверьте карту/телефон.');
+                const errorData = await res.json().catch(() => ({}));
+                const errorMessage =
+                    errorData.detail || 'Ошибка при сохранении. Проверьте карту/телефон.';
+
+                showSnackbar(errorMessage);
             }
         } catch (e) {
             showSnackbar('Нет связи с сервером', e);
@@ -157,6 +161,12 @@ export default function UserModal({
                     {canEdit && (
                         <Button
                             variant="outlined"
+                            onClick={() =>
+                                showSnackbar(
+                                    'Загрузка фото находится в разработке',
+                                    'info',
+                                )
+                            }
                             className="!border-[#EAE0CD] !text-[#463628] !rounded-xl !normal-case !px-4 !bg-[#FFFFFF]"
                         >
                             Фото
