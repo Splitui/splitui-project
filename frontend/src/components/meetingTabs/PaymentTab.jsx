@@ -152,8 +152,8 @@ export default function PaymentTab({ onUpdate, participants, refresh, roomStatus
             if (res.ok) {
                 const payData = await res.json();
                 setSelectedTransaction({
-                    ...row,
                     ...payData,
+                    ...row,
                 });
             } else {
                 showSnackbar('У получателя не указаны банковские реквизиты');

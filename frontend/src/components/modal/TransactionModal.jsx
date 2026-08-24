@@ -15,8 +15,7 @@ export default function TransactionModal({ open, onClose, transaction, onConfirm
                 setTimeout(onClose, 1000);
             } else {
                 showSnackbar(
-                    'Прямая ссылка недоступна. Используйте перевод по реквизитам.',
-                    'warning',
+                    'Прямая ссылка недоступна. Проверьте введённые данные или используйте перевод по реквизитам.',
                 );
                 onClose();
             }
