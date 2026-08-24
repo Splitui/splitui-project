@@ -9,9 +9,17 @@ export default function TransactionModal({ open, onClose, transaction, onConfirm
     const isLink = isPayment && !!transaction.bank_deeplink;
 
     const handleAction = () => {
-        if (isLink) {
-            showSnackbar('Открываем приложение банка...', 'info');
-            setTimeout(onClose, 1000);
+        if (isPayment) {
+            if (isLink) {
+                showSnackbar('Открываем приложение банка...', 'info');
+                setTimeout(onClose, 1000);
+            } else {
+                showSnackbar(
+                    'Прямая ссылка недоступна. Используйте перевод по реквизитам.',
+                    'warning',
+                );
+                onClose();
+            }
         } else {
             onConfirm();
         }
