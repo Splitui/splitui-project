@@ -84,12 +84,14 @@ def get_expenses(
                 r.purchase_date,
                 r.title,
                 payer.nickname AS payer,
-                r.category,
+                cc.name AS category,
                 r.total_amount AS amount,
                 r.is_confirmed AS confirmed
             FROM receipts r
             JOIN participants payer
                 ON payer.id = r.payer_id
+            LEFT JOIN cashback_categories cc
+                ON CAST(cc.id AS TEXT) = r.category
             WHERE r.meeting_id = :meeting_id
             ORDER BY r.purchase_date, r.id
         """),
